@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Calculadora de Preço de Venda</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f4f9; padding: 20px; }
+        .container { display: flex; gap: 20px; flex-wrap: wrap; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex: 1; min-width: 300px; }
+        h2 { color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-top: 0; }
+        label { display: block; margin-top: 15px; font-weight: bold; color: #555; }
+        input { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        
+        /* Botões */
+        button { width: 100%; padding: 15px; border: none; border-radius: 5px; font-size: 1.1em; font-weight: bold; cursor: pointer; margin-top: 20px; transition: 0.2s; }
+        .btn-verde { background-color: #27ae60; color: white; }
+        .btn-verde:hover { background-color: #219150; }
+        .btn-azul { background-color: #2980b9; color: white; }
+        
+        /* Tabela */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f8f9fa; color: #333; }
+        
+        .preco-destaque { color: #27ae60; font-weight: bold; font-size: 1.1em; }
+        .erro { color: red; margin-top: 10px; font-weight: bold; display: none; }
+
+        /* Ações da Tabela */
+        .acoes-btn { display: flex; gap: 5px; }
+        .btn-pequeno { padding: 5px 10px; font-size: 0.9em; margin: 0; border-radius: 3px; cursor: pointer; color: white; border: none; }
+        .btn-editar { background-color: #f39c12; }
+        .btn-excluir { background-color: #c0392b; }
+        .btn-detalhes { background-color: #3498db; } /* Botão do Demonstrativo */
+
+        /* --- ESTILOS DO MODAL (JANELA FLUTUANTE) --- */
+        .modal { display: none; position: fixed; z-index: 1; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 90%; max-width: 600px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close:hover { color: black; }
+        
+        /* Tabela do Demonstrativo */
+        .tabela-demo { width: 100%; border: 1px solid #ddd; margin-top: 15px; }
+        .tabela-demo th, .tabela-demo td { border: 1px solid #ddd; padding: 8px; text-align: right; }
+        .tabela-demo td:first-child { text-align: left; font-weight: bold; }
+        .linha-destaque { background-color: #e8f6f3; font-weight: bold; font-size: 1.1em; }
+        .linha-lucro { background-color: #dbf6e6; color: #27ae60; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <a href="../index.html" style="text-decoration: none; color: #555;">&larr; Voltar ao Início</a>
+    <h1>Calculadora de Preço de Venda</h1>
+
+    <div class="container">
+        <div class="card">
+            <h2 id="titulo-form">Novo Orçamento</h2>
+            <input type="hidden" id="idOrcamento">
+
+            <label>Nome do Produto / Serviço</label>
+            <input type="text" id="nome" placeholder="Ex: Guarda-Roupa Casal MDF">
+
+            <label>Custo de Materiais (R$)</label>
+            <input type="number" id="custoMercadoria" placeholder="0.00">
+
+            <label>Tempo Gasto (Dias ou Horas)</label>
+            <input type="number" id="tempo" placeholder="Ex: 5">
+
+            <div style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <label>Lucro Desejado (%)</label>
+                    <input type="number" id="lucro" value="30">
+                </div>
+                <div style="flex: 1;">
+                    <label>Imposto (%)</label>
+                    <input type="number" id="imposto" value="5">
+                </div>
+            </div>
+
+            <button id="btn-acao" class="btn-verde" onclick="salvar()">💲 Calcular e Salvar</button>
+            <button id="btn-cancelar" onclick="cancelarEdicao()" style="background-color: #7f8c8d; color: white; display: none; margin-top: 10px;">Cancelar Edição</button>
+            <div id="msg-erro" class="erro"></div>
+        </div>
+
+        <div class="card">
+            <h2>Orçamentos Salvos</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Produto</th>
+                        <th>Preço Venda</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="lista-orcamentos"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="modal-demonstrativo" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="fecharModal()">&times;</span>
+            <h2 style="text-align: center;">Demonstrativo de Formação de Preço</h2>
+            <h3 id="demo-titulo-produto" style="text-align: center; color: #555;"></h3>
+            
+            <table class="tabela-demo">
+                <thead>
+                    <tr>
+                        <th style="text-align: left;">Descrição</th>
+                        <th>Valor (R$)</th>
+                        <th>%</th>
+                    </tr>
+                </thead>
+                <tbody id="corpo-demonstrativo">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000';
+        let listaAtual = [];
+
+        window.onload = listarOrcamentos;
+
+        // --- LÓGICA DO DEMONSTRATIVO ---
+        function verDemonstrativo(id) {
+            const item = listaAtual.find(i => i.id === id);
+            if (!item) return;
+
+            // 1. Pega os valores brutos
+            const PV = Number(item.preco_venda);
+            const Mercadoria = Number(item.custo_mercadoria);
+            const MO = Number(item.custo_mao_obra_total);
+            
+            // 2. Calcula os valores em Reais baseados na porcentagem do Preço de Venda
+            const pctCustoFixo = Number(item.custo_fixo_pct_snapshot);
+            const valCustoFixo = PV * (pctCustoFixo / 100);
+
+            const pctImposto = Number(item.imposto_pct);
+            const valImposto = PV * (pctImposto / 100);
+
+            const pctLucro = Number(item.lucro_desejado_pct);
+            const valLucro = PV * (pctLucro / 100);
+
+            // 3. Calcula a representatividade (%) da Mercadoria e MO sobre o Preço Final
+            const pctMercadoria = (Mercadoria / PV) * 100;
+            const pctMO = (MO / PV) * 100;
+
+            // 4. Monta a Tabela HTML
+            const tbody = document.getElementById('corpo-demonstrativo');
+            document.getElementById('demo-titulo-produto').innerText = item.nome_produto;
+            
+            tbody.innerHTML = `
+                <tr class="linha-destaque">
+                    <td>Preço de Venda</td>
+                    <td>R$ ${PV.toFixed(2)}</td>
+                    <td>100%</td>
+                </tr>
+                <tr>
+                    <td>(-) Custo Fixo</td>
+                    <td>R$ ${valCustoFixo.toFixed(2)}</td>
+                    <td>${pctCustoFixo.toFixed(2)}%</td>
+                </tr>
+                <tr>
+                    <td>(-) Impostos</td>
+                    <td>R$ ${valImposto.toFixed(2)}</td>
+                    <td>${pctImposto.toFixed(2)}%</td>
+                </tr>
+                <tr>
+                    <td>(-) Mercadoria</td>
+                    <td>R$ ${Mercadoria.toFixed(2)}</td>
+                    <td>${pctMercadoria.toFixed(2)}%</td>
+                </tr>
+                <tr>
+                    <td>(-) Mão de Obra</td>
+                    <td>R$ ${MO.toFixed(2)}</td>
+                    <td>${pctMO.toFixed(2)}%</td>
+                </tr>
+                <tr class="linha-lucro">
+                    <td>(=) LUCRO LÍQUIDO</td>
+                    <td>R$ ${valLucro.toFixed(2)}</td>
+                    <td>${pctLucro.toFixed(2)}%</td>
+                </tr>
+            `;
+
+            // Mostra o Modal
+            document.getElementById('modal-demonstrativo').style.display = "block";
+        }
+
+        function fecharModal() {
+            document.getElementById('modal-demonstrativo').style.display = "none";
+        }
+
+        // --- FUNÇÕES CRUD EXISTENTES ---
+
+        async function listarOrcamentos() {
+            try {
+                const res = await fetch(`${API_URL}/orcamentos`);
+                listaAtual = await res.json();
+                
+                const tbody = document.getElementById('lista-orcamentos');
+                tbody.innerHTML = '';
+
+                listaAtual.forEach(item => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${item.nome_produto}</td>
+                            <td class="preco-destaque">R$ ${item.preco_venda}</td>
+                            <td>
+                                <div class="acoes-btn">
+                                    <button class="btn-pequeno btn-detalhes" onclick="verDemonstrativo(${item.id})" title="Ver Demonstrativo">📄</button>
+                                    <button class="btn-pequeno btn-editar" onclick="editar(${item.id})" title="Editar">✏️</button>
+                                    <button class="btn-pequeno btn-excluir" onclick="excluir(${item.id})" title="Excluir">🗑️</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (err) { console.error(err); }
+        }
+
+        async function salvar() {
+            const id = document.getElementById('idOrcamento').value;
+            const dados = {
+                nomeProduto: document.getElementById('nome').value,
+                custoMercadoria: Number(document.getElementById('custoMercadoria').value),
+                tempoGasto: Number(document.getElementById('tempo').value),
+                lucroPct: Number(document.getElementById('lucro').value),
+                impostoPct: Number(document.getElementById('imposto').value)
+            };
+
+            if (!dados.nomeProduto || dados.custoMercadoria <= 0 || dados.tempoGasto <= 0) {
+                alert("Preencha os campos obrigatórios!");
+                return;
+            }
+
+            const metodo = id ? 'PUT' : 'POST';
+            const url = id ? `${API_URL}/orcamentos/${id}` : `${API_URL}/orcamentos`;
+
+            try {
+                const res = await fetch(url, {
+                    method: metodo,
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(dados)
+                });
+                
+                const resultado = await res.json();
+                if (res.status >= 400) throw new Error(resultado.error);
+
+                alert(id ? 'Atualizado!' : 'Salvo com sucesso!');
+                cancelarEdicao();
+                listarOrcamentos();
+            } catch (err) {
+                alert("Erro: " + err.message);
+            }
+        }
+
+        async function excluir(id) {
+            if(!confirm("Tem certeza que deseja excluir?")) return;
+            await fetch(`${API_URL}/orcamentos/${id}`, { method: 'DELETE' });
+            listarOrcamentos();
+        }
+
+        function editar(id) {
+            const item = listaAtual.find(i => i.id === id);
+            if (!item) return;
+
+            document.getElementById('idOrcamento').value = item.id;
+            document.getElementById('nome').value = item.nome_produto;
+            document.getElementById('custoMercadoria').value = item.custo_mercadoria;
+            document.getElementById('tempo').value = item.tempo_gasto;
+            document.getElementById('lucro').value = item.lucro_desejado_pct;
+            document.getElementById('imposto').value = item.imposto_pct;
+
+            document.getElementById('titulo-form').innerText = "Editando Orçamento";
+            const btn = document.getElementById('btn-acao');
+            btn.innerText = "💾 Salvar Alterações";
+            btn.className = "btn-azul";
+            document.getElementById('btn-cancelar').style.display = "block";
+        }
+
+        function cancelarEdicao() {
+            document.getElementById('idOrcamento').value = '';
+            document.getElementById('nome').value = '';
+            document.getElementById('custoMercadoria').value = '';
+            document.getElementById('tempo').value = '';
+            document.getElementById('titulo-form').innerText = "Novo Orçamento";
+            const btn = document.getElementById('btn-acao');
+            btn.innerText = "💲 Calcular e Salvar";
+            btn.className = "btn-verde";
+            document.getElementById('btn-cancelar').style.display = "none";
+        }
+        
+        // Fecha o modal se clicar fora dele
+        window.onclick = function(event) {
+            const modal = document.getElementById('modal-demonstrativo');
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>

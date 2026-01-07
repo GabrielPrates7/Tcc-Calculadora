@@ -1,0 +1,108 @@
+.custo-obra-container {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    max-width: 900px;
+    margin: 0 auto;
+    padding-bottom: 50px;
+}
+
+/* --- O CARD QUE SUMIU --- */
+.card-resultado {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); /* Azul bem escuro */
+    color: white;
+    padding: 40px;
+    border-radius: 16px;
+    text-align: center;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+    border: 1px solid #334155;
+    margin-bottom: 20px;
+}
+
+.resultado-titulo {
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 0.9rem;
+    opacity: 0.8;
+    margin-bottom: 5px;
+    color: #cbd5e1;
+}
+
+.resultado-valor {
+    font-size: 3.5rem; /* Fonte Gigante */
+    font-weight: 800;
+    color: #f97316; /* Laranja */
+    margin: 15px 0;
+    text-shadow: 0 4px 10px rgba(249, 115, 22, 0.3);
+    line-height: 1;
+}
+
+.resultado-info {
+    font-size: 1rem;
+    color: #94a3b8;
+}
+
+/* --- GRID DE CONFIGURAÇÃO --- */
+.config-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+@media (max-width: 768px) {
+    .config-grid { grid-template-columns: 1fr; }
+}
+
+.card-config {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    border: 1px solid #e2e8f0;
+}
+
+.card-config h2 {
+    margin-top: 0; color: #334155; font-size: 1.2rem; margin-bottom: 15px; 
+    border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;
+    display: flex; align-items: center;
+}
+
+/* Inputs */
+.input-group { margin-bottom: 20px; }
+.input-group label { display: block; margin-bottom: 8px; color: #475569; font-weight: 600; font-size: 0.9rem; }
+.input-group input { 
+    width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; 
+    font-size: 1.1rem; font-weight: bold; color: #1e293b; background-color: #f8fafc;
+}
+.input-group input:focus { border-color: #3b82f6; background-color: white; outline: none; }
+
+/* Botões de Opção (Dia/Hora, Individual/Grupo) */
+.btn-opcao {
+    flex: 1; padding: 12px; border: 1px solid #cbd5e1; background: white; border-radius: 8px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+    color: #64748b; font-weight: 600; transition: 0.2s;
+}
+.btn-opcao:hover { background-color: #f1f5f9; }
+.btn-opcao.ativo {
+    background-color: #3b82f6; color: white; border-color: #3b82f6;
+    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+}
+
+.btn-atualizar {
+    width: 100%; background-color: #f97316; color: white; padding: 15px; border: none; border-radius: 8px;
+    font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 10px;
+    box-shadow: 0 4px 6px rgba(249, 115, 22, 0.2);
+}
+.btn-atualizar:hover { background-color: #ea580c; transform: translateY(-2px); }
+
+/* Caixa de Explicação */
+.formula-box {
+    background-color: #f8fafc;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px dashed #cbd5e1;
+    color: #475569;
+}
+.formula-total {
+    border-top: 1px solid #cbd5e1; padding-top: 15px; font-weight: bold; 
+    color: #1e293b; margin-top: 15px; text-align: center; font-size: 1.1rem;
+}

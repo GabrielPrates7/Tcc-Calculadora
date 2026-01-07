@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Financeiro - Teste Backend</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; padding: 20px; background-color: #f4f4f9; }
+        .bloco { 
+            background: white; 
+            border-radius: 8px; 
+            padding: 20px; 
+            margin-bottom: 20px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+        }
+        h3 { margin-top: 0; color: #2c3e50; border-bottom: 1px solid #eee; padding-bottom: 10px;}
+        .resumo { font-weight: bold; margin-top: 15px; font-size: 1.1em; text-align: right;}
+        
+        input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; margin-right: 5px; }
+        
+        button { cursor: pointer; padding: 8px 12px; border: none; border-radius: 4px; font-weight: bold; }
+        .btn-add { background-color: #27ae60; color: white; }
+        .btn-save { background-color: #2980b9; color: white; display: none; } /* Escondido por padrão */
+        .btn-cancel { background-color: #95a5a6; color: white; display: none; } /* Escondido por padrão */
+        
+        .lista-itens { list-style: none; padding: 0; margin-top: 15px; }
+        .lista-itens li { 
+            background: #f8f9fa; border-bottom: 1px solid #ddd; padding: 10px; 
+            display: flex; justify-content: space-between; align-items: center; 
+        }
+        .acoes button { margin-left: 5px; font-size: 0.9em; padding: 4px 8px;}
+        .btn-editar { background-color: #f39c12; color: white; }
+        .btn-excluir { background-color: #e74c3c; color: white; }
+    </style>
+</head>
+<body>
+
+    <a href="../index.html" style="text-decoration: none; color: #555;">&larr; Voltar ao Início</a>
+    <h1 style="color: #333;">Módulo Financeiro</h1>
+
+    <div class="bloco">
+        <h3>1. Faturamento Mensal</h3>
+        <label>Valor (R$):</label>
+        <input type="number" id="input-faturamento">
+        <button class="btn-add" onclick="atualizarFaturamento()">Atualizar</button>
+    </div>
+
+    <div class="bloco">
+        <h3>2. Despesas Fixas (Aluguel, Luz...)</h3>
+        <input type="text" id="desp-nome" placeholder="Nome (ex: Luz)">
+        <input type="number" id="desp-valor" placeholder="Valor (R$)">
+        
+        <button id="btn-desp-add" class="btn-add" onclick="salvarDespesa()">+ Adicionar</button>
+        <button id="btn-desp-save" class="btn-save" onclick="salvarDespesa()">Salvar Alteração</button>
+        <button id="btn-desp-cancel" class="btn-cancel" onclick="cancelarEdicao('desp')">Cancelar</button>
+        
+        <ul id="lista-despesas" class="lista-itens"></ul>
+        <div id="total-despesas" class="resumo" style="color: #c0392b;">Total: R$ 0,00 (0%)</div>
+    </div>
+
+    <div class="bloco">
+        <h3>3. Investimentos (Máquinas, Carros...)</h3>
+        <input type="text" id="inv-nome" placeholder="Nome (ex: Serra)">
+        <input type="number" id="inv-valor" placeholder="Valor (R$)">
+
+        <button id="btn-inv-add" class="btn-add" onclick="salvarInvestimento()">+ Adicionar</button>
+        <button id="btn-inv-save" class="btn-save" onclick="salvarInvestimento()">Salvar Alteração</button>
+        <button id="btn-inv-cancel" class="btn-cancel" onclick="cancelarEdicao('inv')">Cancelar</button>
+        
+        <ul id="lista-investimentos" class="lista-itens"></ul>
+        <div id="total-investimentos" class="resumo" style="color: #f39c12;">Total: R$ 0,00 (0%)</div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000';
+        
+        // Variáveis de controle de edição (null = criando novo)
+        let idEditandoDespesa = null;
+        let idEditandoInvestimento = null;
+        let faturamentoAtual = 0;
+
+        window.onload = function() {
+            carregarFaturamento();
+            carregarDespesas();
+            carregarInvestimentos();
+        };
+
+        // --- FATURAMENTO ---
+        async function carregarFaturamento() {
+            const res = await fetch(`${API_URL}/faturamento`);
+            const dados = await res.json();
+            faturamentoAtual = Number(dados.valor_mensal);
+            document.getElementById('input-faturamento').value = faturamentoAtual;
+            calcularTotais(); 
+        }
+
+        async function atualizarFaturamento() {
+            const valor = document.getElementById('input-faturamento').value;
+            await fetch(`${API_URL}/faturamento`, {
+                method: 'PUT', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ valor: valor })
+            });
+            alert('Faturamento atualizado!');
+            carregarFaturamento();
+        }
+
+        // --- DESPESAS (Lógica Unificada: Criar ou Editar) ---
+        async function carregarDespesas() {
+            const res = await fetch(`${API_URL}/despesas`);
+            const lista = await res.json();
+            const ul = document.getElementById('lista-despesas');
+            ul.innerHTML = '';
+            let total = 0;
+            
+            lista.forEach(item => {
+                total += Number(item.valor);
+                ul.innerHTML += `
+                    <li>
+                        <span>${item.nome}: <strong>R$ ${item.valor}</strong></span>
+                        <div class="acoes">
+                            <button class="btn-editar" onclick="editarItem('desp', ${item.id}, '${item.nome}', ${item.valor})">✎</button>
+                            <button class="btn-excluir" onclick="deletarItem('despesas', ${item.id})">🗑</button>
+                        </div>
+                    </li>`;
+            });
+            const porcentagem = faturamentoAtual > 0 ? (total / faturamentoAtual * 100).toFixed(2) : 0;
+            document.getElementById('total-despesas').innerText = `Total: R$ ${total} (${porcentagem}%)`;
+        }
+
+        async function salvarDespesa() {
+            const nome = document.getElementById('desp-nome').value;
+            const valor = document.getElementById('desp-valor').value;
+
+            if (idEditandoDespesa === null) {
+                // MODO CRIAR (POST)
+                await fetch(`${API_URL}/despesas`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ nome, valor })
+                });
+            } else {
+                // MODO EDITAR (PUT)
+                await fetch(`${API_URL}/despesas/${idEditandoDespesa}`, {
+                    method: 'PUT', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ nome, valor })
+                });
+                cancelarEdicao('desp'); // Sai do modo edição
+            }
+            // Limpa e recarrega
+            document.getElementById('desp-nome').value = '';
+            document.getElementById('desp-valor').value = '';
+            carregarDespesas();
+        }
+
+        // --- INVESTIMENTOS (Lógica Unificada) ---
+        async function carregarInvestimentos() {
+            const res = await fetch(`${API_URL}/investimentos`);
+            const lista = await res.json();
+            const ul = document.getElementById('lista-investimentos');
+            ul.innerHTML = '';
+            let total = 0;
+
+            lista.forEach(item => {
+                total += Number(item.valor);
+                ul.innerHTML += `
+                    <li>
+                        <span>${item.nome}: <strong>R$ ${item.valor}</strong></span>
+                        <div class="acoes">
+                            <button class="btn-editar" onclick="editarItem('inv', ${item.id}, '${item.nome}', ${item.valor})">✎</button>
+                            <button class="btn-excluir" onclick="deletarItem('investimentos', ${item.id})">🗑</button>
+                        </div>
+                    </li>`;
+            });
+            const porcentagem = faturamentoAtual > 0 ? (total / faturamentoAtual * 100).toFixed(2) : 0;
+            document.getElementById('total-investimentos').innerText = `Total: R$ ${total} (${porcentagem}%)`;
+        }
+
+        async function salvarInvestimento() {
+            const nome = document.getElementById('inv-nome').value;
+            const valor = document.getElementById('inv-valor').value;
+
+            if (idEditandoInvestimento === null) {
+                // POST
+                await fetch(`${API_URL}/investimentos`, {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ nome, valor })
+                });
+            } else {
+                // PUT
+                await fetch(`${API_URL}/investimentos/${idEditandoInvestimento}`, {
+                    method: 'PUT', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ nome, valor })
+                });
+                cancelarEdicao('inv');
+            }
+            document.getElementById('inv-nome').value = '';
+            document.getElementById('inv-valor').value = '';
+            carregarInvestimentos();
+        }
+
+        // --- FUNÇÕES GERAIS (Excluir, Preparar Edição, Cancelar) ---
+        
+        async function deletarItem(rota, id) {
+            if(confirm('Tem certeza?')) {
+                await fetch(`${API_URL}/${rota}/${id}`, { method: 'DELETE' });
+                if(rota === 'despesas') carregarDespesas();
+                else carregarInvestimentos();
+            }
+        }
+
+        // Prepara a tela para edição (Joga valores nos inputs e troca botões)
+        function editarItem(tipo, id, nome, valor) {
+            if (tipo === 'desp') {
+                idEditandoDespesa = id;
+                document.getElementById('desp-nome').value = nome;
+                document.getElementById('desp-valor').value = valor;
+                // Troca botões
+                document.getElementById('btn-desp-add').style.display = 'none';
+                document.getElementById('btn-desp-save').style.display = 'inline-block';
+                document.getElementById('btn-desp-cancel').style.display = 'inline-block';
+            } else {
+                idEditandoInvestimento = id;
+                document.getElementById('inv-nome').value = nome;
+                document.getElementById('inv-valor').value = valor;
+                // Troca botões
+                document.getElementById('btn-inv-add').style.display = 'none';
+                document.getElementById('btn-inv-save').style.display = 'inline-block';
+                document.getElementById('btn-inv-cancel').style.display = 'inline-block';
+            }
+        }
+
+        // Cancela e limpa tudo
+        function cancelarEdicao(tipo) {
+            if (tipo === 'desp') {
+                idEditandoDespesa = null;
+                document.getElementById('desp-nome').value = '';
+                document.getElementById('desp-valor').value = '';
+                document.getElementById('btn-desp-add').style.display = 'inline-block';
+                document.getElementById('btn-desp-save').style.display = 'none';
+                document.getElementById('btn-desp-cancel').style.display = 'none';
+            } else {
+                idEditandoInvestimento = null;
+                document.getElementById('inv-nome').value = '';
+                document.getElementById('inv-valor').value = '';
+                document.getElementById('btn-inv-add').style.display = 'inline-block';
+                document.getElementById('btn-inv-save').style.display = 'none';
+                document.getElementById('btn-inv-cancel').style.display = 'none';
+            }
+        }
+
+        function calcularTotais() {
+            carregarDespesas();
+            carregarInvestimentos();
+        }
+    </script>
+</body>
+</html>
