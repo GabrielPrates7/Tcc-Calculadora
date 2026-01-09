@@ -1,283 +1,208 @@
-import React, { useState, useEffect } from 'react';
-import { Trash2, Edit, FileText, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Calculator, DollarSign, Package, Percent, FileText, Trash2, Save, TrendingUp, Hammer, Building2 } from 'lucide-react';
 import './Orcamentos.css';
 
-// --- Tipos (Interfaces) ---
 interface Orcamento {
-  id: number;
+  id?: number;
+  cliente: string;
   nome_produto: string;
-  custo_mercadoria: string;
-  custo_mao_obra_total: string;
-  preco_venda: string;
-  custo_fixo_pct_snapshot: string;
-  imposto_pct: string;
-  lucro_desejado_pct: string;
-  tempo_gasto: string;
+  custo_materiais: number;
+  horas_trabalhadas: number; 
+  lucro_desejado: number;
+  imposto: number;
+  preco_venda: number;
+  lucro_real?: number; 
 }
 
 export function Orcamentos() {
-  // --- Estados ---
-  const [orcamentos, setOrcamentos] = useState<Orcamento[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<Orcamento | null>(null);
+  // --- INPUTS ---
+  const [produto, setProduto] = useState('');
+  const [materiais, setMateriais] = useState(0);
+  const [tempo, setTempo] = useState(0); 
+  const [lucro, setLucro] = useState(30);   
+  const [imposto, setImposto] = useState(5); 
 
-  // Formulário
-  const [form, setForm] = useState({
-    id: 0,
-    nomeProduto: '',
-    custoMercadoria: '',
-    tempoGasto: '',
-    lucroPct: '30',
-    impostoPct: '5'
-  });
+  // --- DADOS DO SISTEMA ---
+  const [valorHora, setValorHora] = useState(0);
+  const [taxaFixa, setTaxaFixa] = useState(0);
+  
+  const [listaOrcamentos, setListaOrcamentos] = useState<Orcamento[]>([]);
+  const [versaoDados, setVersaoDados] = useState(0);
 
-  const API_URL = 'http://localhost:3000/orcamentos';
+  // --- CÁLCULO ---
+  const custoMaoObra = tempo * valorHora;
+  const custoProducao = Number(materiais) + custoMaoObra; 
+  
+  const taxaFixaReal = Number(taxaFixa) || 0;
+  const somaPorcentagens = taxaFixaReal + Number(lucro) + Number(imposto);
+  const divisor = 1 - (somaPorcentagens / 100);
+  const precoFinal = (divisor > 0 && custoProducao > 0) ? custoProducao / divisor : 0;
+  const lucroReal = precoFinal * (Number(lucro) / 100);
 
-  // --- Funções ---
-
+  // --- EFEITO: CARREGAR CONFIGURAÇÕES ---
   useEffect(() => {
-    carregarOrcamentos();
+    async function carregarSistema() {
+      try {
+        // 1. Valor da Hora
+        try {
+            const resObra = await fetch('http://localhost:3000/calculo-obra'); 
+            const dataObra = await resObra.json();
+            setValorHora(Number(dataObra.calculo?.valorUnitario || 0));
+        } catch (e) { 
+            console.warn("Erro ao buscar valor hora:", e); // <--- CORRIGIDO AQUI
+        }
+
+        // 2. Taxa Financeira
+        try {
+            const resFin = await fetch('http://localhost:3000/financeiro/dashboard');
+            const dataFin = await resFin.json();
+            setTaxaFixa(Number(dataFin.taxaCustoFixo || 0));
+        } catch (e) { 
+            console.warn("Erro ao buscar taxa financeira:", e); // <--- CORRIGIDO AQUI
+        }
+
+      } catch (error) {
+        console.error("Erro geral:", error);
+      }
+    }
+    carregarSistema();
   }, []);
 
-  async function carregarOrcamentos() {
-    try {
-      const resposta = await fetch(API_URL);
-      const dados = await resposta.json();
-      setOrcamentos(dados);
-    } catch (error) {
-      console.error("Erro ao buscar orçamentos:", error); // <--- CORREÇÃO AQUI
+  // --- CARREGAR LISTA ---
+  useEffect(() => {
+    async function carregarLista() {
+      try {
+          const res = await fetch('http://localhost:3000/orcamentos');
+          const data = await res.json();
+          setListaOrcamentos(data);
+      } catch (error) { console.error("Erro lista:", error); }
     }
-  }
+    carregarLista();
+  }, [versaoDados]);
 
-  async function handleSalvar(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
+  // --- AÇÕES ---
+  async function handleSalvar() {
+    if (!produto) return alert("Digite o nome do produto!");
+    if (precoFinal <= 0) return alert("Preço zerado.");
 
-    const dadosEnvio = {
-      nomeProduto: form.nomeProduto,
-      custoMercadoria: Number(form.custoMercadoria),
-      tempoGasto: Number(form.tempoGasto),
-      lucroPct: Number(form.lucroPct),
-      impostoPct: Number(form.impostoPct)
+    const novo = {
+        cliente: "Cliente Padrão",
+        nome_produto: produto,
+        custo_materiais: Number(materiais),
+        horas_trabalhadas: Number(tempo),
+        lucro_desejado: Number(lucro),
+        imposto: Number(imposto),
+        preco_venda: precoFinal,
+        lucro_real: lucroReal
     };
 
     try {
-      const method = form.id === 0 ? 'POST' : 'PUT';
-      const url = form.id === 0 ? API_URL : `${API_URL}/${form.id}`;
-
-      const res = await fetch(url, {
-        method: method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dadosEnvio)
-      });
-
-      if (!res.ok) throw new Error('Erro ao salvar');
-      
-      alert(form.id === 0 ? 'Orçamento criado!' : 'Orçamento atualizado!');
-      limparForm();
-      carregarOrcamentos();
-    } catch (error) {
-      console.error("Erro ao salvar:", error); // <--- CORREÇÃO AQUI
-      alert('Erro ao processar. Verifique se o servidor (backend) está rodando.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  function handleEditar(item: Orcamento) {
-    setForm({
-      id: item.id,
-      nomeProduto: item.nome_produto,
-      custoMercadoria: item.custo_mercadoria,
-      tempoGasto: item.tempo_gasto,
-      lucroPct: item.lucro_desejado_pct,
-      impostoPct: item.imposto_pct
-    });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+        await fetch('http://localhost:3000/orcamentos', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(novo)
+        });
+        alert(`Salvo!`);
+        setVersaoDados(v => v + 1);
+        setProduto(''); setMateriais(0); setTempo(0);
+    } catch (error) { console.error(error); alert("Erro ao salvar."); }
   }
 
   async function handleExcluir(id: number) {
-    if (!confirm('Tem certeza que deseja excluir?')) return;
-    try {
-      await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
-      carregarOrcamentos();
-    } catch (error) {
-      console.error("Erro ao excluir:", error); // <--- CORREÇÃO AQUI
-      alert('Erro ao excluir');
-    }
-  }
-
-  function abrirDemonstrativo(item: Orcamento) {
-    setSelectedItem(item);
-    setModalOpen(true);
-  }
-
-  function limparForm() {
-    setForm({ id: 0, nomeProduto: '', custoMercadoria: '', tempoGasto: '', lucroPct: '30', impostoPct: '5' });
+      if(!confirm("Apagar?")) return;
+      await fetch(`http://localhost:3000/orcamentos/${id}`, { method: 'DELETE' });
+      setVersaoDados(v => v + 1);
   }
 
   return (
-    <div className="page-container">
+    <div className="orcamentos-container">
       <h1>Calculadora de Preços 🏛️</h1>
+      
+      <div className="orcamento-grid">
+        <div className="card-calculadora">
+            <h2><Calculator size={22} color="#f97316"/> Novo Orçamento</h2>
 
-      <div className="card">
-        <h2>{form.id === 0 ? 'Novo Orçamento' : 'Editando Orçamento'}</h2>
-        
-        <form onSubmit={handleSalvar} className="form-grid">
-          <div className="full-width">
-            <label>Nome do Produto / Serviço</label>
-            <input 
-              type="text" 
-              placeholder="Ex: Guarda-Roupa MDF" 
-              value={form.nomeProduto}
-              onChange={e => setForm({...form, nomeProduto: e.target.value})}
-              required
-            />
-          </div>
-
-          <div>
-            <label>Custo Materiais (R$)</label>
-            <input 
-              type="number" 
-              placeholder="0.00" 
-              value={form.custoMercadoria}
-              onChange={e => setForm({...form, custoMercadoria: e.target.value})}
-              required
-            />
-          </div>
-
-          <div>
-            <label>Tempo Gasto (Dias)</label>
-            <input 
-              type="number" 
-              placeholder="Ex: 5" 
-              value={form.tempoGasto}
-              onChange={e => setForm({...form, tempoGasto: e.target.value})}
-              required
-            />
-          </div>
-
-          <div>
-            <label>Lucro Desejado (%)</label>
-            <input 
-              type="number" 
-              value={form.lucroPct}
-              onChange={e => setForm({...form, lucroPct: e.target.value})}
-              required
-            />
-          </div>
-
-          <div>
-            <label>Imposto (%)</label>
-            <input 
-              type="number" 
-              value={form.impostoPct}
-              onChange={e => setForm({...form, impostoPct: e.target.value})}
-              required
-            />
-          </div>
-
-          <div className="full-width">
-            <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? 'Calculando...' : (form.id === 0 ? '💲 Calcular Preço Final' : '💾 Salvar Alterações')}
-            </button>
-            {form.id !== 0 && (
-              <button type="button" className="btn btn-secondary" onClick={limparForm}>
-                Cancelar Edição
-              </button>
-            )}
-          </div>
-        </form>
-      </div>
-
-      <div className="card">
-        <h2>Orçamentos Realizados</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Produto</th>
-              <th>Custo Mat.</th>
-              <th>Preço Venda</th>
-              <th>Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orcamentos.map((item) => (
-              <tr key={item.id}>
-                <td>{item.nome_produto}</td>
-                <td>R$ {Number(item.custo_mercadoria).toFixed(2)}</td>
-                <td className="text-destaque">R$ {Number(item.preco_venda).toFixed(2)}</td>
-                <td>
-                  <button className="action-btn btn-info" title="Ver Detalhes" onClick={() => abrirDemonstrativo(item)}>
-                    <FileText size={18} />
-                  </button>
-                  <button className="action-btn btn-edit" title="Editar" onClick={() => handleEditar(item)}>
-                    <Edit size={18} />
-                  </button>
-                  <button className="action-btn btn-delete" title="Excluir" onClick={() => handleExcluir(item.id)}>
-                    <Trash2 size={18} />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {modalOpen && selectedItem && (
-        <div className="modal-overlay" onClick={() => setModalOpen(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <button className="close-modal" onClick={() => setModalOpen(false)}><X /></button>
-            <h2>Demonstrativo: {selectedItem.nome_produto}</h2>
-            
-            {(() => {
-              const PV = Number(selectedItem.preco_venda);
-              const Mercadoria = Number(selectedItem.custo_mercadoria);
-              const MO = Number(selectedItem.custo_mao_obra_total);
-              
-              const pctFixo = Number(selectedItem.custo_fixo_pct_snapshot);
-              const valFixo = PV * (pctFixo / 100);
-
-              const pctImp = Number(selectedItem.imposto_pct);
-              const valImp = PV * (pctImp / 100);
-
-              const pctLucro = Number(selectedItem.lucro_desejado_pct);
-              const valLucro = PV * (pctLucro / 100);
-              
-              return (
-                <div style={{ marginTop: '20px' }}>
-                  <div className="demo-row total">
-                    <span>Preço de Venda</span>
-                    <span>R$ {PV.toFixed(2)} (100%)</span>
-                  </div>
-                  <div className="demo-row">
-                    <span>(-) Custo Fixo</span>
-                    <span>R$ {valFixo.toFixed(2)} ({pctFixo.toFixed(2)}%)</span>
-                  </div>
-                  <div className="demo-row">
-                    <span>(-) Impostos</span>
-                    <span>R$ {valImp.toFixed(2)} ({pctImp.toFixed(2)}%)</span>
-                  </div>
-                  <div className="demo-row">
-                    <span>(-) Mercadoria</span>
-                    <span>R$ {Mercadoria.toFixed(2)} ({((Mercadoria/PV)*100).toFixed(2)}%)</span>
-                  </div>
-                  <div className="demo-row">
-                    <span>(-) Mão de Obra</span>
-                    <span>R$ {MO.toFixed(2)} ({((MO/PV)*100).toFixed(2)}%)</span>
-                  </div>
-                  <div className="demo-row lucro">
-                    <span>(=) LUCRO LÍQUIDO</span>
-                    <span>R$ {valLucro.toFixed(2)} ({pctLucro.toFixed(2)}%)</span>
-                  </div>
+            <div className="form-group">
+                <label>Produto</label>
+                <div className="input-icon-wrapper">
+                    <Package size={18} className="input-icon"/>
+                    <input type="text" placeholder="Ex: Mesa de Jantar" value={produto} onChange={e => setProduto(e.target.value)} />
                 </div>
-              );
-            })()}
+            </div>
 
-          </div>
+            <div className="form-group">
+                <label>Materiais (R$)</label>
+                <div className="input-icon-wrapper">
+                    <DollarSign size={18} className="input-icon"/>
+                    <input type="number" placeholder="0.00" value={materiais} onChange={e => setMateriais(Number(e.target.value))} />
+                </div>
+            </div>
+
+            <div className="form-group">
+                <label>Tempo (Horas)</label>
+                <div className="input-icon-wrapper">
+                    <FileText size={18} className="input-icon"/>
+                    <input type="number" placeholder="0" value={tempo} onChange={e => setTempo(Number(e.target.value))} />
+                </div>
+            </div>
+
+            <div className="custos-breakdown">
+                <div className="custo-linha"><span><Package size={14}/> Materiais:</span><span className="custo-valor">R$ {materiais.toLocaleString('pt-BR', {minimumFractionDigits:2})}</span></div>
+                <div className="custo-linha"><span><Hammer size={14}/> Mão de Obra ({tempo}h):</span><span className="custo-valor">R$ {custoMaoObra.toLocaleString('pt-BR', {minimumFractionDigits:2})}</span></div>
+                <div className="custo-linha destaque"><span>Total Produção:</span><span className="custo-valor">R$ {custoProducao.toLocaleString('pt-BR', {minimumFractionDigits:2})}</span></div>
+            </div>
+
+            <div className="row-inputs" style={{gridTemplateColumns: '1fr 1fr 1fr'}}>
+                <div className="form-group">
+                    <label style={{fontSize:'0.8rem'}}>Custo Fixo (cf%)</label>
+                    <div className="input-icon-wrapper">
+                        <Building2 size={16} className="input-icon" style={{color:'#f97316'}}/>
+                        <input type="number" value={taxaFixaReal.toFixed(2)} disabled style={{backgroundColor:'#f1f5f9', color:'#64748b', fontWeight:'bold', cursor: 'not-allowed'}} />
+                    </div>
+                </div>
+                <div className="form-group">
+                    <label style={{fontSize:'0.8rem'}}>Lucro (%)</label>
+                    <div className="input-icon-wrapper">
+                        <TrendingUp size={16} className="input-icon"/>
+                        <input type="number" value={lucro} onChange={e => setLucro(Number(e.target.value))} />
+                    </div>
+                </div>
+                <div className="form-group">
+                    <label style={{fontSize:'0.8rem'}}>Imposto (%)</label>
+                    <div className="input-icon-wrapper">
+                        <Percent size={16} className="input-icon"/>
+                        <input type="number" value={imposto} onChange={e => setImposto(Number(e.target.value))} />
+                    </div>
+                </div>
+            </div>
+
+            <div className="resultado-box">
+                <span className="resultado-label">Preço Sugerido</span>
+                <div className="resultado-valor">R$ {precoFinal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                <span className="resultado-lucro">Lucro Líq: R$ {lucroReal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+            </div>
+
+            <button className="btn-salvar" onClick={handleSalvar}><Save size={18} /> Salvar Orçamento</button>
         </div>
-      )}
+
+        <div className="card-lista">
+            <table>
+                <thead><tr><th>Produto</th><th>Custo Mat.</th><th>Lucro</th><th>Preço Final</th><th>Ações</th></tr></thead>
+                <tbody>
+                    {listaOrcamentos.length === 0 ? (<tr><td colSpan={5} style={{textAlign:'center', padding:'40px'}}>Nenhum orçamento.</td></tr>) : (
+                        listaOrcamentos.map(orc => (
+                            <tr key={orc.id}>
+                                <td style={{fontWeight:'600'}}>{orc.nome_produto}</td>
+                                <td>R$ {Number(orc.custo_materiais).toFixed(2)}</td>
+                                <td><span className="badge-lucro">{orc.lucro_desejado}%</span></td>
+                                <td style={{fontWeight:'bold', color:'#0f172a'}}>R$ {Number(orc.preco_venda).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                                <td><div className="acoes-td"><button className="btn-icon btn-del" onClick={() => orc.id && handleExcluir(orc.id)}><Trash2 size={16}/></button></div></td>
+                            </tr>
+                        ))
+                    )}
+                </tbody>
+            </table>
+        </div>
+      </div>
     </div>
   );
 }

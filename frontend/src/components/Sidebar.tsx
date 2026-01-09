@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom'; // <--- Importamos os hooks de rota
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Users, 
@@ -14,8 +14,8 @@ import './Sidebar.css';
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   
-  const navigate = useNavigate(); // Função para mudar de página
-  const location = useLocation(); // Função para saber onde estamos
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
 
@@ -28,29 +28,38 @@ export function Sidebar() {
   ];
 
   return (
-    <div className={`sidebar ${isCollapsed ? 'collapsed' : 'expanded'}`}>
+    <div 
+      className={`sidebar ${isCollapsed ? 'collapsed' : 'expanded'}`}
+      // 2. Estilo INLINE para garantir o visual Dark Navy
+      style={{
+        backgroundColor: '#1e293b', // Azul Petróleo
+        borderRight: '1px solid #334155', // Borda sutil
+        color: '#f8fafc' // Texto claro
+      }}
+    >
       <div className="sidebar-header">
         {!isCollapsed && (
-            <div className="logo-text">
-                Denarius<span className="logo-highlight">.</span>
+            <div className="logo-text" style={{color: 'white'}}>
+                Denarius<span className="logo-highlight" style={{color: '#3b82f6'}}>.</span>
             </div>
         )}
-        <button className="toggle-btn" onClick={toggleSidebar}>
+        <button className="toggle-btn" onClick={toggleSidebar} style={{color: 'white'}}>
           {isCollapsed ? <ChevronRight size={24} /> : <ChevronLeft size={24} />}
         </button>
       </div>
 
       <nav className="nav-links">
         {menuItems.map((item) => {
-          // Verifica se a URL atual começa com o caminho do item
           const isActive = location.pathname === item.path;
           
           return (
             <div 
               key={item.id}
               className={`nav-item ${isActive ? 'active' : ''}`}
-              onClick={() => navigate(item.path)} // Navega sem recarregar
+              onClick={() => navigate(item.path)}
               title={isCollapsed ? item.label : ''}
+              // Ajuste para hover ficar bonito no tema escuro
+              style={{ color: isActive ? '#3b82f6' : '#cbd5e1' }}
             >
               <item.icon className="nav-icon" size={20} />
               <span className="nav-text">{item.label}</span>

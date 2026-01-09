@@ -1,108 +1,95 @@
 /* Container Principal */
 .funcionarios-container {
-    display: flex;
-    flex-direction: column;
-    gap: 30px;
+    display: flex; flex-direction: column; gap: 30px;
 }
+
+/* Título Branco no Fundo Escuro */
+.funcionarios-container h1 { color: #f8fafc; }
 
 /* --- CARD DE CADASTRO --- */
 .card-cadastro {
-    background: white;
-    padding: 25px;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-    border-top: 5px solid #3b82f6; /* Azul Denarius */
+    background: white; padding: 30px; border-radius: 12px; /* Mais espaçamento */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-top: 5px solid #3b82f6;
 }
 
 .card-cadastro h2 {
-    margin-top: 0;
-    color: #1e293b;
-    font-size: 1.2rem;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    margin-top: 0; color: #1e293b; font-size: 1.4rem; /* Título Maior */
+    margin-bottom: 25px; display: flex; align-items: center; gap: 10px;
 }
 
 .form-funcionario {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr auto; /* Nome maior, valores menores, botão */
-    gap: 15px;
-    align-items: end; /* Alinha os inputs com o botão na base */
+    grid-template-columns: 1.5fr 1fr 1fr 1fr auto;
+    gap: 20px; align-items: end;
 }
 
-/* Em telas pequenas, quebra linha */
-@media (max-width: 900px) {
-    .form-funcionario {
-        grid-template-columns: 1fr;
-    }
-    .btn-salvar { width: 100%; margin-top: 10px; }
+@media (max-width: 1100px) {
+    .form-funcionario { grid-template-columns: 1fr 1fr; }
+    .btn-salvar { grid-column: span 2; }
 }
 
-label {
-    display: block;
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: #64748b;
-    margin-bottom: 5px;
+label { 
+    display: block; font-size: 1rem; /* Label maior */
+    font-weight: 600; color: #475569; margin-bottom: 8px; 
 }
-
-input {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #cbd5e1;
-    border-radius: 6px;
-    font-size: 1rem;
+input { 
+    width: 100%; padding: 12px; /* Input maior e mais alto */
+    border: 1px solid #cbd5e1; border-radius: 8px; 
+    font-size: 1.1rem; /* Texto digitado maior */
+    color: #1e293b;
 }
-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
 
 .btn-salvar {
-    background-color: #3b82f6;
-    color: white;
-    border: none;
-    padding: 11px 20px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: 0.2s;
-    height: 42px; /* Altura igual ao input */
+    background-color: #3b82f6; color: white; border: none; padding: 0 25px; border-radius: 8px;
+    cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center;
+    gap: 8px; transition: 0.2s; height: 48px; /* Botão mais alto */
+    font-size: 1rem;
 }
 .btn-salvar:hover { background-color: #2563eb; }
+.btn-cancelar { background-color: #94a3b8; }
 
-.btn-cancelar {
-    background-color: #94a3b8;
-}
-
-/* --- TABELA DE FUNCIONÁRIOS --- */
+/* --- TABELA --- */
 .card-lista {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    background: white; padding: 0; border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden;
 }
 
 table { width: 100%; border-collapse: collapse; }
-th { text-align: left; padding: 15px; border-bottom: 2px solid #f1f5f9; color: #64748b; font-size: 0.9rem; text-transform: uppercase; }
-td { padding: 15px; border-bottom: 1px solid #f1f5f9; color: #334155; }
-tr:last-child td { border-bottom: none; }
 
-/* Destaque para o custo total (O número que importa) */
-.custo-total {
-    color: #ef4444; /* Vermelho pois é custo */
-    font-weight: bold;
-    background-color: #fef2f2;
-    padding: 5px 10px;
-    border-radius: 20px;
-    font-size: 0.95rem;
+th { 
+    text-align: left; padding: 20px 25px; border-bottom: 2px solid #e2e8f0; 
+    color: #64748b; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px;
+    background-color: #f8fafc;
 }
 
-.acoes { display: flex; gap: 8px; }
-.btn-icon {
-    border: none; padding: 8px; border-radius: 6px; cursor: pointer; color: white; transition: 0.2s;
+td { 
+    padding: 20px 25px; border-bottom: 1px solid #f1f5f9; color: #334155; 
+    font-size: 1.1rem; /* <--- AUMENTO DAS LETRAS DA TABELA */
 }
+
+/* Badge de Função */
+.badge-funcao {
+    background-color: #e0f2fe; color: #0369a1; padding: 6px 12px;
+    border-radius: 20px; font-size: 0.9rem; font-weight: 700;
+}
+
+.custo-total-highlight {
+    color: #ef4444; font-weight: 800; font-size: 1.2rem; /* Valor Total bem visível */
+}
+
+/* --- DETALHES --- */
+.row-detalhes { background-color: #f1f5f9; }
+.detalhes-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 25px; padding: 25px 50px;
+}
+.detalhe-label { font-size: 0.85rem; color: #64748b; margin-bottom: 5px; font-weight: bold; }
+.detalhe-valor { font-size: 1.1rem; font-weight: 600; color: #1e293b; }
+
+.acoes { display: flex; gap: 10px; }
+.btn-icon { border: none; padding: 10px; border-radius: 8px; cursor: pointer; color: white; }
+.btn-expand { background-color: #cbd5e1; color: #475569; }
+.btn-expand:hover { background-color: #64748b; color: white; }
 .btn-edit { background-color: #f59e0b; }
 .btn-delete { background-color: #ef4444; }

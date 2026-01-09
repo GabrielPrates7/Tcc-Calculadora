@@ -1,85 +1,59 @@
 .custo-obra-container {
-    display: flex;
-    flex-direction: column;
-    gap: 30px;
-    max-width: 900px;
-    margin: 0 auto;
-    padding-bottom: 50px;
+    display: flex; flex-direction: column; gap: 30px;
+    max-width: 900px; margin: 0 auto; padding-bottom: 50px;
 }
 
-/* --- O CARD QUE SUMIU --- */
+/* Título Branco */
+.custo-obra-container h1 { color: #f8fafc; margin-bottom: 5px; }
+.custo-obra-container p { color: #94a3b8; font-size: 1.1rem; } /* Subtítulo maior */
+
+/* --- CARD DE RESULTADO (Já é escuro, mantemos, mas aumentamos a fonte) --- */
 .card-resultado {
-    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); /* Azul bem escuro */
-    color: white;
-    padding: 40px;
-    border-radius: 16px;
-    text-align: center;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
-    border: 1px solid #334155;
-    margin-bottom: 20px;
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    color: white; padding: 45px; /* Mais espaço */
+    border-radius: 16px; text-align: center;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3); border: 1px solid #334155;
 }
-
-.resultado-titulo {
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    font-size: 0.9rem;
-    opacity: 0.8;
-    margin-bottom: 5px;
-    color: #cbd5e1;
-}
-
-.resultado-valor {
-    font-size: 3.5rem; /* Fonte Gigante */
-    font-weight: 800;
-    color: #f97316; /* Laranja */
-    margin: 15px 0;
-    text-shadow: 0 4px 10px rgba(249, 115, 22, 0.3);
-    line-height: 1;
-}
-
-.resultado-info {
-    font-size: 1rem;
-    color: #94a3b8;
-}
+.resultado-titulo { font-size: 1rem; color: #cbd5e1; letter-spacing: 2px; text-transform: uppercase; }
+.resultado-valor { font-size: 4.5rem; /* GIGANTE */ font-weight: 800; color: #f97316; margin: 15px 0; line-height: 1; }
+.resultado-info { font-size: 1.1rem; color: #94a3b8; }
 
 /* --- GRID DE CONFIGURAÇÃO --- */
 .config-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 25px;
 }
-@media (max-width: 768px) {
-    .config-grid { grid-template-columns: 1fr; }
-}
+@media (max-width: 900px) { .config-grid { grid-template-columns: 1fr; } }
 
 .card-config {
-    background: white;
-    padding: 25px;
+    background: white; /* <--- GARANTE BRANCO */
+    padding: 30px; /* Mais respiro */
     border-radius: 12px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
 .card-config h2 {
-    margin-top: 0; color: #334155; font-size: 1.2rem; margin-bottom: 15px; 
-    border-bottom: 1px solid #f1f5f9; padding-bottom: 10px;
+    margin-top: 0; color: #1e293b; font-size: 1.4rem; /* Título maior */
+    margin-bottom: 25px; border-bottom: 1px solid #f1f5f9; padding-bottom: 15px;
     display: flex; align-items: center;
 }
 
-/* Inputs */
-.input-group { margin-bottom: 20px; }
-.input-group label { display: block; margin-bottom: 8px; color: #475569; font-weight: 600; font-size: 0.9rem; }
+/* Inputs e Labels Aumentados */
+.input-group { margin-bottom: 25px; }
+.input-group label { display: block; margin-bottom: 8px; color: #475569; font-weight: 700; font-size: 1rem; }
 .input-group input { 
-    width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; 
-    font-size: 1.1rem; font-weight: bold; color: #1e293b; background-color: #f8fafc;
+    width: 100%; padding: 12px; /* Input mais alto */
+    border: 1px solid #cbd5e1; border-radius: 8px; 
+    font-size: 1.2rem; /* Texto digitado GRANDE */
+    font-weight: bold; color: #1e293b; background-color: #f8fafc;
 }
 .input-group input:focus { border-color: #3b82f6; background-color: white; outline: none; }
 
-/* Botões de Opção (Dia/Hora, Individual/Grupo) */
+/* Botões de Opção */
 .btn-opcao {
-    flex: 1; padding: 12px; border: 1px solid #cbd5e1; background: white; border-radius: 8px;
-    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
-    color: #64748b; font-weight: 600; transition: 0.2s;
+    flex: 1; padding: 14px; /* Botão maior */
+    border: 1px solid #cbd5e1; background: white; border-radius: 8px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+    color: #64748b; font-weight: 600; font-size: 1rem; transition: 0.2s;
 }
 .btn-opcao:hover { background-color: #f1f5f9; }
 .btn-opcao.ativo {
@@ -88,21 +62,17 @@
 }
 
 .btn-atualizar {
-    width: 100%; background-color: #f97316; color: white; padding: 15px; border: none; border-radius: 8px;
-    font-size: 1rem; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 10px;
-    box-shadow: 0 4px 6px rgba(249, 115, 22, 0.2);
+    width: 100%; background-color: #f97316; color: white; padding: 16px; 
+    border: none; border-radius: 8px; font-size: 1.1rem; /* Botão maior */
+    font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 15px;
 }
 .btn-atualizar:hover { background-color: #ea580c; transform: translateY(-2px); }
 
-/* Caixa de Explicação */
+/* Explicação */
 .formula-box {
-    background-color: #f8fafc;
-    padding: 20px;
-    border-radius: 8px;
-    border: 1px dashed #cbd5e1;
-    color: #475569;
+    background-color: #f8fafc; padding: 25px; border-radius: 8px; border: 1px dashed #cbd5e1; color: #475569; font-size: 1rem;
 }
 .formula-total {
-    border-top: 1px solid #cbd5e1; padding-top: 15px; font-weight: bold; 
-    color: #1e293b; margin-top: 15px; text-align: center; font-size: 1.1rem;
+    border-top: 1px solid #cbd5e1; padding-top: 15px; font-weight: bold; color: #1e293b; 
+    margin-top: 15px; text-align: center; font-size: 1.2rem;
 }

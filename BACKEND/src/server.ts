@@ -1,40 +1,39 @@
 import express from 'express';
-import cors from 'cors'; // Importando o desbloqueador
+import cors from 'cors';
 import bodyParser from 'body-parser';
 
-// Importando as rotas (O Mapa do sistema)
+// --- IMPORTANDO ROTAS ---
 import funcionariosRoutes from './routes/funcionarios.routes';
 import financeiroRoutes from './routes/financeiro.routes';
-import obraRoutes from './routes/obra.routes';
+import obraRoutes from './routes/obra.routes'; // Confirme se o arquivo chama 'obra.routes.ts' ou 'calculo-obra.routes.ts'
 import orcamentosRoutes from './routes/orcamentos.routes';
 
 const app = express();
 
-// --- 1. CONFIGURAÇÃO DO CORS (O Desbloqueio) ---
-// Isso permite que o Frontend (porta 5173) converse com o Backend (porta 3000)
+// --- 1. CONFIGURAÇÃO DO CORS ---
 app.use(cors());
 
 // --- 2. CONFIGURAÇÃO DO JSON ---
-app.use(bodyParser.json());
+app.use(express.json()); // (Substitui o bodyParser, é mais moderno, mas faz a mesma coisa)
 
 // --- 3. DEFINIÇÃO DAS ROTAS ---
 
-// Rota de Teste (Para saber se o servidor está vivo)
+// Rota de Teste
 app.get('/', (req, res) => {
     res.send('Servidor Denarius está ON! 🚀');
 });
 
-// Módulo Funcionários -> localhost:3000/funcionarios
+// Módulo Funcionários
 app.use('/funcionarios', funcionariosRoutes);
 
-// Módulo Financeiro (Faturamento, Despesas, Investimentos)
-// Usamos '/' para que ele assuma as rotas internas direto (ex: /faturamento)
-app.use('/', financeiroRoutes);
+// Módulo Financeiro (AQUI ESTAVA O ERRO)
+// Antes estava '/', agora colocamos o prefixo correto:
+app.use('/financeiro', financeiroRoutes); 
 
-// Módulo Custo de Obra -> localhost:3000/calculo-obra
+// Módulo Custo de Obra
 app.use('/calculo-obra', obraRoutes);
 
-// Módulo Orçamentos -> localhost:3000/orcamentos
+// Módulo Orçamentos
 app.use('/orcamentos', orcamentosRoutes);
 
 

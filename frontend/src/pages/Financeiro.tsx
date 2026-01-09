@@ -1,316 +1,196 @@
 import { useState, useEffect } from 'react';
-import { Trash2, Edit2, TrendingUp, TrendingDown, Plus, Save, XCircle } from 'lucide-react'; // Novos ícones
+import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Save, PieChart } from 'lucide-react';
 import './Financeiro.css';
 
 interface ItemFinanceiro {
   id: number;
   nome: string;
-  valor: string;
-}
-
-// Tipo para controlar o que estamos editando
-interface EstadoEdicao {
-  id: number;
-  tipo: 'despesas' | 'investimentos';
+  valor: string | number;
 }
 
 export function Financeiro() {
-  // --- Estados de Dados ---
+  // Estados do Dashboard
   const [faturamento, setFaturamento] = useState(0);
-  const [despesas, setDespesas] = useState<ItemFinanceiro[]>([]);
-  const [investimentos, setInvestimentos] = useState<ItemFinanceiro[]>([]);
+  const [totalDespesas, setTotalDespesas] = useState(0);
+  const [totalInvestimentos, setTotalInvestimentos] = useState(0);
+  const [taxaFixa, setTaxaFixa] = useState(0);
+
+  // Listas
+  const [listaDespesas, setListaDespesas] = useState<ItemFinanceiro[]>([]);
+  const [listaInvestimentos, setListaInvestimentos] = useState<ItemFinanceiro[]>([]);
+
+  // Inputs dos Formulários
+  const [novaDespesa, setNovaDespesa] = useState('');
+  const [valorDespesa, setValorDespesa] = useState('');
+  const [novoInvestimento, setNovoInvestimento] = useState('');
+  const [valorInvestimento, setValorInvestimento] = useState('');
+
+  // Controle de Edição
+  const [editandoFat, setEditandoFat] = useState(false);
+  const [fatTemp, setFatTemp] = useState('');
   const [versaoDados, setVersaoDados] = useState(0);
 
-  // --- Estados de Interface ---
-  const [editandoFaturamento, setEditandoFaturamento] = useState(false);
-  const [novoFaturamento, setNovoFaturamento] = useState('');
-
-  // Estados dos Formulários
-  const [novaDespesa, setNovaDespesa] = useState({ nome: '', valor: '' });
-  const [novoInvestimento, setNovoInvestimento] = useState({ nome: '', valor: '' });
-
-  // Controle de Edição (Qual item está sendo editado agora?)
-  const [itemEmEdicao, setItemEmEdicao] = useState<EstadoEdicao | null>(null);
-
-  const API_URL = 'http://localhost:3000';
-
-  // --- EFEITO: Carrega dados ---
+  // --- CARREGAR DADOS ---
   useEffect(() => {
-    async function buscarTudo() {
+    async function carregar() {
       try {
-        const resFat = await fetch(`${API_URL}/faturamento`);
-        const dataFat = await resFat.json();
-        setFaturamento(Number(dataFat.valor_mensal));
+        // 1. Dashboard
+        const resDash = await fetch('http://localhost:3000/financeiro/dashboard');
+        const d = await resDash.json();
 
-        const resDesp = await fetch(`${API_URL}/despesas`);
-        setDespesas(await resDesp.json());
+        // BLINDAGEM CONTRA NaN (|| 0)
+        setFaturamento(Number(d.faturamento || 0));
+        setTotalDespesas(Number(d.totalDespesas || 0));
+        setTotalInvestimentos(Number(d.totalInvestimentos || 0));
+        setTaxaFixa(Number(d.taxaCustoFixo || 0));
+        setFatTemp(String(d.faturamento || 0));
 
-        const resInv = await fetch(`${API_URL}/investimentos`);
-        setInvestimentos(await resInv.json());
+        // 2. Despesas
+        const resDesp = await fetch('http://localhost:3000/financeiro/despesas');
+        setListaDespesas(await resDesp.json());
+
+        // 3. Investimentos
+        const resInv = await fetch('http://localhost:3000/financeiro/investimentos');
+        setListaInvestimentos(await resInv.json());
+
       } catch (error) {
-        console.error("Erro ao buscar dados:", error);
+        console.error("Erro ao carregar Financeiro:", error);
       }
     }
-    buscarTudo();
+    carregar();
   }, [versaoDados]);
 
   // --- AÇÕES ---
-
   async function salvarFaturamento() {
-    try {
-      await fetch(`${API_URL}/faturamento`, {
-        method: 'PUT',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ valor: Number(novoFaturamento) })
-      });
-      setVersaoDados(v => v + 1);
-      setEditandoFaturamento(false);
-    } catch (error) {
-      console.error(error);
-    }
+    await fetch('http://localhost:3000/financeiro/config', {
+        method: 'PUT', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ faturamento: Number(fatTemp) })
+    });
+    setEditandoFat(false);
+    setVersaoDados(v => v + 1);
   }
 
-  // Função Unificada: Serve para CRIAR e para ATUALIZAR
-  async function salvarItem(tipo: 'despesas' | 'investimentos') {
-    const dados = tipo === 'despesas' ? novaDespesa : novoInvestimento;
+  // Função Genérica para Adicionar (Despesa ou Investimento)
+  async function adicionar(tipo: 'despesas' | 'investimentos') {
+    const url = `http://localhost:3000/financeiro/${tipo}`;
+    const payload = tipo === 'despesas' 
+        ? { nome: novaDespesa, valor: Number(valorDespesa) }
+        : { nome: novoInvestimento, valor: Number(valorInvestimento) };
+
+    if (!payload.nome || !payload.valor) return;
+
+    await fetch(url, {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+    });
+
+    // Limpa os campos certos
+    if (tipo === 'despesas') { setNovaDespesa(''); setValorDespesa(''); }
+    else { setNovoInvestimento(''); setValorInvestimento(''); }
     
-    if (!dados.nome || !dados.valor) return;
-
-    try {
-      // Se estiver editando este tipo, usa PUT. Se não, usa POST.
-      if (itemEmEdicao && itemEmEdicao.tipo === tipo) {
-        // MODO EDIÇÃO (PUT)
-        await fetch(`${API_URL}/${tipo}/${itemEmEdicao.id}`, {
-          method: 'PUT',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ nome: dados.nome, valor: Number(dados.valor) })
-        });
-        cancelarEdicao(); // Sai do modo edição
-      } else {
-        // MODO CRIAÇÃO (POST)
-        await fetch(`${API_URL}/${tipo}`, {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ nome: dados.nome, valor: Number(dados.valor) })
-        });
-      }
-
-      // Limpa inputs
-      if (tipo === 'despesas') setNovaDespesa({ nome: '', valor: '' });
-      else setNovoInvestimento({ nome: '', valor: '' });
-      
-      setVersaoDados(v => v + 1);
-    } catch (error) {
-      console.error(error);
-    }
+    setVersaoDados(v => v + 1);
   }
 
-  async function removerItem(id: number, tipo: 'despesas' | 'investimentos') {
-    if (!confirm('Excluir este item?')) return;
-    try {
-      await fetch(`${API_URL}/${tipo}/${id}`, { method: 'DELETE' });
-      setVersaoDados(v => v + 1);
-    } catch (error) {
-      console.error(error);
-    }
+  async function excluir(id: number, tipo: 'despesas' | 'investimentos') {
+    if (!confirm("Tem certeza que deseja excluir?")) return;
+    await fetch(`http://localhost:3000/financeiro/${tipo}/${id}`, { method: 'DELETE' });
+    setVersaoDados(v => v + 1);
   }
-
-  // --- LÓGICA DE EDIÇÃO ---
-  
-  function iniciarEdicao(item: ItemFinanceiro, tipo: 'despesas' | 'investimentos') {
-    setItemEmEdicao({ id: item.id, tipo });
-    
-    // Joga os dados do item para o input lá de cima
-    if (tipo === 'despesas') {
-      setNovaDespesa({ nome: item.nome, valor: item.valor });
-    } else {
-      setNovoInvestimento({ nome: item.nome, valor: item.valor });
-    }
-  }
-
-  function cancelarEdicao() {
-    setItemEmEdicao(null);
-    setNovaDespesa({ nome: '', valor: '' });
-    setNovoInvestimento({ nome: '', valor: '' });
-  }
-
-  // --- CÁLCULOS ---
-  const totalDespesas = despesas.reduce((acc, item) => acc + Number(item.valor), 0);
-  const totalInvestimentos = investimentos.reduce((acc, item) => acc + Number(item.valor), 0);
-  
-  const pctCustoFixo = faturamento > 0 ? (totalDespesas / faturamento) * 100 : 0;
-  
-  // Cálculo da % de Investimentos (NOVO)
-  const pctInvestimentos = faturamento > 0 ? (totalInvestimentos / faturamento) * 100 : 0;
 
   return (
     <div className="financeiro-container">
       <h1>Gestão Financeira 💰</h1>
 
-      {/* BLOCO DE RESUMO */}
+      {/* --- CARDS RESUMO --- */}
       <div className="resumo-grid">
+        {/* Faturamento */}
         <div className="resumo-card card-azul">
-          <div className="card-info">
-            <h3>Faturamento Mensal</h3>
-            {editandoFaturamento ? (
-              <div style={{display: 'flex', gap: '5px', marginTop: '5px'}}>
-                <input 
-                  type="number" 
-                  value={novoFaturamento} 
-                  onChange={e => setNovoFaturamento(e.target.value)}
-                  style={{width: '120px', padding: '5px'}}
-                />
-                <button onClick={salvarFaturamento} style={{cursor:'pointer'}}>💾</button>
-              </div>
-            ) : (
-              <p>R$ {faturamento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-            )}
-          </div>
-          <button className="card-edit-btn" onClick={() => {
-              setNovoFaturamento(String(faturamento));
-              setEditandoFaturamento(!editandoFaturamento);
-          }}>
-            <Edit2 size={24} />
-          </button>
+            <div className="card-info">
+                <h3>Faturamento Mensal</h3>
+                {editandoFat ? (
+                    <div>
+                        <input type="number" value={fatTemp} onChange={e=>setFatTemp(e.target.value)} style={{width:'120px'}} autoFocus/>
+                        <button onClick={salvarFaturamento}><Save size={16}/></button>
+                    </div>
+                ) : (
+                    <p style={{color:'#1e293b'}}>R$ {faturamento.toLocaleString('pt-BR', {minimumFractionDigits:2})}</p>
+                )}
+            </div>
+            <button className="card-edit-btn" onClick={()=>setEditandoFat(!editandoFat)}><Edit2 size={20}/></button>
         </div>
 
+        {/* Despesas */}
         <div className="resumo-card card-vermelho">
-          <div className="card-info">
-            <h3>Total Despesas Fixas</h3>
-            <p>R$ {totalDespesas.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-          </div>
-          <div style={{ color: '#ef4444' }}><TrendingDown size={32} /></div>
+            <div className="card-info">
+                <h3>Despesas Fixas</h3>
+                <p style={{color:'#ef4444'}}>R$ {totalDespesas.toLocaleString('pt-BR', {minimumFractionDigits:2})}</p>
+            </div>
+            <TrendingDown size={24} color="#ef4444"/>
         </div>
 
+        {/* Investimentos */}
+        <div className="resumo-card" style={{borderLeftColor:'#8b5cf6'}}>
+            <div className="card-info">
+                <h3>Investimentos</h3>
+                <p style={{color:'#8b5cf6'}}>R$ {totalInvestimentos.toLocaleString('pt-BR', {minimumFractionDigits:2})}</p>
+            </div>
+            <PieChart size={24} color="#8b5cf6"/>
+        </div>
+
+        {/* Taxa */}
         <div className="resumo-card card-laranja">
-          <div className="card-info">
-            <h3>Taxa de Custo Fixo</h3>
-            <p>{pctCustoFixo.toFixed(2)}%</p>
-            <small>Baseada no faturamento</small>
-          </div>
-          <div style={{ color: '#f97316' }}><TrendingUp size={32} /></div>
+            <div className="card-info">
+                <h3>Taxa Custo Fixo</h3>
+                <p style={{color:'#f97316'}}>{taxaFixa.toFixed(2)}%</p>
+                <small style={{color:'#94a3b8'}}>Baseada no faturamento</small>
+            </div>
+            <TrendingUp size={24} color="#f97316"/>
         </div>
       </div>
 
-      {/* BLOCO DE LISTAS */}
+      {/* --- LISTAS --- */}
       <div className="listas-grid">
         
-        {/* DESPESAS */}
+        {/* COLUNA 1: DESPESAS */}
         <div className="lista-card">
-          <div className="lista-header">
-            <h2>📉 Despesas Fixas</h2>
-          </div>
-          
-          {/* Formulário Inteligente (Cria ou Edita) */}
-          <div className="quick-form" style={itemEmEdicao?.tipo === 'despesas' ? {border: '2px solid #3b82f6'} : {}}>
-            <input 
-              type="text" placeholder="Nome" 
-              value={novaDespesa.nome}
-              onChange={e => setNovaDespesa({...novaDespesa, nome: e.target.value})}
-            />
-            <input 
-              type="number" placeholder="R$" 
-              value={novaDespesa.valor}
-              onChange={e => setNovaDespesa({...novaDespesa, valor: e.target.value})}
-            />
-            
-            {itemEmEdicao?.tipo === 'despesas' ? (
-              <>
-                <button className="btn-add" style={{backgroundColor: '#3b82f6'}} onClick={() => salvarItem('despesas')} title="Salvar Alteração">
-                  <Save size={20} />
-                </button>
-                <button className="btn-add" style={{backgroundColor: '#94a3b8'}} onClick={cancelarEdicao} title="Cancelar">
-                  <XCircle size={20} />
-                </button>
-              </>
-            ) : (
-              <button className="btn-add" onClick={() => salvarItem('despesas')} title="Adicionar">
-                <Plus size={20} />
-              </button>
-            )}
-          </div>
-
-          <div>
-            {despesas.map(item => (
-              <div key={item.id} className="lista-item">
-                <span className="item-nome">{item.nome}</span>
-                <div style={{display: 'flex', alignItems: 'center', gap: '5px'}}>
-                  <span className="item-valor">R$ {Number(item.valor).toFixed(2)}</span>
-                  
-                  {/* Botão Editar */}
-                  <button className="btn-remove-sm" style={{backgroundColor: '#e0f2fe', color: '#0284c7'}} onClick={() => iniciarEdicao(item, 'despesas')}>
-                    <Edit2 size={16} />
-                  </button>
-                  
-                  {/* Botão Excluir */}
-                  <button className="btn-remove-sm" onClick={() => removerItem(item.id, 'despesas')}>
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+            <div className="lista-header"><h2>📉 Despesas Fixas</h2></div>
+            <div className="quick-form">
+                <input placeholder="Nome" value={novaDespesa} onChange={e=>setNovaDespesa(e.target.value)}/>
+                <input type="number" placeholder="R$" value={valorDespesa} onChange={e=>setValorDespesa(e.target.value)}/>
+                <button className="btn-add" onClick={()=>adicionar('despesas')}><Plus size={20}/></button>
+            </div>
+            <div className="lista-items">
+                {listaDespesas.map(i => (
+                    <div key={i.id} className="lista-item">
+                        <span className="item-nome">{i.nome}</span>
+                        <div>
+                            <span className="item-valor">R$ {Number(i.valor).toLocaleString('pt-BR', {minimumFractionDigits:2})}</span>
+                            <button className="btn-remove-sm" onClick={()=>excluir(i.id, 'despesas')}><Trash2 size={14}/></button>
+                        </div>
+                    </div>
+                ))}
+            </div>
         </div>
 
-        {/* INVESTIMENTOS */}
+        {/* COLUNA 2: INVESTIMENTOS */}
         <div className="lista-card">
-          <div className="lista-header" style={{flexDirection: 'column', alignItems: 'flex-start'}}>
-            <h2>🚀 Investimentos</h2>
-            {/* MOSTRANDO TOTAL E PORCENTAGEM AQUI */}
-            <small style={{fontSize: '0.9rem', color: '#64748b'}}>
-              Total: <strong>R$ {totalInvestimentos.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong> 
-              <span style={{marginLeft: '8px', color: '#f59e0b'}}>({pctInvestimentos.toFixed(2)}% do Fat.)</span>
-            </small>
-          </div>
-
-          <div className="quick-form" style={itemEmEdicao?.tipo === 'investimentos' ? {border: '2px solid #3b82f6'} : {}}>
-            <input 
-              type="text" placeholder="Nome" 
-              value={novoInvestimento.nome}
-              onChange={e => setNovoInvestimento({...novoInvestimento, nome: e.target.value})}
-            />
-            <input 
-              type="number" placeholder="R$" 
-              value={novoInvestimento.valor}
-              onChange={e => setNovoInvestimento({...novoInvestimento, valor: e.target.value})}
-            />
-            
-            {itemEmEdicao?.tipo === 'investimentos' ? (
-              <>
-                <button className="btn-add" style={{backgroundColor: '#3b82f6'}} onClick={() => salvarItem('investimentos')} title="Salvar Alteração">
-                  <Save size={20} />
-                </button>
-                <button className="btn-add" style={{backgroundColor: '#94a3b8'}} onClick={cancelarEdicao} title="Cancelar">
-                  <XCircle size={20} />
-                </button>
-              </>
-            ) : (
-              <button className="btn-add" onClick={() => salvarItem('investimentos')} title="Adicionar">
-                <Plus size={20} />
-              </button>
-            )}
-          </div>
-
-          <div>
-            {investimentos.map(item => (
-              <div key={item.id} className="lista-item">
-                <span className="item-nome">{item.nome}</span>
-                <div style={{display: 'flex', alignItems: 'center', gap: '5px'}}>
-                  <span className="item-valor">R$ {Number(item.valor).toFixed(2)}</span>
-                  
-                  {/* Botão Editar */}
-                  <button className="btn-remove-sm" style={{backgroundColor: '#e0f2fe', color: '#0284c7'}} onClick={() => iniciarEdicao(item, 'investimentos')}>
-                    <Edit2 size={16} />
-                  </button>
-                  
-                  {/* Botão Excluir */}
-                  <button className="btn-remove-sm" onClick={() => removerItem(item.id, 'investimentos')}>
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+            <div className="lista-header"><h2>🚀 Investimentos</h2></div>
+            <div className="quick-form">
+                <input placeholder="Nome" value={novoInvestimento} onChange={e=>setNovoInvestimento(e.target.value)}/>
+                <input type="number" placeholder="R$" value={valorInvestimento} onChange={e=>setValorInvestimento(e.target.value)}/>
+                <button className="btn-add" style={{backgroundColor:'#8b5cf6'}} onClick={()=>adicionar('investimentos')}><Plus size={20}/></button>
+            </div>
+            <div className="lista-items">
+                {listaInvestimentos.map(i => (
+                    <div key={i.id} className="lista-item">
+                        <span className="item-nome">{i.nome}</span>
+                        <div>
+                            <span className="item-valor" style={{color:'#8b5cf6'}}>R$ {Number(i.valor).toLocaleString('pt-BR', {minimumFractionDigits:2})}</span>
+                            <button className="btn-remove-sm" onClick={()=>excluir(i.id, 'investimentos')}><Trash2 size={14}/></button>
+                        </div>
+                    </div>
+                ))}
+            </div>
         </div>
 
       </div>

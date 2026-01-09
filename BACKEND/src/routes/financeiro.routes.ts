@@ -1,142 +1,86 @@
+// ARQUIVO: BACKEND/src/routes/financeiro.routes.ts
+
 import { Router, Request, Response } from 'express';
 import { pool } from '../services/db';
 
 const router = Router();
 
-interface ItemFinanceiroBody {
-    nome: string;
-    valor: string | number;
-}
-
-// ==========================================
-// 1. FATURAMENTO
-// ==========================================
-
-router.get('/faturamento', async (req: Request, res: Response) => {
+// --- 1. DASHBOARD (Soma Tudo) ---
+router.get('/dashboard', async (req: Request, res: Response) => {
     try {
-        const resultado = await pool.query('SELECT * FROM faturamento ORDER BY id ASC LIMIT 1');
-        const faturamento = resultado.rows.length > 0 ? resultado.rows[0] : { valor_mensal: 0 };
-        res.json(faturamento);
+        // A. Busca Faturamento
+        const configRes = await pool.query('SELECT faturamento_mensal FROM config_financeiro LIMIT 1');
+        const faturamento = Number(configRes.rows[0]?.faturamento_mensal) || 1; // Evita divisão por zero
+
+        // B. Soma Despesas
+        const despesasRes = await pool.query('SELECT SUM(valor) as total FROM despesas_fixas');
+        const totalDespesas = Number(despesasRes.rows[0]?.total) || 0;
+
+        // C. Soma Investimentos (IMPORTANTE)
+        const investRes = await pool.query('SELECT SUM(valor) as total FROM investimentos');
+        const totalInvestimentos = Number(investRes.rows[0]?.total) || 0;
+
+        // D. Calcula Taxa
+        const taxaCustoFixo = (totalDespesas / faturamento) * 100;
+
+        res.json({
+            faturamento,
+            totalDespesas,
+            totalInvestimentos, // Manda para o Frontend
+            taxaCustoFixo
+        });
+
     } catch (err) {
-        console.error(err);
-        res.status(500).send('Erro ao buscar faturamento');
+        console.error("Erro no Dashboard Financeiro:", err);
+        res.status(500).json({ error: 'Erro ao carregar dados' });
     }
 });
 
-router.put('/faturamento', async (req: Request, res: Response) => {
-    const { valor } = req.body;
+// --- 2. EDITAR FATURAMENTO ---
+router.put('/config', async (req: Request, res: Response) => {
+    const { faturamento } = req.body;
     try {
-        const check = await pool.query('SELECT * FROM faturamento WHERE id = 1');
+        // Verifica se já existe registro, se não cria
+        const check = await pool.query('SELECT id FROM config_financeiro LIMIT 1');
         if (check.rows.length === 0) {
-            await pool.query('INSERT INTO faturamento (id, valor_mensal) VALUES (1, $1)', [valor]);
+            await pool.query('INSERT INTO config_financeiro (faturamento_mensal) VALUES ($1)', [faturamento]);
         } else {
-            await pool.query('UPDATE faturamento SET valor_mensal = $1 WHERE id = 1', [valor]);
+            await pool.query('UPDATE config_financeiro SET faturamento_mensal = $1', [faturamento]);
         }
-        res.json({ message: 'Faturamento atualizado' });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Erro ao atualizar faturamento');
-    }
-});
-
-// ==========================================
-// 2. DESPESAS FIXAS
-// ==========================================
-
-router.get('/despesas', async (req: Request, res: Response) => {
-    try {
-        const resultado = await pool.query('SELECT * FROM despesas_fixas ORDER BY id ASC');
-        res.json(resultado.rows);
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Erro nas despesas');
-    }
-});
-
-router.post('/despesas', async (req: Request, res: Response) => {
-    const { nome, valor } = req.body as ItemFinanceiroBody;
-    try {
-        const query = 'INSERT INTO despesas_fixas (nome, valor) VALUES ($1, $2) RETURNING *';
-        const nova = await pool.query(query, [nome, valor]);
-        res.json(nova.rows[0]);
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Erro ao salvar despesa');
-    }
-});
-
-// --- NOVO: ATUALIZAR DESPESA ---
-router.put('/despesas/:id', async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const { nome, valor } = req.body as ItemFinanceiroBody;
-    try {
-        await pool.query('UPDATE despesas_fixas SET nome = $1, valor = $2 WHERE id = $3', [nome, valor, id]);
         res.json({ message: 'Atualizado' });
     } catch (err) {
-        console.error(err);
-        res.status(500).send('Erro ao atualizar');
+        res.status(500).json({ error: 'Erro ao atualizar' });
     }
 });
 
-router.delete('/despesas/:id', async (req: Request, res: Response) => {
-    const { id } = req.params;
-    try {
-        await pool.query('DELETE FROM despesas_fixas WHERE id = $1', [id]);
-        res.json({ message: 'Deletado' });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Erro ao deletar');
-    }
+// --- 3. CRUD DESPESAS ---
+router.get('/despesas', async (req, res) => {
+    const result = await pool.query('SELECT * FROM despesas_fixas ORDER BY id DESC');
+    res.json(result.rows);
+});
+router.post('/despesas', async (req, res) => {
+    const { nome, valor } = req.body;
+    await pool.query('INSERT INTO despesas_fixas (nome, valor) VALUES ($1, $2)', [nome, valor]);
+    res.json({ message: 'Salvo' });
+});
+router.delete('/despesas/:id', async (req, res) => {
+    await pool.query('DELETE FROM despesas_fixas WHERE id = $1', [req.params.id]);
+    res.json({ message: 'Deletado' });
 });
 
-// ==========================================
-// 3. INVESTIMENTOS
-// ==========================================
-
-router.get('/investimentos', async (req: Request, res: Response) => {
-    try {
-        const resultado = await pool.query('SELECT * FROM investimentos ORDER BY id ASC');
-        res.json(resultado.rows);
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Erro nos investimentos');
-    }
+// --- 4. CRUD INVESTIMENTOS ---
+router.get('/investimentos', async (req, res) => {
+    const result = await pool.query('SELECT * FROM investimentos ORDER BY id DESC');
+    res.json(result.rows);
 });
-
-router.post('/investimentos', async (req: Request, res: Response) => {
-    const { nome, valor } = req.body as ItemFinanceiroBody;
-    try {
-        const query = 'INSERT INTO investimentos (nome, valor) VALUES ($1, $2) RETURNING *';
-        const novo = await pool.query(query, [nome, valor]);
-        res.json(novo.rows[0]);
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Erro ao salvar investimento');
-    }
+router.post('/investimentos', async (req, res) => {
+    const { nome, valor } = req.body;
+    await pool.query('INSERT INTO investimentos (nome, valor) VALUES ($1, $2)', [nome, valor]);
+    res.json({ message: 'Salvo' });
 });
-
-// --- NOVO: ATUALIZAR INVESTIMENTO ---
-router.put('/investimentos/:id', async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const { nome, valor } = req.body as ItemFinanceiroBody;
-    try {
-        await pool.query('UPDATE investimentos SET nome = $1, valor = $2 WHERE id = $3', [nome, valor, id]);
-        res.json({ message: 'Atualizado' });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Erro ao atualizar');
-    }
-});
-
-router.delete('/investimentos/:id', async (req: Request, res: Response) => {
-    const { id } = req.params;
-    try {
-        await pool.query('DELETE FROM investimentos WHERE id = $1', [id]);
-        res.json({ message: 'Deletado' });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Erro ao deletar');
-    }
+router.delete('/investimentos/:id', async (req, res) => {
+    await pool.query('DELETE FROM investimentos WHERE id = $1', [req.params.id]);
+    res.json({ message: 'Deletado' });
 });
 
 export default router;

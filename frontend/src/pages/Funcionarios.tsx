@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Users, Save, Trash2, Edit2, XCircle, HardHat } from 'lucide-react';
+import { Users, Save, Trash2, Edit2, XCircle, ChevronDown, ChevronUp, Wallet } from 'lucide-react';
 import './Funcionarios.css';
 
 interface Funcionario {
   id: number;
   nome: string;
+  funcao?: string;
   salario_base: string;
   epi: string;
-  // Campos calculados pelo backend
   decimo_terceiro: string;
   ferias: string;
   um_terco_ferias: string;
@@ -22,15 +22,16 @@ export function Funcionarios() {
 
   // Formulário
   const [nome, setNome] = useState('');
+  const [funcao, setFuncao] = useState('');
   const [salario, setSalario] = useState('');
   const [epi, setEpi] = useState('');
   
-  // Controle de Edição
+  // Controle
   const [idEditando, setIdEditando] = useState<number | null>(null);
+  const [idExpandido, setIdExpandido] = useState<number | null>(null);
 
   const API_URL = 'http://localhost:3000/funcionarios';
 
-  // Carregar dados
   useEffect(() => {
     async function carregar() {
       try {
@@ -44,183 +45,124 @@ export function Funcionarios() {
     carregar();
   }, [versaoDados]);
 
-  // Salvar (Criar ou Editar)
   async function handleSalvar(e: React.FormEvent) {
     e.preventDefault();
     if (!nome || !salario) return alert("Preencha nome e salário!");
 
     const corpo = {
       nome,
+      funcao,
       salario: Number(salario),
       epi: Number(epi)
     };
 
     try {
       if (idEditando) {
-        // PUT
         await fetch(`${API_URL}/${idEditando}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(corpo)
         });
       } else {
-        // POST
         await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(corpo)
         });
       }
-
       limparForm();
       setVersaoDados(v => v + 1);
-    } catch (error) {
-      console.error("Erro ao salvar:", error);
-      alert("Erro ao salvar funcionário.");
-    }
+    } catch (error) { console.error(error); }
   }
 
   function iniciarEdicao(func: Funcionario) {
     setIdEditando(func.id);
     setNome(func.nome);
+    setFuncao(func.funcao || '');
     setSalario(func.salario_base);
     setEpi(func.epi);
-    document.getElementById('inputNome')?.focus();
   }
 
   function limparForm() {
-    setIdEditando(null);
-    setNome('');
-    setSalario('');
-    setEpi('');
+    setIdEditando(null); setNome(''); setFuncao(''); setSalario(''); setEpi('');
   }
 
   async function excluir(id: number) {
-    if (!confirm("Tem certeza que deseja excluir?")) return;
-    try {
-      await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
-      setVersaoDados(v => v + 1);
-    } catch (error) {
-      console.error("Erro ao excluir:", error);
-    }
+    if (!confirm("Excluir funcionário?")) return;
+    await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+    setVersaoDados(v => v + 1);
   }
 
   const custoTotalEquipe = funcionarios.reduce((acc, f) => acc + Number(f.custo_total_mensal), 0);
-
-  // Função auxiliar para formatar dinheiro
-  const BRL = (valor: string | number) => {
-    return Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-  };
+  const BRL = (v: string | number) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
   return (
     <div className="funcionarios-container">
-      
-      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap: 'wrap', gap: '10px'}}>
+      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:'20px'}}>
         <h1>Equipe & Custos 👷‍♂️</h1>
-        <div style={{textAlign:'right'}}>
-            <small style={{color:'#64748b'}}>Custo Mensal da Equipe</small>
-            <div style={{fontSize:'1.5rem', fontWeight:'bold', color:'#1e293b'}}>
+        <div style={{
+            textAlign:'right', backgroundColor: 'rgba(30, 41, 59, 0.8)', padding: '15px 25px', 
+            borderRadius: '12px', border: '1px solid #334155', boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
+        }}>
+            <small style={{color:'#cbd5e1', fontSize:'0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '5px'}}>
+                <Wallet size={16} /> Custo Mensal da Equipe
+            </small>
+            <div style={{fontSize:'2.2rem', fontWeight:'800', color:'#f97316', marginTop: '5px'}}>
                 {BRL(custoTotalEquipe)}
             </div>
         </div>
       </div>
 
-      {/* CARD DE CADASTRO */}
       <div className="card-cadastro">
-        <h2>
-            {idEditando ? <Edit2 size={24} /> : <Users size={24} />}
-            {idEditando ? 'Editar Funcionário' : 'Novo Colaborador'}
-        </h2>
-        
+        <h2>{idEditando ? <Edit2 size={24} /> : <Users size={24} />} {idEditando ? 'Editar' : 'Novo Colaborador'}</h2>
         <form onSubmit={handleSalvar} className="form-funcionario">
-            <div>
-                <label>Nome Completo</label>
-                <input 
-                    id="inputNome" type="text" placeholder="Ex: João da Silva" 
-                    value={nome} onChange={e => setNome(e.target.value)}
-                />
-            </div>
-            <div>
-                <label>Salário Base (R$)</label>
-                <input 
-                    type="number" placeholder="0.00" 
-                    value={salario} onChange={e => setSalario(e.target.value)}
-                />
-            </div>
-            <div>
-                <label>EPI / Vale / Outros (R$)</label>
-                <input 
-                    type="number" placeholder="0.00" 
-                    value={epi} onChange={e => setEpi(e.target.value)}
-                />
-            </div>
-            
-            {idEditando ? (
-                <div style={{display:'flex', gap:'10px'}}>
-                    <button type="submit" className="btn-salvar"> <Save size={18} /> Salvar </button>
-                    <button type="button" className="btn-salvar btn-cancelar" onClick={limparForm}> <XCircle size={18} /> </button>
-                </div>
-            ) : (
-                <button type="submit" className="btn-salvar"> <Save size={18} /> Cadastrar </button>
-            )}
+            <div><label>Nome</label><input type="text" value={nome} onChange={e => setNome(e.target.value)} /></div>
+            <div><label>Função</label><input type="text" value={funcao} onChange={e => setFuncao(e.target.value)} /></div>
+            <div><label>Salário (R$)</label><input type="number" value={salario} onChange={e => setSalario(e.target.value)} /></div>
+            <div><label>EPI/Vale (R$)</label><input type="number" value={epi} onChange={e => setEpi(e.target.value)} /></div>
+            <button type="submit" className="btn-salvar"><Save size={18} /> Salvar</button>
+            {idEditando && <button type="button" className="btn-salvar btn-cancelar" onClick={limparForm}><XCircle size={18}/></button>}
         </form>
       </div>
 
-      {/* LISTA DE FUNCIONÁRIOS (TABELA COMPLETA) */}
       <div className="card-lista">
-        <div className="table-responsive"> {/* Scroll aqui */}
-            <table>
-                <thead>
-                    <tr>
-                        <th>Nome</th>
-                        <th title="Salário Base">Salário</th>
-                        <th title="Provisão mensal de 13º">13º (Prov.)</th>
-                        <th title="Provisão mensal de Férias">Férias (Prov.)</th>
-                        <th title="1/3 de Férias">1/3 Férias</th>
-                        <th title="INSS Patronal ou desc.">INSS (8%)</th>
-                        <th title="Multa FGTS (40%)">Multa FGTS</th>
-                        <th>EPI/Outros</th>
-                        <th>Somatório</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {funcionarios.map(func => (
-                        <tr key={func.id}>
-                            <td style={{fontWeight:'500'}}>{func.nome}</td>
-                            <td className="col-destaque">{BRL(func.salario_base)}</td>
-                            <td>{BRL(func.decimo_terceiro)}</td>
-                            <td>{BRL(func.ferias)}</td>
-                            <td>{BRL(func.um_terco_ferias)}</td>
-                            <td>{BRL(func.inss)}</td>
-                            <td>{BRL(func.multa_fgts)}</td>
-                            <td>{BRL(func.epi)}</td>
-                            <td className="col-total">{BRL(func.custo_total_mensal)}</td>
+        <table>
+            <thead>
+                <tr><th>Colaborador</th><th>Função</th><th>Salário Base</th><th>Custo Mensal</th><th>Ações</th></tr>
+            </thead>
+            <tbody>
+                {funcionarios.map(func => (
+                    <>
+                        <tr key={func.id} style={{backgroundColor: idExpandido === func.id ? '#eff6ff' : 'transparent'}}>
+                            <td style={{fontWeight:'600'}}>{func.nome}</td>
+                            <td>{func.funcao || '-'}</td>
+                            <td>{BRL(func.salario_base)}</td>
+                            <td><span className="custo-total-highlight">{BRL(func.custo_total_mensal)}</span></td>
                             <td>
                                 <div className="acoes">
-                                    <button className="btn-icon btn-edit" onClick={() => iniciarEdicao(func)}>
-                                        <Edit2 size={16} />
+                                    <button className="btn-icon btn-expand" onClick={() => setIdExpandido(idExpandido === func.id ? null : func.id)}>
+                                        {idExpandido === func.id ? <ChevronUp size={18}/> : <ChevronDown size={18}/>}
                                     </button>
-                                    <button className="btn-icon btn-delete" onClick={() => excluir(func.id)}>
-                                        <Trash2 size={16} />
-                                    </button>
+                                    <button className="btn-icon btn-edit" onClick={() => iniciarEdicao(func)}><Edit2 size={16}/></button>
+                                    <button className="btn-icon btn-delete" onClick={() => excluir(func.id)}><Trash2 size={16}/></button>
                                 </div>
                             </td>
                         </tr>
-                    ))}
-                    {funcionarios.length === 0 && (
-                        <tr>
-                            <td colSpan={10} style={{textAlign:'center', padding:'30px', color:'#94a3b8'}}>
-                                <HardHat size={40} style={{marginBottom:'10px', opacity:0.5}} /><br/>
-                                Nenhum funcionário cadastrado.
-                            </td>
-                        </tr>
-                    )}
-                </tbody>
-            </table>
-        </div>
+                        {idExpandido === func.id && (
+                            <tr className="row-detalhes"><td colSpan={5}>
+                                <div className="detalhes-grid">
+                                    <div className="detalhe-item"><span>13º</span><span>{BRL(func.decimo_terceiro)}</span></div>
+                                    <div className="detalhe-item"><span>Férias</span><span>{BRL(func.ferias)}</span></div>
+                                    <div className="detalhe-item"><span>1/3 Férias</span><span>{BRL(func.um_terco_ferias)}</span></div>
+                                    <div className="detalhe-item"><span>INSS</span><span>{BRL(func.inss)}</span></div>
+                                    <div className="detalhe-item"><span>Multa FGTS</span><span>{BRL(func.multa_fgts)}</span></div>
+                                    <div className="detalhe-item"><span>EPI</span><span>{BRL(func.epi)}</span></div>
+                                </div>
+                            </td></tr>
+                        )}
+                    </>
+                ))}
+            </tbody>
+        </table>
       </div>
-
     </div>
   );
 }
