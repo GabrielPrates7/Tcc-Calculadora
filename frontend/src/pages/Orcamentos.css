@@ -1,31 +1,35 @@
-/* Container Principal */
+/* =========================================
+   1. ESTRUTURA PRINCIPAL
+   ========================================= */
 .orcamentos-container {
     display: flex; flex-direction: column; gap: 20px;
     padding-bottom: 50px;
 }
 
-/* Título da Página (Branco para destacar no fundo escuro) */
+/* Título da Página */
 .orcamentos-container h1 { 
     color: #f8fafc; 
     font-size: 1.8rem; 
     margin-bottom: 10px; 
 }
 
-/* --- GRID PRINCIPAL (CALCULADORA x LISTA) --- */
+/* Grid: Calculadora (Esq) x Lista (Dir) */
 .orcamento-grid {
     display: grid;
-    grid-template-columns: 380px 1fr; /* Calculadora fixa, Lista flexível */
+    grid-template-columns: 380px 1fr;
     gap: 30px;
     align-items: start;
 }
 
 @media (max-width: 1100px) {
-    .orcamento-grid { grid-template-columns: 1fr; } /* Celular: um embaixo do outro */
+    .orcamento-grid { grid-template-columns: 1fr; }
 }
 
-/* --- CARD DA CALCULADORA (Esquerda) --- */
+/* =========================================
+   2. CALCULADORA (CARD ESQUERDA)
+   ========================================= */
 .card-calculadora {
-    background: white; /* FUNDO BRANCO IMPORTANTE */
+    background: white;
     padding: 30px;
     border-radius: 16px;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
@@ -39,7 +43,7 @@
     display: flex; align-items: center; gap: 10px;
 }
 
-/* --- INPUTS COM ÍCONES (Estilo Moderno) --- */
+/* Inputs com Ícones */
 .form-group { margin-bottom: 20px; position: relative; }
 .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #64748b; font-size: 0.9rem; }
 
@@ -56,7 +60,7 @@
     color: #1e293b; 
     background-color: #fff;
     transition: 0.2s;
-    box-sizing: border-box; /* Garante que o padding não quebre o layout */
+    box-sizing: border-box;
 }
 
 .form-group input:focus { 
@@ -65,11 +69,16 @@
     box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1); 
 }
 
+.form-group input:disabled {
+    background-color: #f1f5f9;
+    cursor: not-allowed;
+    color: #64748b;
+}
+
 /* Grid para campos menores lado a lado */
 .row-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
 
-
-/* --- NOVO: DETALHAMENTO DE CUSTOS (Painel Cinza) --- */
+/* Detalhamento de Custos (Painel Cinza) */
 .custos-breakdown {
     background-color: #f1f5f9;
     border: 1px solid #e2e8f0;
@@ -79,31 +88,20 @@
 }
 
 .custo-linha {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.9rem;
-    color: #64748b;
-    margin-bottom: 8px;
-    align-items: center;
+    display: flex; justify-content: space-between;
+    font-size: 0.9rem; color: #64748b;
+    margin-bottom: 8px; align-items: center;
 }
 
 .custo-linha.destaque {
     border-top: 1px dashed #cbd5e1;
-    padding-top: 10px;
-    margin-top: 5px;
-    margin-bottom: 0;
-    color: #1e293b;
-    font-weight: 800;
-    font-size: 1rem;
+    padding-top: 10px; margin-top: 5px; margin-bottom: 0;
+    color: #1e293b; font-weight: 800; font-size: 1rem;
 }
 
-.custo-valor {
-    font-family: 'Courier New', Courier, monospace;
-    font-weight: 600;
-}
+.custo-valor { font-family: 'Courier New', Courier, monospace; font-weight: 600; }
 
-
-/* --- RESULTADO FINAL (Caixa Azul) --- */
+/* Resultado Final (Caixa Azul) */
 .resultado-box {
     background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
     border: 1px dashed #38bdf8;
@@ -123,7 +121,9 @@
 .btn-salvar:hover { background-color: #0f172a; transform: translateY(-2px); }
 
 
-/* --- TABELA DE ORÇAMENTOS (Direita) --- */
+/* =========================================
+   3. LISTA DE ORÇAMENTOS (CARD DIREITA)
+   ========================================= */
 .card-lista {
     background: white; border-radius: 16px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow: hidden;
@@ -136,11 +136,89 @@ th {
 }
 td { padding: 20px; border-bottom: 1px solid #f1f5f9; color: #334155; font-size: 1rem; vertical-align: middle; }
 
-/* Badges e Botões da Tabela */
+/* Badges e Botões */
 .badge-lucro { color: #16a34a; font-weight: bold; font-size: 0.9rem; }
 
 .acoes-td { display: flex; gap: 8px; }
-.btn-icon { width: 32px; height: 32px; border-radius: 6px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: white; transition: 0.2s; }
-.btn-ver { background-color: #3b82f6; }
-.btn-del { background-color: #ef4444; }
+.btn-icon { 
+    width: 32px; height: 32px; border-radius: 6px; border: none; 
+    cursor: pointer; display: flex; align-items: center; justify-content: center; 
+    color: white; transition: 0.2s; 
+}
+
+.btn-ver { background-color: #3b82f6; } /* Azul para ver */
+.btn-del { background-color: #ef4444; } /* Vermelho para deletar */
 .btn-ver:hover, .btn-del:hover { opacity: 0.9; }
+
+
+/* =========================================
+   4. MODAL DEMONSTRATIVO (NOVO)
+   ========================================= */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(15, 23, 42, 0.7); /* Fundo escuro */
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 16px;
+    width: 90%; max-width: 600px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    position: relative;
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px;
+}
+.modal-header h3 { margin: 0; color: #1e293b; display: flex; align-items: center; gap: 10px; }
+
+.btn-close { background: none; border: none; cursor: pointer; color: #94a3b8; }
+.btn-close:hover { color: #ef4444; }
+
+/* Tabela Demonstrativa (Estilo Excel) */
+.tabela-demonstrativo {
+    width: 100%; border-collapse: collapse;
+    border: 1px solid #cbd5e1; margin-bottom: 20px;
+}
+
+.tabela-demonstrativo th {
+    background-color: #f1f5f9; color: #0f172a;
+    font-weight: 800; text-transform: uppercase; font-size: 0.9rem;
+    padding: 12px; border: 1px solid #cbd5e1; text-align: center;
+}
+
+.tabela-demonstrativo td {
+    padding: 10px 15px; border: 1px solid #cbd5e1;
+    color: #334155; font-size: 1rem;
+}
+
+/* Colunas Específicas */
+.col-valor { text-align: right; font-family: 'Courier New', Courier, monospace; font-weight: 600; }
+.col-pct { text-align: center; width: 80px; }
+
+/* Linha de Venda (Topo) */
+.row-venda { background-color: #fff; font-weight: bold; font-size: 1.1rem; }
+.row-venda td { color: #0f172a; border-bottom: 2px solid #0f172a; }
+
+/* Linha de Lucro (Destaque Azul) */
+.row-lucro { background-color: #bfdbfe; font-weight: bold; }
+.row-lucro td { color: #1e3a8a; border-top: 2px solid #3b82f6; }
+
+.btn-imprimir {
+    background-color: #475569; color: white; width: 100%; padding: 12px;
+    border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-imprimir:hover { background-color: #334155; }

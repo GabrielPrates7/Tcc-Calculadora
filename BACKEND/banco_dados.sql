@@ -2,12 +2,12 @@
 -- PostgreSQL database dump
 --
 
-\restrict mFLjFxDw2SkN6yzdocFqKrtjcx6weA4wVASXqHlfjBscKw6gNvTDYEvVl4ZhJj3
+\restrict VflEVIMwLQgbayYHkARum9ZGOzPHLaiALRdwdp63MD9uu0bA1dFlOB4m8NU6riz
 
 -- Dumped from database version 18.1
 -- Dumped by pg_dump version 18.1
 
--- Started on 2026-01-09 19:14:48
+-- Started on 2026-01-11 20:39:56
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -290,7 +290,8 @@ CREATE TABLE public.orcamentos (
     custo_mao_obra_unitario numeric(10,2),
     custo_mao_obra_total numeric(10,2),
     preco_venda numeric(15,2),
-    criado_em timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+    criado_em timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    cliente character varying(255)
 );
 
 
@@ -466,8 +467,8 @@ INSERT INTO public.investimentos VALUES (11, 'Compra de Maquinário', 5000.00, '
 -- Data for Name: orcamentos; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public.orcamentos VALUES (2, 'Guarda roupas 2', 4000.00, 5.00, 30.00, 5.00, 13.72, 394.69, 1973.43, 11648.10, '2026-01-05 22:51:00.090763');
-INSERT INTO public.orcamentos VALUES (3, 'Teste', 5000.00, 5.00, 20.00, 10.00, 13.72, 394.69, 1973.43, 12390.06, '2026-01-05 23:02:55.800167');
+INSERT INTO public.orcamentos VALUES (3, 'Teste', 5000.00, 5.00, 20.00, 10.00, 13.72, 394.69, 1973.43, 12390.06, '2026-01-05 23:02:55.800167', 'José Ribeiro');
+INSERT INTO public.orcamentos VALUES (2, 'Guarda roupas 2', 4000.00, 5.00, 30.00, 5.00, 13.72, 394.69, 1973.43, 11648.10, '2026-01-05 22:51:00.090763', 'Fulano 1');
 
 
 --
@@ -530,7 +531,7 @@ SELECT pg_catalog.setval('public.investimentos_id_seq', 11, true);
 -- Name: orcamentos_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.orcamentos_id_seq', 4, true);
+SELECT pg_catalog.setval('public.orcamentos_id_seq', 5, true);
 
 
 --
@@ -596,11 +597,11 @@ ALTER TABLE ONLY public.orcamentos
     ADD CONSTRAINT orcamentos_pkey PRIMARY KEY (id);
 
 
--- Completed on 2026-01-09 19:14:48
+-- Completed on 2026-01-11 20:39:57
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict mFLjFxDw2SkN6yzdocFqKrtjcx6weA4wVASXqHlfjBscKw6gNvTDYEvVl4ZhJj3
+\unrestrict VflEVIMwLQgbayYHkARum9ZGOzPHLaiALRdwdp63MD9uu0bA1dFlOB4m8NU6riz
 

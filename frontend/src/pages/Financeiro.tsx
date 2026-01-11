@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Save, PieChart } from 'lucide-react';
+import { TrendingUp, TrendingDown, Plus, Trash2, Edit2, Save, PieChart, XCircle } from 'lucide-react';
 import './Financeiro.css';
 
 interface ItemFinanceiro {
@@ -22,10 +22,15 @@ export function Financeiro() {
   // Inputs dos Formulários
   const [novaDespesa, setNovaDespesa] = useState('');
   const [valorDespesa, setValorDespesa] = useState('');
+  
   const [novoInvestimento, setNovoInvestimento] = useState('');
   const [valorInvestimento, setValorInvestimento] = useState('');
 
-  // Controle de Edição
+  // Controle de Edição (IDs)
+  const [idEditandoDespesa, setIdEditandoDespesa] = useState<number | null>(null);
+  const [idEditandoInvestimento, setIdEditandoInvestimento] = useState<number | null>(null);
+
+  // Controle de Edição Faturamento
   const [editandoFat, setEditandoFat] = useState(false);
   const [fatTemp, setFatTemp] = useState('');
   const [versaoDados, setVersaoDados] = useState(0);
@@ -34,33 +39,25 @@ export function Financeiro() {
   useEffect(() => {
     async function carregar() {
       try {
-        // 1. Dashboard
         const resDash = await fetch('http://localhost:3000/financeiro/dashboard');
         const d = await resDash.json();
-
-        // BLINDAGEM CONTRA NaN (|| 0)
         setFaturamento(Number(d.faturamento || 0));
         setTotalDespesas(Number(d.totalDespesas || 0));
         setTotalInvestimentos(Number(d.totalInvestimentos || 0));
         setTaxaFixa(Number(d.taxaCustoFixo || 0));
         setFatTemp(String(d.faturamento || 0));
 
-        // 2. Despesas
         const resDesp = await fetch('http://localhost:3000/financeiro/despesas');
         setListaDespesas(await resDesp.json());
 
-        // 3. Investimentos
         const resInv = await fetch('http://localhost:3000/financeiro/investimentos');
         setListaInvestimentos(await resInv.json());
-
-      } catch (error) {
-        console.error("Erro ao carregar Financeiro:", error);
-      }
+      } catch (error) { console.error("Erro ao carregar Financeiro:", error); }
     }
     carregar();
   }, [versaoDados]);
 
-  // --- AÇÕES ---
+  // --- FATURAMENTO ---
   async function salvarFaturamento() {
     await fetch('http://localhost:3000/financeiro/config', {
         method: 'PUT', headers: {'Content-Type': 'application/json'},
@@ -70,25 +67,67 @@ export function Financeiro() {
     setVersaoDados(v => v + 1);
   }
 
-  // Função Genérica para Adicionar (Despesa ou Investimento)
-  async function adicionar(tipo: 'despesas' | 'investimentos') {
-    const url = `http://localhost:3000/financeiro/${tipo}`;
-    const payload = tipo === 'despesas' 
-        ? { nome: novaDespesa, valor: Number(valorDespesa) }
-        : { nome: novoInvestimento, valor: Number(valorInvestimento) };
+  // --- FUNÇÕES DE EDIÇÃO ---
+  
+  // Prepara o formulário para edição
+  function iniciarEdicao(item: ItemFinanceiro, tipo: 'despesas' | 'investimentos') {
+      if (tipo === 'despesas') {
+          setNovaDespesa(item.nome);
+          setValorDespesa(String(item.valor));
+          setIdEditandoDespesa(item.id);
+      } else {
+          setNovoInvestimento(item.nome);
+          setValorInvestimento(String(item.valor));
+          setIdEditandoInvestimento(item.id);
+      }
+  }
 
-    if (!payload.nome || !payload.valor) return;
+  // Cancela a edição e limpa campos
+  function cancelarEdicao(tipo: 'despesas' | 'investimentos') {
+      if (tipo === 'despesas') {
+          setNovaDespesa('');
+          setValorDespesa('');
+          setIdEditandoDespesa(null);
+      } else {
+          setNovoInvestimento('');
+          setValorInvestimento('');
+          setIdEditandoInvestimento(null);
+      }
+  }
 
-    await fetch(url, {
-        method: 'POST', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(payload)
-    });
-
-    // Limpa os campos certos
-    if (tipo === 'despesas') { setNovaDespesa(''); setValorDespesa(''); }
-    else { setNovoInvestimento(''); setValorInvestimento(''); }
+  // Função Unificada para Salvar (Criar ou Atualizar)
+  async function handleSalvarItem(tipo: 'despesas' | 'investimentos') {
+    const isDespesa = tipo === 'despesas';
     
-    setVersaoDados(v => v + 1);
+    // Pega os valores corretos dependendo do tipo
+    const nome = isDespesa ? novaDespesa : novoInvestimento;
+    const valor = isDespesa ? valorDespesa : valorInvestimento;
+    const idEdicao = isDespesa ? idEditandoDespesa : idEditandoInvestimento;
+
+    if (!nome || !valor) return;
+
+    const payload = { nome, valor: Number(valor) };
+    let url = `http://localhost:3000/financeiro/${tipo}`;
+    let method = 'POST';
+
+    // Se tiver ID, vira uma edição (PUT)
+    if (idEdicao) {
+        url = `http://localhost:3000/financeiro/${tipo}/${idEdicao}`;
+        method = 'PUT';
+    }
+
+    try {
+        await fetch(url, {
+            method: method, 
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+
+        // Limpa tudo e atualiza
+        cancelarEdicao(tipo);
+        setVersaoDados(v => v + 1);
+
+    } catch (error) { console.error(error); }
   }
 
   async function excluir(id: number, tipo: 'despesas' | 'investimentos') {
@@ -103,7 +142,6 @@ export function Financeiro() {
 
       {/* --- CARDS RESUMO --- */}
       <div className="resumo-grid">
-        {/* Faturamento */}
         <div className="resumo-card card-azul">
             <div className="card-info">
                 <h3>Faturamento Mensal</h3>
@@ -119,7 +157,6 @@ export function Financeiro() {
             <button className="card-edit-btn" onClick={()=>setEditandoFat(!editandoFat)}><Edit2 size={20}/></button>
         </div>
 
-        {/* Despesas */}
         <div className="resumo-card card-vermelho">
             <div className="card-info">
                 <h3>Despesas Fixas</h3>
@@ -128,7 +165,6 @@ export function Financeiro() {
             <TrendingDown size={24} color="#ef4444"/>
         </div>
 
-        {/* Investimentos */}
         <div className="resumo-card" style={{borderLeftColor:'#8b5cf6'}}>
             <div className="card-info">
                 <h3>Investimentos</h3>
@@ -137,7 +173,6 @@ export function Financeiro() {
             <PieChart size={24} color="#8b5cf6"/>
         </div>
 
-        {/* Taxa */}
         <div className="resumo-card card-laranja">
             <div className="card-info">
                 <h3>Taxa Custo Fixo</h3>
@@ -154,18 +189,42 @@ export function Financeiro() {
         {/* COLUNA 1: DESPESAS */}
         <div className="lista-card">
             <div className="lista-header"><h2>📉 Despesas Fixas</h2></div>
+            
             <div className="quick-form">
                 <input placeholder="Nome" value={novaDespesa} onChange={e=>setNovaDespesa(e.target.value)}/>
                 <input type="number" placeholder="R$" value={valorDespesa} onChange={e=>setValorDespesa(e.target.value)}/>
-                <button className="btn-add" onClick={()=>adicionar('despesas')}><Plus size={20}/></button>
+                
+                {/* Botão Dinâmico: Adicionar ou Salvar Edição */}
+                <button 
+                    className="btn-add" 
+                    style={{ backgroundColor: idEditandoDespesa ? '#f97316' : '#22c55e' }}
+                    onClick={()=>handleSalvarItem('despesas')}
+                    title={idEditandoDespesa ? "Salvar Alteração" : "Adicionar"}
+                >
+                    {idEditandoDespesa ? <Save size={20}/> : <Plus size={20}/>}
+                </button>
+
+                {/* Botão Cancelar (Só aparece editando) */}
+                {idEditandoDespesa && (
+                    <button className="btn-add" style={{backgroundColor:'#94a3b8'}} onClick={()=>cancelarEdicao('despesas')}>
+                        <XCircle size={20}/>
+                    </button>
+                )}
             </div>
+
             <div className="lista-items">
                 {listaDespesas.map(i => (
-                    <div key={i.id} className="lista-item">
+                    <div key={i.id} className="lista-item" style={{backgroundColor: idEditandoDespesa === i.id ? '#fff7ed' : 'transparent'}}>
                         <span className="item-nome">{i.nome}</span>
                         <div>
                             <span className="item-valor">R$ {Number(i.valor).toLocaleString('pt-BR', {minimumFractionDigits:2})}</span>
-                            <button className="btn-remove-sm" onClick={()=>excluir(i.id, 'despesas')}><Trash2 size={14}/></button>
+                            
+                            <button className="btn-remove-sm" style={{backgroundColor:'#fef3c7', color:'#d97706', marginRight:'5px'}} onClick={()=>iniciarEdicao(i, 'despesas')}>
+                                <Edit2 size={14}/>
+                            </button>
+                            <button className="btn-remove-sm" onClick={()=>excluir(i.id, 'despesas')}>
+                                <Trash2 size={14}/>
+                            </button>
                         </div>
                     </div>
                 ))}
@@ -175,18 +234,39 @@ export function Financeiro() {
         {/* COLUNA 2: INVESTIMENTOS */}
         <div className="lista-card">
             <div className="lista-header"><h2>🚀 Investimentos</h2></div>
+            
             <div className="quick-form">
                 <input placeholder="Nome" value={novoInvestimento} onChange={e=>setNovoInvestimento(e.target.value)}/>
                 <input type="number" placeholder="R$" value={valorInvestimento} onChange={e=>setValorInvestimento(e.target.value)}/>
-                <button className="btn-add" style={{backgroundColor:'#8b5cf6'}} onClick={()=>adicionar('investimentos')}><Plus size={20}/></button>
+                
+                <button 
+                    className="btn-add" 
+                    style={{backgroundColor: idEditandoInvestimento ? '#f97316' : '#8b5cf6'}} 
+                    onClick={()=>handleSalvarItem('investimentos')}
+                >
+                     {idEditandoInvestimento ? <Save size={20}/> : <Plus size={20}/>}
+                </button>
+
+                {idEditandoInvestimento && (
+                    <button className="btn-add" style={{backgroundColor:'#94a3b8'}} onClick={()=>cancelarEdicao('investimentos')}>
+                        <XCircle size={20}/>
+                    </button>
+                )}
             </div>
+
             <div className="lista-items">
                 {listaInvestimentos.map(i => (
-                    <div key={i.id} className="lista-item">
+                    <div key={i.id} className="lista-item" style={{backgroundColor: idEditandoInvestimento === i.id ? '#fff7ed' : 'transparent'}}>
                         <span className="item-nome">{i.nome}</span>
                         <div>
                             <span className="item-valor" style={{color:'#8b5cf6'}}>R$ {Number(i.valor).toLocaleString('pt-BR', {minimumFractionDigits:2})}</span>
-                            <button className="btn-remove-sm" onClick={()=>excluir(i.id, 'investimentos')}><Trash2 size={14}/></button>
+                            
+                            <button className="btn-remove-sm" style={{backgroundColor:'#fef3c7', color:'#d97706', marginRight:'5px'}} onClick={()=>iniciarEdicao(i, 'investimentos')}>
+                                <Edit2 size={14}/>
+                            </button>
+                            <button className="btn-remove-sm" onClick={()=>excluir(i.id, 'investimentos')}>
+                                <Trash2 size={14}/>
+                            </button>
                         </div>
                     </div>
                 ))}
