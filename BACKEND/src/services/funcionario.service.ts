@@ -1,6 +1,17 @@
 // ARQUIVO: BACKEND/src/services/funcionario.service.ts
 
-export function calcularEncargos(salario: number, epi: number) {
+export interface EncargosSociais {
+    salarioBase: number;
+    epi: number;
+    decimoTerceiro: number;
+    ferias: number;
+    umTercoFerias: number;
+    inss: number;
+    multaFgts: number;
+    custoTotal: number;
+}
+
+export function calcularEncargos(salario: number, epi: number): EncargosSociais {
     // 1. Provisão de 13º Salário (8,33%)
     const decimoTerceiro = salario / 12;
 
