@@ -1,0 +1,5 @@
+.custo-obra-container {
+    display: flex; flex-direction: column; gap: 30px;
+    max-width: 900px; margin: 0 auto; padding-bottom: 50px;
+}
+.custo-obra-container h1 { color: #f8fafc; margin-bottom: 5px; }

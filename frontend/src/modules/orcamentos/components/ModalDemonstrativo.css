@@ -1,0 +1,45 @@
+/* ModalDemonstrativo.css */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(15, 23, 42, 0.7); display: flex; align-items: center; justify-content: center;
+    z-index: 1000; backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    background: white; padding: 30px; border-radius: 16px;
+    width: 90%; max-width: 600px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    position: relative; animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 15px;
+}
+.modal-header h3 { margin: 0; color: #1e293b; display: flex; align-items: center; gap: 10px; }
+
+.btn-close { background: none; border: none; cursor: pointer; color: #94a3b8; }
+.btn-close:hover { color: #ef4444; }
+
+.tabela-demonstrativo { width: 100%; border-collapse: collapse; border: 1px solid #cbd5e1; margin-bottom: 20px; }
+.tabela-demonstrativo th {
+    background-color: #f1f5f9; color: #0f172a; font-weight: 800; text-transform: uppercase;
+    font-size: 0.9rem; padding: 12px; border: 1px solid #cbd5e1; text-align: center;
+}
+.tabela-demonstrativo td { padding: 10px 15px; border: 1px solid #cbd5e1; color: #334155; font-size: 1rem; }
+.col-valor { text-align: right; font-family: 'Courier New', Courier, monospace; font-weight: 600; }
+.col-pct { text-align: center; width: 80px; }
+
+.row-venda { background-color: #fff; font-weight: bold; font-size: 1.1rem; }
+.row-venda td { color: #0f172a; border-bottom: 2px solid #0f172a; }
+
+.row-lucro { background-color: #bfdbfe; font-weight: bold; }
+.row-lucro td { color: #1e3a8a; border-top: 2px solid #3b82f6; }
+
+.btn-imprimir {
+    background-color: #475569; color: white; width: 100%; padding: 12px;
+    border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-imprimir:hover { background-color: #334155; }

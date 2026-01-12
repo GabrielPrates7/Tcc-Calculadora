@@ -1,0 +1,45 @@
+/* ResumoFinanceiro.css */
+.resumo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-bottom: 24px;
+}
+
+.resumo-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    cursor: pointer;
+    transition: transform 0.2s, opacity 0.2s;
+    border: 1px solid transparent;
+    position: relative;
+}
+
+.resumo-card:hover { transform: translateY(-2px); }
+.resumo-card.active { border-width: 2px; }
+
+/* Cores das Bordas laterais */
+.card-azul { border-left: 4px solid #3b82f6; }
+.card-vermelho { border-left: 4px solid #ef4444; opacity: 0.7; }
+.card-vermelho.active { opacity: 1; border-color: #ef4444; }
+.card-roxo { border-left: 4px solid #8b5cf6; opacity: 0.7; }
+.card-roxo.active { opacity: 1; border-color: #8b5cf6; }
+.card-laranja { border-left: 4px solid #f97316; cursor: default; }
+
+.card-info h3 { margin: 0; font-size: 0.9rem; color: #64748b; font-weight: 600; }
+.card-info p { margin: 5px 0; font-size: 1.5rem; font-weight: bold; }
+.card-info small { font-size: 0.75rem; color: #94a3b8; }
+
+.card-edit-btn {
+    position: absolute; top: 10px; right: 10px;
+    background: transparent; border: none; cursor: pointer; color: #cbd5e1;
+}
+.card-edit-btn:hover { color: #3b82f6; }
+
+.progress-container { width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px; margin-top: 8px; }
+.progress-bar { height: 100%; border-radius: 3px; transition: width 0.5s; }

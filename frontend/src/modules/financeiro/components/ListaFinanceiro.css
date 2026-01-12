@@ -1,0 +1,64 @@
+/* ListaFinanceiro.css */
+.lista-container {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    padding: 20px;
+}
+
+.toolbar-financeiro {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.search-box {
+    display: flex;
+    align-items: center;
+    background: #f1f5f9;
+    padding: 8px 12px;
+    border-radius: 6px;
+    flex: 1;
+    min-width: 200px;
+}
+.search-box input { border: none; background: transparent; margin-left: 8px; width: 100%; outline: none; }
+
+.actions-group { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+.filter-wrapper {
+    display: flex; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0;
+    padding: 0 8px; border-radius: 6px; height: 38px;
+}
+.filter-wrapper select { border: none; background: transparent; outline: none; color: #475569; font-size: 0.85rem; }
+
+.btn-add-main {
+    color: white; border: none; padding: 0 16px; height: 38px; border-radius: 6px;
+    font-weight: 600; display: flex; align-items: center; gap: 6px; cursor: pointer;
+}
+
+.lista-scroll { max-height: 400px; overflow-y: auto; border-top: 1px solid #f1f5f9; }
+.empty-state { padding: 40px; text-align: center; color: #94a3b8; }
+
+.lista-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 12px 0; border-bottom: 1px solid #f1f5f9;
+}
+.lista-item:last-child { border-bottom: none; }
+
+.item-nome { display: block; font-weight: 500; color: #334155; }
+.item-sub { font-size: 0.75rem; color: #94a3b8; }
+.item-valor { font-weight: bold; margin-right: 15px; }
+
+.acoes-item { display: inline-flex; gap: 6px; }
+.btn-icon-sm {
+    border: none; width: 28px; height: 28px; border-radius: 4px; 
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+
+.lista-footer {
+    border-top: 2px solid #f1f5f9; padding-top: 15px; margin-top: 10px;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.footer-valor { font-size: 1.2rem; font-weight: bold; }

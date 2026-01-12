@@ -1,0 +1,24 @@
+/* Layout Principal */
+.financeiro-container {
+    width: 100%;
+    box-sizing: border-box;
+    color: #f8fafc; /* Texto claro para fundo escuro */
+}
+
+.financeiro-container h1 {
+    font-size: 1.8rem;
+    margin-bottom: 24px;
+    font-weight: 700;
+    color: #f8fafc;
+}
+
+/* Responsividade simples */
+@media (max-width: 768px) {
+    .financeiro-container {
+        padding: 10px;
+    }
+    
+    .financeiro-container h1 {
+        font-size: 1.5rem;
+    }
+}

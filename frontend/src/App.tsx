@@ -1,14 +1,14 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar';
-import { Orcamentos } from './pages/Orcamentos';
-import { Financeiro } from './pages/Financeiro';
-import { Funcionarios } from './pages/Funcionarios';
-import { CustoObra } from './pages/CustoObra';
+import { Orcamentos } from './modules/orcamentos/Orcamentos';
+import { Financeiro } from './modules/financeiro/Financeiro';
+// CORREÇÃO: Importando do novo módulo organizado
+import { Funcionarios } from './modules/funcionarios/Funcionarios';
+import { CustoObra } from './modules/custo-obra/CustoObra';
 
 function App() {
   return (
     <BrowserRouter>
-      {/* 1. Removido o backgroundColor fixo para usar o tema escuro do CSS */}
       <div style={{ display: 'flex', minHeight: '100vh' }}>
         
         <Sidebar />

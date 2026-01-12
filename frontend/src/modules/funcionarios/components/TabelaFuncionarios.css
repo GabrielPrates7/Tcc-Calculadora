@@ -1,0 +1,104 @@
+/* Card que envolve a tabela */
+.card-lista {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    overflow: hidden;
+    margin-top: 20px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+
+thead {
+    background-color: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+th {
+    padding: 16px;
+    text-align: left;
+    font-weight: 600;
+    color: #475569;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+td {
+    padding: 16px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+}
+
+/* Badges e Avatares */
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 0.9rem;
+    margin-right: 12px;
+}
+
+.colaborador-info {
+    display: flex;
+    align-items: center;
+}
+
+.badge-setor {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+.badge-setor.producao { background-color: #dbeafe; color: #1e40af; }
+.badge-setor.administrativo { background-color: #f3e8ff; color: #6b21a8; }
+
+.custo-total-highlight {
+    font-weight: bold;
+    color: #0f172a;
+}
+
+/* Ações e Botões da Tabela */
+.acoes {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-icon {
+    background: transparent;
+    border: none;
+    padding: 6px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-edit { color: #f59e0b; background-color: #fffbeb; }
+.btn-edit:hover { background-color: #fcd34d; }
+
+.btn-delete { color: #ef4444; background-color: #fef2f2; }
+.btn-delete:hover { background-color: #fca5a5; }
+
+/* Detalhes Expandidos */
+.row-detalhes { background-color: #f8fafc; }
+.detalhes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 20px;
+    padding: 20px;
+}
+.detalhe-item { display: flex; flex-direction: column; }
+.detalhe-item span:first-child { font-size: 0.8rem; color: #64748b; margin-bottom: 4px; }
+.detalhe-item span:last-child { font-size: 1rem; font-weight: 600; color: #334155; }

@@ -1,0 +1,22 @@
+/* ListaOrcamentos.css */
+.card-lista {
+    background: white; border-radius: 16px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow: hidden;
+}
+
+table { width: 100%; border-collapse: collapse; }
+th { 
+    text-align: left; padding: 20px; background-color: #f8fafc; color: #64748b;
+    font-size: 0.85rem; text-transform: uppercase; font-weight: 700;
+}
+td { padding: 20px; border-bottom: 1px solid #f1f5f9; color: #334155; font-size: 1rem; vertical-align: middle; }
+
+.badge-lucro { color: #16a34a; font-weight: bold; font-size: 0.9rem; }
+.acoes-td { display: flex; gap: 8px; }
+.btn-icon { 
+    width: 32px; height: 32px; border-radius: 6px; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; color: white; transition: 0.2s; 
+}
+.btn-ver { background-color: #3b82f6; }
+.btn-del { background-color: #ef4444; }
+.btn-ver:hover, .btn-del:hover { opacity: 0.9; }
