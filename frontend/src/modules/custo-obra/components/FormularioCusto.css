@@ -1,25 +1,19 @@
-/* FormularioCusto.css */
 .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; }
 @media (max-width: 900px) { .config-grid { grid-template-columns: 1fr; } }
 
-.card-config {
-    background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-}
-
+.card-config { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
 .card-config h2 {
-    margin-top: 0; color: #1e293b; font-size: 1.4rem;
-    margin-bottom: 25px; border-bottom: 1px solid #f1f5f9; padding-bottom: 15px;
-    display: flex; align-items: center;
+    margin-top: 0; color: #1e293b; font-size: 1.4rem; margin-bottom: 25px;
+    border-bottom: 1px solid #f1f5f9; padding-bottom: 15px; display: flex; align-items: center;
 }
 
 .input-group { margin-bottom: 25px; }
 .input-group label { display: block; margin-bottom: 8px; color: #475569; font-weight: 700; font-size: 1rem; }
-.input-group input { 
-    width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; 
-    font-size: 1.2rem; font-weight: bold; color: #1e293b; background-color: #f8fafc;
-    box-sizing: border-box;
+.input-group input {
+    width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px;
+    font-size: 1.2rem; font-weight: bold; color: #1e293b; background-color: #f8fafc; box-sizing: border-box;
 }
-.input-group input:focus { border-color: #3b82f6; background-color: white; outline: none; }
+.input-group input:focus { border-color: var(--cor-primaria); background-color: white; outline: none; }
 
 .btn-opcao {
     flex: 1; padding: 14px; border: 1px solid #cbd5e1; background: white; border-radius: 8px;
@@ -28,19 +22,16 @@
 }
 .btn-opcao:hover { background-color: #f1f5f9; }
 .btn-opcao.ativo {
-    background-color: #3b82f6; color: white; border-color: #3b82f6;
-    box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+    background-color: var(--cor-primaria); color: white; border-color: var(--cor-primaria);
+    box-shadow: 0 4px 6px -1px rgba(0,0,0, 0.3);
 }
 
 .btn-atualizar {
-    width: 100%; background-color: #f97316; color: white; padding: 16px; 
-    border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; 
+    width: 100%; background-color: var(--cor-primaria); color: white; padding: 16px;
+    border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold;
     cursor: pointer; transition: 0.2s; margin-top: 15px;
 }
-.btn-atualizar:hover { background-color: #ea580c; transform: translateY(-2px); }
+.btn-atualizar:hover { background-color: var(--cor-primaria-hover); transform: translateY(-2px); }
 
 .formula-box { background-color: #f8fafc; padding: 25px; border-radius: 8px; border: 1px dashed #cbd5e1; color: #475569; font-size: 1rem; }
-.formula-total {
-    border-top: 1px solid #cbd5e1; padding-top: 15px; font-weight: bold; color: #1e293b; 
-    margin-top: 15px; text-align: center; font-size: 1.2rem;
-}
+.formula-total { border-top: 1px solid #cbd5e1; padding-top: 15px; font-weight: bold; color: #1e293b; margin-top: 15px; text-align: center; font-size: 1.2rem; }

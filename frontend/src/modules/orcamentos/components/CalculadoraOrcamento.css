@@ -1,14 +1,10 @@
-/* CalculadoraOrcamento.css */
 .card-calculadora {
     background: white; padding: 30px; border-radius: 16px;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    border-top: 5px solid #f97316; position: sticky; top: 20px;
+    border-top: 5px solid var(--cor-primaria); /* Usa tema */
+    position: sticky; top: 20px;
 }
-
-.card-calculadora h2 {
-    margin-top: 0; color: #334155; font-size: 1.3rem; margin-bottom: 25px;
-    display: flex; align-items: center; gap: 10px;
-}
+.card-calculadora h2 { margin-top: 0; color: #334155; font-size: 1.3rem; margin-bottom: 25px; display: flex; align-items: center; gap: 10px; }
 
 .form-group { margin-bottom: 20px; position: relative; }
 .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: #64748b; font-size: 0.9rem; }
@@ -20,21 +16,14 @@
     border-radius: 8px; font-size: 1.05rem; font-weight: 500; color: #1e293b;
     background-color: #fff; transition: 0.2s; box-sizing: border-box;
 }
-.form-group input:focus { border-color: #f97316; outline: none; box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1); }
+.form-group input:focus { border-color: var(--cor-primaria); outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
 .form-group input:disabled { background-color: #f1f5f9; cursor: not-allowed; color: #64748b; }
 
 .row-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
 
-.custos-breakdown {
-    background-color: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-bottom: 20px;
-}
-.custo-linha {
-    display: flex; justify-content: space-between; font-size: 0.9rem; color: #64748b; margin-bottom: 8px; align-items: center;
-}
-.custo-linha.destaque {
-    border-top: 1px dashed #cbd5e1; padding-top: 10px; margin-top: 5px; margin-bottom: 0;
-    color: #1e293b; font-weight: 800; font-size: 1rem;
-}
+.custos-breakdown { background-color: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
+.custo-linha { display: flex; justify-content: space-between; font-size: 0.9rem; color: #64748b; margin-bottom: 8px; align-items: center; }
+.custo-linha.destaque { border-top: 1px dashed #cbd5e1; padding-top: 10px; margin-top: 5px; margin-bottom: 0; color: #1e293b; font-weight: 800; font-size: 1rem; }
 .custo-valor { font-family: 'Courier New', Courier, monospace; font-weight: 600; }
 
 .resultado-box {

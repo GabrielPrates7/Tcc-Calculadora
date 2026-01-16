@@ -1,5 +1,4 @@
-import { Edit2, Trash2, CheckCircle, PauseCircle, ChevronDown, ChevronUp } from 'lucide-react';
-import { useState } from 'react';
+import { Edit2, Trash2, Info } from 'lucide-react';
 import type { Funcionario } from '../types';
 import './TabelaFuncionarios.css';
 
@@ -7,89 +6,92 @@ interface Props {
     funcionarios: Funcionario[];
     loading: boolean;
     onEditar: (f: Funcionario) => void;
-    onExcluir: (id: number) => void;
+    onExcluir: (id: number) => Promise<void>;
+    
+    // --- O ERRO ESTÁ AQUI: ESSA LINHA É OBRIGATÓRIA ---
+    onVerDetalhes: (f: Funcionario) => void; 
 }
 
-export function TabelaFuncionarios({ funcionarios, loading, onEditar, onExcluir }: Props) {
-    const [idExpandido, setIdExpandido] = useState<number | null>(null);
+// E AQUI TAMBÉM: Adicione onVerDetalhes na desestruturação
+export function TabelaFuncionarios({ funcionarios, loading, onEditar, onExcluir, onVerDetalhes }: Props) {
+    
+    if (loading) {
+        return <div className="loading-state">Carregando dados...</div>;
+    }
 
-    const BRL = (v: string | number) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    const formatarData = (data: string) => data ? new Date(data).toLocaleDateString('pt-BR') : '-';
-    const getIniciais = (nome: string) => nome.substring(0, 2).toUpperCase();
-
-    if (loading) return <div style={{padding: 20, color: 'white'}}>Carregando equipe...</div>;
+    if (funcionarios.length === 0) {
+        return <div className="empty-state">Nenhum funcionário encontrado.</div>;
+    }
 
     return (
-        <div className="card-lista">
+        <div className="tabela-container">
             <table>
                 <thead>
                     <tr>
-                        <th style={{ width: '50px', textAlign: 'center' }}>Status</th>
-                        <th>Colaborador</th>
+                        <th>Nome</th>
+                        <th>Função</th>
                         <th>Setor</th>
-                        <th>Admissão</th>
+                        <th>Salário Base</th>
                         <th>Custo Mensal</th>
-                        <th style={{ width: '120px', textAlign: 'center' }}>Ações</th>
+                        <th>Status</th>
+                        <th>Admissão</th>
+                        <th style={{ textAlign: 'right' }}>Ações</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {funcionarios.length === 0 ? (
-                        <tr><td colSpan={6} style={{ textAlign: 'center', padding: 40 }}>Nenhum registro.</td></tr>
-                    ) : (
-                        funcionarios.map(func => (
-                            <>
-                                <tr key={func.id} style={{ opacity: func.ativo ? 1 : 0.6 }}>
-                                    <td style={{ textAlign: 'center' }}>
-                                        {func.ativo
-                                            ? <CheckCircle size={20} color="#16a34a" />
-                                            : <PauseCircle size={20} color="#ef4444" />
-                                        }
-                                    </td>
-                                    <td>
-                                        <div className="colaborador-info">
-                                            <div className="avatar-circle" style={{ backgroundColor: func.ativo ? '#3b82f6' : '#94a3b8' }}>
-                                                {getIniciais(func.nome)}
-                                            </div>
-                                            <div>
-                                                <div style={{ fontWeight: 'bold' }}>{func.nome}</div>
-                                                <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{func.funcao}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span className={`badge-setor ${func.setor}`}>
-                                            {func.setor === 'producao' ? 'Produção' : 'Admin'}
-                                        </span>
-                                    </td>
-                                    <td>{formatarData(func.data_admissao)}</td>
-                                    <td><span className="custo-total-highlight">{BRL(func.custo_total_mensal)}</span></td>
-                                    <td>
-                                        <div className="acoes" style={{ justifyContent: 'center' }}>
-                                            <button className="btn-icon" onClick={() => setIdExpandido(idExpandido === func.id ? null : func.id)}>
-                                                {idExpandido === func.id ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                                            </button>
-                                            <button className="btn-icon btn-edit" onClick={() => onEditar(func)}><Edit2 size={16} /></button>
-                                            <button className="btn-icon btn-delete" onClick={() => onExcluir(func.id)}><Trash2 size={16} /></button>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {idExpandido === func.id && (
-                                    <tr className="row-detalhes">
-                                        <td colSpan={6}>
-                                            <div className="detalhes-grid">
-                                                <div className="detalhe-item"><span>Salário Base</span><span>{BRL(func.salario_base)}</span></div>
-                                                <div className="detalhe-item"><span>EPI/Vale</span><span>{BRL(func.epi)}</span></div>
-                                                <div className="detalhe-item"><span>13º Salário</span><span>{BRL(func.decimo_terceiro)}</span></div>
-                                                <div className="detalhe-item"><span>Férias + 1/3</span><span>{BRL(Number(func.ferias) + Number(func.um_terco_ferias))}</span></div>
-                                                <div className="detalhe-item"><span>Encargos</span><span>{BRL(func.inss)}</span></div>
-                                                <div className="detalhe-item"><span>Multa FGTS</span><span>{BRL(func.multa_fgts)}</span></div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
-                            </>
-                        ))
-                    )}
+                    {funcionarios.map(func => (
+                        <tr key={func.id} className={!func.ativo ? 'tr-inativo' : ''}>
+                            <td>
+                                <div className="col-nome">
+                                    <strong>{func.nome}</strong>
+                                </div>
+                            </td>
+                            <td>{func.funcao}</td>
+                            <td>
+                                <span className={`badge-setor ${func.setor}`}>
+                                    {func.setor === 'producao' ? 'Produção' : 'Admin'}
+                                </span>
+                            </td>
+                            <td>
+                                {Number(func.salario_base).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                            </td>
+                            <td>
+                                <strong style={{ color: '#0f172a' }}>
+                                    {Number(func.custo_total_mensal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                                </strong>
+                            </td>
+                            <td>
+                                <span className={`badge-status ${func.ativo ? 'ativo' : 'inativo'}`}>
+                                    {func.ativo ? 'Ativo' : 'Inativo'}
+                                </span>
+                            </td>
+                            <td>{new Date(func.data_admissao).toLocaleDateString('pt-BR')}</td>
+                            
+                            <td style={{ textAlign: 'right' }}>
+                                <div className="acoes-grupo">
+                                    {/* Botão INFO que chama a função */}
+<button
+    className="btn-icon info"
+    onClick={() => {
+        console.log("Clicou no botão I - Funcionário:", func.nome); // <--- TESTE AQUI
+        onVerDetalhes(func);
+    }}
+    title="Ver Memória de Cálculo"
+>
+    <Info size={18} />
+</button>
+
+                                    <button className="btn-icon edit" onClick={() => onEditar(func)} title="Editar">
+                                        <Edit2 size={18} />
+                                    </button>
+                                    
+                                    <button className="btn-icon delete" onClick={() => onExcluir(func.id!)} title="Excluir">
+                                        <Trash2 size={18} />
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    ))}
                 </tbody>
             </table>
         </div>

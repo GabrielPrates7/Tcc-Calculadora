@@ -3,39 +3,53 @@
   line-height: 1.5;
   font-weight: 400;
 
-  /* PALETA DENARIUS NAVY */
-  --bg-deep: #0f172a;      /* Fundo da Tela (Azul Quase Preto) */
-  --bg-card: #ffffff;      /* Fundo dos Cards (Branco) */
-  --text-main: #f8fafc;    /* Texto Principal (Branco Gelo) */
-  --text-card: #1e293b;    /* Texto dentro dos Cards (Escuro) */
-  --accent: #3b82f6;       /* Azul Destaque */
+  /* === IDENTIDADE VISUAL DENARIUS === */
+
+  /* 1. O Laranja (Ações, Botões, Destaques) */
+  --cor-primaria: #f97316;       /* Laranja Vibrante */
+  --cor-primaria-hover: #ea580c; /* Laranja mais fechado (hover) */
+  
+  /* 2. O Azul (Detalhes secundários, Informações) */
+  --cor-secundaria: #3b82f6;     /* Azul Royal */
+
+  /* 3. A Base (Fundos Escuros / Dark Mode) */
+  --bg-main: #0f172a;            /* Fundo da Tela (Azul Quase Preto) */
+  --bg-card: #1e293b;            /* Fundo dos Cards/Sidebar (Azul Petróleo) */
+  --bg-input: #0f172a;           /* Fundo de Inputs */
+  --border-color: #334155;       /* Bordas sutis */
+  
+  /* 4. Textos */
+  --text-primary: #f8fafc;       /* Branco Gelo */
+  --text-secondary: #94a3b8;     /* Cinza Azulado */
+  --text-dark: #1e293b;          /* Texto escuro (apenas se houver fundo branco) */
+
+  /* 5. Status */
+  --success: #22c55e;
+  --danger: #ef4444;
+  --warning: #f59e0b;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background-color: var(--bg-deep); /* AQUI MUDA O FUNDO */
-  color: var(--text-main);          /* Texto padrão vira branco */
+  background-color: var(--bg-main); /* Fundo Azul Profundo */
+  color: var(--text-primary);       /* Texto Claro */
 }
 
 h1, h2, h3, h4, h5, h6 {
-  color: var(--text-main); /* Títulos soltos brancos */
+  color: var(--text-primary);
 }
 
-/* --- REGRA DE OURO --- */
-/* Tudo que for card ou input volta a ter texto escuro para ler no branco */
-.card-cadastro, .card-lista, .resumo-card, .lista-card, .card-config, .card-resultado, .input-group input, input {
-  color: var(--text-card);
-}
-
-/* Força os títulos DENTRO dos cards a serem escuros */
-.card-cadastro h2, .card-lista h2, .card-config h2 {
-  color: #334155 !important;
-}
-
-/* Scrollbar Bonita */
+/* Scrollbar combinando com o tema */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: #1e293b; }
+::-webkit-scrollbar-track { background: var(--bg-card); }
 ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+/* Garante que inputs e selects tenham fundo escuro e borda sutil */
+input, select, textarea {
+    background-color: var(--bg-input);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}

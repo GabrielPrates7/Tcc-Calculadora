@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar';
 import { Orcamentos } from './modules/orcamentos/Orcamentos';
 import { Financeiro } from './modules/financeiro/Financeiro';
-// CORREÇÃO: Importando do novo módulo organizado
 import { Funcionarios } from './modules/funcionarios/Funcionarios';
 import { CustoObra } from './modules/custo-obra/CustoObra';
 

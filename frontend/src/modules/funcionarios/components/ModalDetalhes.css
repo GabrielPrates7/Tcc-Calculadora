@@ -1,0 +1,93 @@
+/* ModalDetalhes.css */
+
+/* Fundo Escuro (Overlay) - Essencial para aparecer na frente */
+.modal-overlay {
+    position: fixed; /* Fixa na tela */
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(15, 23, 42, 0.6); /* Escuro transparente */
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; /* Garante que fique por cima de tudo */
+    animation: fadeIn 0.2s ease-out;
+}
+
+/* A Janela do Modal */
+.detalhes-content {
+    background: white;
+    width: 500px;
+    max-width: 90vw;
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    border-top: 4px solid #3b82f6; /* Detalhe azul no topo */
+}
+
+/* Header */
+.detalhes-header {
+    background-color: #f8fafc;
+    padding: 20px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+.header-text h2 { margin: 0; font-size: 1.25rem; color: #0f172a; }
+.header-text p { margin: 4px 0 0 0; font-size: 0.85rem; color: #64748b; }
+
+.badge-cargo {
+    display: inline-flex; align-items: center;
+    background-color: #eff6ff; color: #1d4ed8;
+    font-size: 0.75rem; font-weight: 700;
+    padding: 4px 8px; border-radius: 4px; margin-bottom: 8px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+}
+
+.btn-close {
+    background: transparent; border: none; color: #94a3b8; cursor: pointer;
+}
+.btn-close:hover { color: #ef4444; background-color: #fee2e2; border-radius: 4px; }
+
+/* Body */
+.modal-body { padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+
+/* Card Resumo */
+.card-resumo {
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    color: white; padding: 20px; border-radius: 8px;
+}
+.resumo-item.principal {
+    display: flex; justify-content: space-between; align-items: center;
+}
+.resumo-item.principal strong { font-size: 1.5rem; color: #4ade80; }
+.resumo-sub { margin-top: 8px; font-size: 0.8rem; opacity: 0.8; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 8px; }
+
+/* Tabela */
+.tabela-custos { border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; font-size: 0.9rem; }
+.tabela-header {
+    background-color: #f1f5f9; padding: 10px 15px; font-weight: 700; color: #64748b;
+    display: flex; justify-content: space-between; font-size: 0.75rem; text-transform: uppercase;
+}
+.tabela-row {
+    padding: 10px 15px; border-bottom: 1px solid #f1f5f9;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.tabela-row:last-child { border-bottom: none; }
+.row-titulo { color: #334155; font-weight: 500; }
+.row-valor { font-family: monospace; font-weight: 600; color: #0f172a; }
+
+.destaque-imposto { background-color: #fff1f2; }
+.destaque-imposto .row-titulo { color: #be123c; }
+
+/* Info Legal */
+.info-legal {
+    display: flex; gap: 10px; background-color: #f8fafc; padding: 12px; border-radius: 6px;
+    color: #64748b; font-size: 0.75rem; align-items: start;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scaleUp { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }

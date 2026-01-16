@@ -1,21 +1,21 @@
-// ARQUIVO: src/modules/funcionarios/hooks/useFuncionarios.ts
-import { useState, useEffect } from 'react'; // REMOVIDO: useCallback
-import type { Funcionario } from '../types/index'; // AJUSTE: Apontando para /index explicitamente
-import { FuncionariosService } from '../services/funcionarios.service';
+import { useState, useEffect } from 'react';
+// Importamos o novo tipo aqui
+import type { Funcionario, FuncionarioInput } from '../types';
+
+const API_URL = 'http://localhost:3000/funcionarios';
 
 export function useFuncionarios() {
-    // Estado dos Dados
     const [funcionarios, setFuncionarios] = useState<Funcionario[]>([]);
     const [loading, setLoading] = useState(true);
-    const [versaoDados, setVersaoDados] = useState(0); // Gatilho para recarregar
+    const [versao, setVersao] = useState(0);
 
-    // Carregar dados
     useEffect(() => {
         async function carregar() {
-            setLoading(true);
             try {
-                const dados = await FuncionariosService.listar();
-                setFuncionarios(dados);
+                setLoading(true);
+                const res = await fetch(API_URL);
+                const data = await res.json();
+                setFuncionarios(data);
             } catch (error) {
                 console.error("Erro ao carregar funcionários:", error);
             } finally {
@@ -23,47 +23,40 @@ export function useFuncionarios() {
             }
         }
         carregar();
-    }, [versaoDados]);
+    }, [versao]);
 
-    // Função para forçar recarregamento
-    const recarregar = () => setVersaoDados(v => v + 1);
-
-    // Ações do CRUD
-    const salvar = async (dados: Partial<Funcionario>) => {
+    // CORREÇÃO: A função aceita o Union Type (Funcionario OU Input)
+    // Isso satisfaz o TypeScript e remove o erro de 'any'
+    const salvar = async (func: Funcionario | FuncionarioInput) => {
         try {
-            if (dados.id) {
-                await FuncionariosService.atualizar(dados.id, dados);
-            } else {
-                await FuncionariosService.criar(dados);
-            }
-            recarregar();
-            return true;
+            const url = func.id ? `${API_URL}/${func.id}` : API_URL;
+            const method = func.id ? 'PUT' : 'POST';
+
+            await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(func)
+            });
+
+            setVersao(v => v + 1);
         } catch (error) {
             console.error("Erro ao salvar:", error);
             alert("Erro ao salvar funcionário.");
-            return false;
         }
     };
 
     const excluir = async (id: number) => {
-        if (!confirm("Tem certeza que deseja excluir?")) return;
+        if (!confirm("Tem certeza que deseja excluir este colaborador?")) return;
         try {
-            await FuncionariosService.excluir(id);
-            recarregar();
+            await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+            setVersao(v => v + 1);
         } catch (error) {
             console.error("Erro ao excluir:", error);
-            alert("Erro ao excluir.");
         }
     };
 
-    // Ações do Relatório
-    const buscarRelatorio = async (inicio: string, fim: string) => {
-        try {
-            return await FuncionariosService.buscarRelatorio(inicio, fim);
-        } catch (error) {
-            console.error("Erro no relatório:", error);
-            return [];
-        }
+    const buscarRelatorio = async (dataInicio: string, dataFim: string) => {
+        console.log("Buscar relatório", dataInicio, dataFim);
     };
 
     return {
@@ -71,7 +64,6 @@ export function useFuncionarios() {
         loading,
         salvar,
         excluir,
-        buscarRelatorio,
-        recarregar
+        buscarRelatorio
     };
 }

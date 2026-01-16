@@ -1,19 +1,13 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Users, 
-  HardHat, 
-  DollarSign, 
-  Calculator, 
-  ChevronLeft, 
-  ChevronRight 
+import {
+  LayoutDashboard, Users, HardHat, DollarSign, Calculator,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import './Sidebar.css';
 
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -28,38 +22,29 @@ export function Sidebar() {
   ];
 
   return (
-    <div 
-      className={`sidebar ${isCollapsed ? 'collapsed' : 'expanded'}`}
-      // 2. Estilo INLINE para garantir o visual Dark Navy
-      style={{
-        backgroundColor: '#1e293b', // Azul Petróleo
-        borderRight: '1px solid #334155', // Borda sutil
-        color: '#f8fafc' // Texto claro
-      }}
-    >
+    <div className={`sidebar ${isCollapsed ? 'collapsed' : 'expanded'}`}>
+      {/* CABEÇALHO */}
       <div className="sidebar-header">
         {!isCollapsed && (
-            <div className="logo-text" style={{color: 'white'}}>
-                Denarius<span className="logo-highlight" style={{color: '#3b82f6'}}>.</span>
+            <div className="logo-text">
+                Denarius<span className="logo-highlight">.</span>
             </div>
         )}
-        <button className="toggle-btn" onClick={toggleSidebar} style={{color: 'white'}}>
+        <button className="toggle-btn" onClick={toggleSidebar}>
           {isCollapsed ? <ChevronRight size={24} /> : <ChevronLeft size={24} />}
         </button>
       </div>
 
+      {/* NAVEGAÇÃO */}
       <nav className="nav-links">
         {menuItems.map((item) => {
           const isActive = location.pathname === item.path;
-          
           return (
-            <div 
+            <div
               key={item.id}
               className={`nav-item ${isActive ? 'active' : ''}`}
               onClick={() => navigate(item.path)}
               title={isCollapsed ? item.label : ''}
-              // Ajuste para hover ficar bonito no tema escuro
-              style={{ color: isActive ? '#3b82f6' : '#cbd5e1' }}
             >
               <item.icon className="nav-icon" size={20} />
               <span className="nav-text">{item.label}</span>
@@ -67,6 +52,11 @@ export function Sidebar() {
           );
         })}
       </nav>
+      
+      {/* Rodapé decorativo ou versão */}
+      <div className="sidebar-footer">
+          {!isCollapsed && <span style={{fontSize: '0.75rem', color: '#64748b'}}>v1.0.0</span>}
+      </div>
     </div>
   );
 }

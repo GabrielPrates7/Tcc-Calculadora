@@ -1,35 +1,41 @@
-// ARQUIVO: src/modules/funcionarios/types/index.ts
-
 export interface Funcionario {
-    id: number;
+    id?: number;
     nome: string;
-    funcao?: string;
-    salario_base: string;
-    epi: string;
-    custo_total_mensal: string;
-    ativo: boolean;
+    funcao: string;
     setor: 'producao' | 'administrativo';
-  
-    // Datas
+    ativo: boolean;
     data_admissao: string;
-    data_inativacao?: string;
-    motivo_inativacao?: string;
-  
-    // Detalhes Financeiros
-    decimo_terceiro: string;
-    ferias: string;
-    um_terco_ferias: string;
-    inss: string;
-    multa_fgts: string;
+    
+    // Valores Monetários Principais
+    salario_base: number; 
+    epi: number;
+    custo_total_mensal?: number;
+
+    // --- NOVOS CAMPOS (Detalhamento Financeiro) ---
+    // Adicione estes campos para o ModalDetalhes parar de reclamar
+    decimo_terceiro?: number;
+    ferias?: number;
+    um_terco_ferias?: number;
+    inss?: number;
+    multa_fgts?: number;
+    outros_gastos?: number;
+
+    // --- NOVOS CAMPOS (Desligamento) ---
+    data_inativacao?: string | null;
+    motivo_inativacao?: string | null;
 }
-  
-// Tipos auxiliares para os filtros e ordenação
-export type TipoFiltroSetor = 'todos' | 'producao' | 'administrativo';
-export type TipoFiltroStatus = 'todos' | 'ativos' | 'inativos';
-export type TipoSetor = 'producao' | 'administrativo';
 
-export type SortConfig = { 
-    key: keyof Funcionario | 'custo'; 
-    direction: 'asc' | 'desc' 
-} | null;
+export interface FuncionarioInput {
+    id?: number;
+    nome: string;
+    funcao: string;
+    setor: 'producao' | 'administrativo';
+    ativo: boolean;
+    data_admissao: string;
+    
+    salario: number; 
+    epi: number;
 
+    data_inativacao?: string | null;
+    motivo_inativacao?: string | null;
+}
