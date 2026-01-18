@@ -4,36 +4,77 @@ import { calcularEncargos } from '../services/funcionario.service';
 
 const router = Router();
 
-// --- LISTAR ---
+// ==============================================================================
+// 1. ROTAS DE LEITURA (GET)
+// ==============================================================================
+
+// --- LISTAR TODOS (PADRÃO) ---
 router.get('/', async (req: Request, res: Response) => {
     try {
-        // Agora buscamos também as colunas de inativação
         const result = await pool.query(`
             SELECT * FROM funcionarios 
             ORDER BY ativo DESC, nome ASC
         `);
         res.json(result.rows);
     } catch (err) { 
+        console.error(err);
         res.status(500).json({ error: 'Erro ao buscar dados' }); 
     }
 });
 
+// --- RELATÓRIO HISTÓRICO (IMPORTANTE: DEVE VIR ANTES DE QUALQUER ROTA /:id) ---
+router.get('/relatorio', async (req: Request, res: Response) => {
+    const { inicio, fim } = req.query;
+
+    if (!inicio || !fim) {
+        return res.status(400).json({ error: 'Datas de início e fim são obrigatórias' });
+    }
+
+    try {
+        // LÓGICA DE INTERSEÇÃO DE DATAS:
+        // O funcionário entra no relatório se:
+        // 1. Foi admitido ANTES do fim do período do filtro.
+        // 2. E (Ainda é ativo OU saiu DEPOIS do início do período do filtro).
+        const query = `
+            SELECT * FROM funcionarios
+            WHERE 
+                data_admissao <= $2 
+                AND (data_inativacao IS NULL OR data_inativacao >= $1)
+            ORDER BY nome ASC
+        `;
+        
+        const values = [inicio, fim];
+        const result = await pool.query(query, values);
+
+        res.json(result.rows);
+    } catch (err) {
+        console.error("Erro no relatório:", err);
+        res.status(500).json({ error: 'Erro ao gerar relatório' });
+    }
+});
+
+// (Se você tiver uma rota GET /:id para buscar um único funcionário, ela deve ficar AQUI)
+
+// ==============================================================================
+// 2. ROTAS DE ESCRITA (POST, PUT, DELETE)
+// ==============================================================================
+
 // --- CADASTRAR (POST) ---
 router.post('/', async (req: Request, res: Response) => {
-    // 1. Recebemos os novos campos do frontend
     const { 
         nome, funcao, salario, epi, ativo, setor, 
         data_admissao, 
-        data_inativacao, motivo_inativacao // <--- NOVOS
+        data_inativacao, motivo_inativacao 
     } = req.body;
 
+    // Realiza o cálculo financeiro antes de salvar
     const calculo = calcularEncargos(Number(salario), Number(epi));
     
     const isAtivo = ativo !== undefined ? ativo : true;
     const setorSalvar = setor || 'producao';
     const admissao = data_admissao || new Date().toISOString().split('T')[0];
 
-    // Se estiver ativo, garantimos que inativação seja null
+    // Se estiver ativo, garantimos que campos de saída sejam nulos
     const dataSaida = isAtivo ? null : data_inativacao;
     const motivoSaida = isAtivo ? null : motivo_inativacao;
 
@@ -44,7 +85,7 @@ router.post('/', async (req: Request, res: Response) => {
                 nome, funcao, salario_base, epi, 
                 decimo_terceiro, ferias, um_terco_ferias, inss, multa_fgts, custo_total_mensal, 
                 ativo, setor, data_admissao,
-                data_inativacao, motivo_inativacao  -- <--- COLUNAS NOVAS NO SQL
+                data_inativacao, motivo_inativacao
             )
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
             RETURNING *
@@ -55,7 +96,7 @@ router.post('/', async (req: Request, res: Response) => {
             calculo.decimoTerceiro, calculo.ferias, calculo.umTercoFerias, 
             calculo.inss, calculo.multaFgts, calculo.custoTotal,
             isAtivo, setorSalvar, admissao,
-            dataSaida, motivoSaida // <--- VALORES NOVOS
+            dataSaida, motivoSaida
         ];
 
         const result = await pool.query(query, values);
@@ -72,15 +113,15 @@ router.put('/:id', async (req: Request, res: Response) => {
     const {
         nome, funcao, salario, epi, ativo, setor,
         data_admissao, 
-        data_inativacao, motivo_inativacao // <--- RECEBENDO
+        data_inativacao, motivo_inativacao
     } = req.body;
 
     const calculo = calcularEncargos(Number(salario), Number(epi));
 
-    // Lógica: Se o usuário marcou como ATIVO, limpamos os dados de saída no banco
+    // Lógica: Se o usuário marcou como ATIVO, limpamos os dados de saída
     let dataSaida = data_inativacao;
     let motivoSaida = motivo_inativacao;
-   
+    
     if (ativo === true) {
         dataSaida = null;
         motivoSaida = null;
@@ -102,8 +143,8 @@ router.put('/:id', async (req: Request, res: Response) => {
                 ativo = $11, 
                 setor = $12, 
                 data_admissao = $13,
-                data_inativacao = $14,    -- <--- ATUALIZANDO
-                motivo_inativacao = $15   -- <--- ATUALIZANDO
+                data_inativacao = $14,
+                motivo_inativacao = $15
             WHERE id = $16
         `;
         
@@ -124,36 +165,13 @@ router.put('/:id', async (req: Request, res: Response) => {
     }
 });
 
-// --- EXCLUIR ---
+// --- EXCLUIR (DELETE) ---
 router.delete('/:id', async (req: Request, res: Response) => {
     try {
         await pool.query('DELETE FROM funcionarios WHERE id = $1', [req.params.id]);
         res.json({ message: 'Deletado com sucesso' });
     } catch (err) {
         res.status(500).json({ error: 'Erro ao deletar' });
-    }
-});
-
-// --- RELATÓRIO ---
-router.get('/relatorio', async (req: Request, res: Response) => {
-    try {
-        const { inicio, fim } = req.query;
-        if (!inicio || !fim) return res.status(400).json({ error: 'Datas obrigatórias.' });
-
-        const query = `
-            SELECT id, nome, funcao, custo_total_mensal, data_admissao, data_inativacao, motivo_inativacao
-            FROM funcionarios
-            WHERE
-                (data_admissao <= $2::DATE)
-                AND (data_inativacao IS NULL OR data_inativacao >= $1::DATE)
-            ORDER BY nome ASC
-        `;
-
-        const result = await pool.query(query, [inicio, fim]);
-        res.json(result.rows);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Erro ao gerar relatório' });
     }
 });
 
