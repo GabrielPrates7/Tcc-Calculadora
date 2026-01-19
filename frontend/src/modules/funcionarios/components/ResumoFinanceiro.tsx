@@ -1,68 +1,72 @@
-// src/modules/funcionarios/components/ResumoFinanceiro.tsx
-import { Wallet, Briefcase, Users } from 'lucide-react';
+import { Users, Wallet, Briefcase, TrendingUp } from 'lucide-react';
 import './ResumoFinanceiro.css';
 
 interface Props {
-  custoFolha: number;
-  custoProducao: number;
-  totalAtivos: number;
-  loading: boolean;
+    custoFolha: number;
+    custoProducao: number;
+    totalAtivos: number;
+    loading: boolean;
 }
 
 export function ResumoFinanceiro({ custoFolha, custoProducao, totalAtivos, loading }: Props) {
-  
-  // Função auxiliar para formatar dinheiro
-  const BRL = (val: number) => 
-    val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    
+    // Função auxiliar para formatar moeda
+    const BRL = (valor: number) => valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-  return (
-    <div className="resumo-container">
-      
-      {/* CARD 1: TOTAL DE COLABORADORES */}
-      <div className="card-resumo">
-        <div className="icon-wrapper orange">
-          <Users size={24} />
-        </div>
-        <div className="info-content">
-          <span className="info-label">Equipe Ativa</span>
-          {loading ? (
-            <div className="skeleton-line" style={{ width: '50px' }}></div>
-          ) : (
-            <span className="info-valor">{totalAtivos}</span>
-          )}
-        </div>
-      </div>
+    if (loading) {
+        return (
+            <div className="resumo-grid">
+                <div className="card-skeleton"></div>
+                <div className="card-skeleton"></div>
+                <div className="card-skeleton"></div>
+            </div>
+        );
+    }
 
-      {/* CARD 2: CUSTO FOLHA TOTAL */}
-      <div className="card-resumo">
-        <div className="icon-wrapper blue">
-          <Wallet size={24} />
-        </div>
-        <div className="info-content">
-          <span className="info-label">Custo Folha Mensal</span>
-          {loading ? (
-            <div className="skeleton-line"></div>
-          ) : (
-            <span className="info-valor">{BRL(custoFolha)}</span>
-          )}
-        </div>
-      </div>
+    return (
+        <div className="resumo-grid">
+            
+            {/* Card 1: Equipe */}
+            <div className="card-metric card-orange">
+                <div className="icon-wrapper">
+                    <Users size={24} />
+                </div>
+                <div className="metric-info">
+                    <span className="metric-label">Equipe Ativa</span>
+                    <strong className="metric-value">{totalAtivos}</strong>
+                    <span className="metric-sub">colaboradores</span>
+                </div>
+            </div>
 
-      {/* CARD 3: CUSTO PRODUÇÃO (Filtro Setor) */}
-      <div className="card-resumo" style={{ borderBottom: '4px solid #16a34a' }}>
-        <div className="icon-wrapper green">
-          <Briefcase size={24} />
-        </div>
-        <div className="info-content">
-          <span className="info-label">Custo Produção</span>
-          {loading ? (
-            <div className="skeleton-line"></div>
-          ) : (
-            <span className="info-valor">{BRL(custoProducao)}</span>
-          )}
-        </div>
-      </div>
+            {/* Card 2: Custo Folha */}
+            <div className="card-metric card-blue">
+                <div className="icon-wrapper">
+                    <Wallet size={24} />
+                </div>
+                <div className="metric-info">
+                    <span className="metric-label">Custo Folha Mensal</span>
+                    <strong className="metric-value">{BRL(custoFolha)}</strong>
+                    <div className="metric-trend">
+                        <TrendingUp size={14} /> <span>Visão Geral</span>
+                    </div>
+                </div>
+            </div>
 
-    </div>
-  );
+            {/* Card 3: Produção */}
+            <div className="card-metric card-green">
+                <div className="icon-wrapper">
+                    <Briefcase size={24} />
+                </div>
+                <div className="metric-info">
+                    <span className="metric-label">Custo Produção</span>
+                    <strong className="metric-value">{BRL(custoProducao)}</strong>
+                    <div className="metric-trend">
+                        <div className="percent-badge">{(custoProducao / custoFolha * 100).toFixed(0)}%</div>
+                        <span>do total</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    );
 }

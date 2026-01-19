@@ -8,6 +8,37 @@ const router = Router();
 // 1. ROTAS DE LEITURA (GET)
 // ==============================================================================
 
+// --- RELATÓRIO HISTÓRICO (AGORA NO TOPO ABSOLUTO) ---
+router.get('/relatorio', async (req: Request, res: Response) => {
+    const { inicio, fim } = req.query;
+
+    console.log("📝 [Backend] Relatório Solicitado. Inicio:", inicio, "Fim:", fim);
+
+    if (!inicio || !fim) {
+        return res.status(400).json({ error: 'Datas de início e fim são obrigatórias' });
+    }
+
+    try {
+        // LÓGICA DE INTERSEÇÃO DE DATAS BLINDADA (::date)
+        const query = `
+            SELECT * FROM funcionarios
+            WHERE 
+                data_admissao <= $2::date 
+                AND (data_inativacao IS NULL OR data_inativacao >= $1::date)
+            ORDER BY nome ASC
+        `;
+        
+        const values = [inicio, fim];
+        const result = await pool.query(query, values);
+
+        console.log(`✅ [Backend] Encontrados ${result.rowCount} registros no período.`);
+        res.json(result.rows);
+    } catch (err) {
+        console.error("❌ [Backend] Erro no relatório:", err);
+        res.status(500).json({ error: 'Erro ao gerar relatório' });
+    }
+});
+
 // --- LISTAR TODOS (PADRÃO) ---
 router.get('/', async (req: Request, res: Response) => {
     try {
@@ -22,39 +53,6 @@ router.get('/', async (req: Request, res: Response) => {
     }
 });
 
-// --- RELATÓRIO HISTÓRICO (IMPORTANTE: DEVE VIR ANTES DE QUALQUER ROTA /:id) ---
-router.get('/relatorio', async (req: Request, res: Response) => {
-    const { inicio, fim } = req.query;
-
-    if (!inicio || !fim) {
-        return res.status(400).json({ error: 'Datas de início e fim são obrigatórias' });
-    }
-
-    try {
-        // LÓGICA DE INTERSEÇÃO DE DATAS:
-        // O funcionário entra no relatório se:
-        // 1. Foi admitido ANTES do fim do período do filtro.
-        // 2. E (Ainda é ativo OU saiu DEPOIS do início do período do filtro).
-        const query = `
-            SELECT * FROM funcionarios
-            WHERE 
-                data_admissao <= $2 
-                AND (data_inativacao IS NULL OR data_inativacao >= $1)
-            ORDER BY nome ASC
-        `;
-        
-        const values = [inicio, fim];
-        const result = await pool.query(query, values);
-
-        res.json(result.rows);
-    } catch (err) {
-        console.error("Erro no relatório:", err);
-        res.status(500).json({ error: 'Erro ao gerar relatório' });
-    }
-});
-
-// (Se você tiver uma rota GET /:id para buscar um único funcionário, ela deve ficar AQUI)
-
 // ==============================================================================
 // 2. ROTAS DE ESCRITA (POST, PUT, DELETE)
 // ==============================================================================
@@ -67,14 +65,11 @@ router.post('/', async (req: Request, res: Response) => {
         data_inativacao, motivo_inativacao 
     } = req.body;
 
-    // Realiza o cálculo financeiro antes de salvar
     const calculo = calcularEncargos(Number(salario), Number(epi));
     
     const isAtivo = ativo !== undefined ? ativo : true;
     const setorSalvar = setor || 'producao';
     const admissao = data_admissao || new Date().toISOString().split('T')[0];
-
-    // Se estiver ativo, garantimos que campos de saída sejam nulos
     const dataSaida = isAtivo ? null : data_inativacao;
     const motivoSaida = isAtivo ? null : motivo_inativacao;
 
@@ -118,7 +113,6 @@ router.put('/:id', async (req: Request, res: Response) => {
 
     const calculo = calcularEncargos(Number(salario), Number(epi));
 
-    // Lógica: Se o usuário marcou como ATIVO, limpamos os dados de saída
     let dataSaida = data_inativacao;
     let motivoSaida = motivo_inativacao;
     

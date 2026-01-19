@@ -1,0 +1,150 @@
+/* src/modules/funcionarios/components/ModalRelatorioCusto.css */
+
+/* --- ESTRUTURA BASE DO MODAL --- */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(5px);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 9999;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    max-height: 90vh;
+    width: 100%;
+}
+
+/* --- HEADER --- */
+.modal-header {
+    background-color: #f8fafc;
+    padding: 20px 30px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex; justify-content: space-between; align-items: flex-start;
+}
+
+.header-text h2 { margin: 0; font-size: 1.25rem; color: #0f172a; font-weight: 700; }
+.header-text p { margin: 4px 0 0 0; font-size: 0.875rem; color: #64748b; }
+
+/* Botões do Header (Fechar e Download) */
+.btn-close, .btn-icon {
+    background: transparent; border: 1px solid transparent; color: #94a3b8; cursor: pointer;
+    padding: 6px; border-radius: 6px; transition: all 0.2s; display: flex; align-items: center; justify-content: center;
+}
+.btn-close:hover { background-color: #fee2e2; color: #ef4444; }
+.btn-icon:hover { background-color: #f1f5f9; border-color: #cbd5e1; }
+.btn-icon:disabled { opacity: 0.5; cursor: wait; }
+
+/* --- BODY --- */
+.modal-body {
+    padding: 30px;
+    overflow-y: auto;
+    display: flex; flex-direction: column; gap: 20px;
+}
+
+/* --- ÁREA DE FILTROS --- */
+.filtros-box {
+    display: flex; gap: 20px; 
+    align-items: flex-end;
+    background: #f8fafc; padding: 20px;
+    border-radius: 8px; border: 1px solid #e2e8f0;
+}
+
+.filtro-grupo {
+    display: flex; flex-direction: column; gap: 6px;
+    position: relative;
+}
+
+.filtro-grupo label {
+    font-size: 0.8rem; font-weight: bold; color: #64748b;
+}
+
+/* Wrapper para juntar Input e Botão */
+.input-wrapper {
+    display: flex; align-items: center; position: relative;
+}
+
+/* Input de Data - Estilo Claro */
+.input-data-dark {
+    background: white; color: #0f172a; 
+    border: 1px solid #cbd5e1;
+    border-right: none; 
+    border-top-right-radius: 0; border-bottom-right-radius: 0;
+    border-top-left-radius: 6px; border-bottom-left-radius: 6px;
+    height: 42px; padding: 0 12px; outline: none; font-family: inherit;
+    width: 150px;
+}
+
+/* --- CORREÇÃO MATADORA PARA ÍCONES BRANCOS --- */
+/* Força o ícone nativo do navegador a ser PRETO e visível */
+.input-data-dark::-webkit-calendar-picker-indicator {
+    filter: none !important; /* O !important garante que nada sobrescreva isso */
+    color: #0f172a;
+    cursor: pointer;
+    opacity: 1; 
+    display: block;
+}
+
+/* AJUSTE PARA O SELECT */
+select.input-data-dark {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%230f172a%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 10px;
+    padding-right: 30px;
+    cursor: pointer; width: auto; min-width: 160px; border-right: 1px solid #cbd5e1; border-radius: 6px;
+}
+
+/* Botão de Calendário Lateral */
+.btn-calendar-trigger {
+    height: 42px; width: 42px; display: flex; align-items: center; justify-content: center;
+    background-color: #e2e8f0; border: 1px solid #cbd5e1; border-left: none;
+    border-top-right-radius: 6px; border-bottom-right-radius: 6px;
+    cursor: pointer; color: #475569; transition: all 0.2s;
+}
+.btn-calendar-trigger:hover { background-color: #cbd5e1; color: #0f172a; }
+
+/* Botão de Filtrar */
+.btn-filtrar {
+    background: var(--cor-primaria); color: white; border: none; 
+    height: 42px; padding: 0 24px; border-radius: 6px; font-weight: bold; 
+    cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s;
+}
+.btn-filtrar:hover { opacity: 0.9; }
+.btn-filtrar:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* --- TABELA E BADGES --- */
+.tabela-container {
+    border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; margin-top: 10px;
+}
+.tabela-container table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.tabela-container th {
+    background-color: #f8fafc; color: #64748b; font-weight: 600; text-align: left; padding: 12px 16px;
+    border-bottom: 1px solid #e2e8f0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;
+}
+.tabela-container td {
+    padding: 12px 16px; border-bottom: 1px solid #f1f5f9; color: #334155; vertical-align: middle;
+}
+.tabela-container tr:last-child td { border-bottom: none; }
+.tabela-container tr:hover { background-color: #f8fafc; }
+.tabela-container::-webkit-scrollbar { width: 6px; height: 6px; }
+.tabela-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+/* Badges de Setor */
+.badge-setor { padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+.badge-setor.producao { background-color: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+.badge-setor.administrativo { background-color: #f3e8ff; color: #6b21a8; border: 1px solid #e9d5ff; }
+
+/* Estilos para impressão/PDF */
+.apenas-pdf { display: none; }
+
+/* Animações */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scaleUp { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }

@@ -1,15 +1,17 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { 
     Plus, Search, RotateCcw, Download, 
-    ArrowUpAZ, ArrowDownZA, Calendar, Filter
+    ArrowUpAZ, ArrowDownZA, Calendar, Filter, FileBarChart2
 } from 'lucide-react';
+import html2canvas from 'html2canvas'; // <--- Importado
+import jsPDF from 'jspdf';             // <--- Importado
 
 import { useFuncionarios } from './hooks/useFuncionarios';
 import { TabelaFuncionarios } from './components/TabelaFuncionarios';
-import { FiltroHistorico } from './components/FiltroHistorico';
 import { ModalFuncionario } from './components/ModalFuncionario';
 import { ModalDetalhes } from './components/ModalDetalhes';
-import { ResumoFinanceiro } from './components/ResumoFinanceiro'; // <--- Import Novo
+import { ResumoFinanceiro } from './components/ResumoFinanceiro'; 
+import { ModalRelatorioCusto } from './components/ModalRelatorioCusto'; 
 
 import type { Funcionario } from './types';
 import './Funcionarios.css'; 
@@ -20,31 +22,102 @@ type FiltroSetor = 'todos' | 'producao' | 'administrativo';
 type FiltroStatus = 'todos' | 'ativos' | 'inativos';
 
 export function Funcionarios() {
-    const { funcionarios, loading, salvar, excluir, buscarRelatorio } = useFuncionarios();
+    const { 
+        funcionarios, 
+        loading, 
+        salvar, 
+        excluir, 
+        buscarRelatorio, 
+        recarregarLista 
+    } = useFuncionarios();
 
     // Filtros e Estados
     const [termoBusca, setTermoBusca] = useState('');
     const [filtroSetor, setFiltroSetor] = useState<FiltroSetor>('todos');
-    const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>('ativos');
+    const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>('ativos'); 
     const [filtroDataAdmissao, setFiltroDataAdmissao] = useState(''); 
     const [ordenarPor, setOrdenarPor] = useState<OpcaoOrdenacao>('nome');
     const [direcaoOrdem, setDirecaoOrdem] = useState<DirecaoOrdenacao>('asc');
     
-    // Modais
+    // Estados de UI
     const [modalAberto, setModalAberto] = useState(false);
+    const [modalRelatorioAberto, setModalRelatorioAberto] = useState(false);
     const [funcionarioEdicao, setFuncionarioEdicao] = useState<Funcionario | null>(null);
     const [funcionarioDetalhes, setFuncionarioDetalhes] = useState<Funcionario | null>(null);
+    
+    // Estado do PDF
+    const [gerandoPdf, setGerandoPdf] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null); // <--- REF PARA CAPTURAR A TELA
 
-    // Lógica de Filtragem e Ordenação
+    // --- FUNÇÃO EXPORTAR PDF DA TELA PRINCIPAL ---
+    const exportarPDF = async () => {
+        if (!containerRef.current) return;
+        setGerandoPdf(true);
+
+        try {
+            const element = containerRef.current;
+            
+            // Captura a tela com configurações para Tema Escuro
+            const canvas = await html2canvas(element, { 
+                scale: 2, 
+                backgroundColor: '#0f172a', // Mantém o fundo escuro do dashboard (Slate-900)
+                onclone: (documentClone) => {
+                    // --- A MÁGICA ACONTECE AQUI: LIMPEZA PARA IMPRESSÃO ---
+                    
+                    // 1. Esconde a barra de ferramentas inteira (Busca, Filtros, Botões)
+                    const toolbar = documentClone.querySelector('.toolbar-container') as HTMLElement;
+                    if (toolbar) toolbar.style.display = 'none';
+
+                    // 2. Esconde o botão "Relatório Histórico" lá em cima
+                    const btnRelatorio = documentClone.querySelector('.btn-relatorio-topo') as HTMLElement;
+                    if (btnRelatorio) btnRelatorio.style.display = 'none';
+
+                    // 3. Adiciona um subtítulo com a data
+                    const header = documentClone.querySelector('.header-top div') as HTMLElement;
+                    if (header) {
+                        const dataImpressao = document.createElement('p');
+                        dataImpressao.innerText = `Relatório Geral emitido em: ${new Date().toLocaleDateString()} às ${new Date().toLocaleTimeString()}`;
+                        dataImpressao.style.color = '#94a3b8';
+                        dataImpressao.style.fontSize = '0.8rem';
+                        dataImpressao.style.marginTop = '5px';
+                        header.appendChild(dataImpressao);
+                    }
+                }
+            });
+
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const imgWidth = canvas.width;
+            const imgHeight = canvas.height;
+            const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+            
+            const imgX = (pdfWidth - imgWidth * ratio) / 2;
+            const imgY = 10;
+
+            pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+            pdf.save(`Dashboard_Equipe_${new Date().toISOString().split('T')[0]}.pdf`);
+
+        } catch (error) {
+            console.error("Erro PDF:", error);
+            alert("Erro ao gerar PDF");
+        } finally {
+            setGerandoPdf(false);
+        }
+    };
+
     const getDadosProcessados = () => {
         const lista = funcionarios.filter(func => {
-            const matchNome = func.nome.toLowerCase().includes(termoBusca.toLowerCase()) || 
-                              (func.funcao || '').toLowerCase().includes(termoBusca.toLowerCase());
+            const termo = termoBusca.toLowerCase();
+            const nome = (func.nome || '').toLowerCase();
+            const funcao = (func.funcao || '').toLowerCase();
+            const matchNome = nome.includes(termo) || funcao.includes(termo);
             const matchSetor = filtroSetor === 'todos' || func.setor === filtroSetor;
-            const matchStatus = filtroStatus === 'todos' 
-                ? true 
-                : (filtroStatus === 'ativos' ? func.ativo : !func.ativo);
-            const matchData = !filtroDataAdmissao || func.data_admissao.startsWith(filtroDataAdmissao);
+            const isAtivo = String(func.ativo) === 'true' || func.ativo === true;
+            const matchStatus = filtroStatus === 'todos' ? true : (filtroStatus === 'ativos' ? isAtivo : !isAtivo);
+            const dataStr = func.data_admissao ? String(func.data_admissao) : '';
+            const matchData = !filtroDataAdmissao || dataStr.includes(filtroDataAdmissao);
             return matchNome && matchSetor && matchStatus && matchData;
         });
 
@@ -59,43 +132,50 @@ export function Funcionarios() {
 
     const dadosExibicao = getDadosProcessados();
     
-    // --- CÁLCULOS PARA O DASHBOARD (ResumoFinanceiro) ---
-    const totalAtivos = funcionarios.filter(f => f.ativo).length;
-    
-    const custoFolha = funcionarios
-        .filter(f => f.ativo)
-        .reduce((acc, f) => acc + (Number(f.custo_total_mensal) || 0), 0);
-        
-    const custoProducao = funcionarios
-        .filter(f => f.ativo && f.setor === 'producao')
-        .reduce((acc, f) => acc + (Number(f.custo_total_mensal) || 0), 0);
+    const totalAtivos = funcionarios.filter(f => String(f.ativo) === 'true' || f.ativo === true).length;
+    const custoFolha = funcionarios.filter(f => String(f.ativo) === 'true' || f.ativo === true).reduce((acc, f) => acc + (Number(f.custo_total_mensal) || 0), 0);
+    const custoProducao = funcionarios.filter(f => (String(f.ativo) === 'true' || f.ativo === true) && f.setor === 'producao').reduce((acc, f) => acc + (Number(f.custo_total_mensal) || 0), 0);
 
-    // Handlers
     const handleNovo = () => { setFuncionarioEdicao(null); setModalAberto(true); };
     const handleEditar = (f: Funcionario) => { setFuncionarioEdicao(f); setModalAberto(true); };
+    
     const limparFiltros = () => {
         setTermoBusca(''); setFiltroSetor('todos'); setFiltroStatus('ativos');
         setFiltroDataAdmissao(''); setOrdenarPor('nome'); setDirecaoOrdem('asc');
-    };
-    const exportarCSV = () => {
-        // TODO: Implementar exportação real se necessário
-        alert("Funcionalidade de CSV em desenvolvimento");
+        recarregarLista(); 
     };
 
     return (
-        <div className="funcionarios-container">
+        // ADICIONEI A REF AQUI PARA CAPTURAR TUDO
+        <div className="funcionarios-container" ref={containerRef}>
             
-            {/* --- NOVO HEADER --- */}
-            <div style={{ marginBottom: '20px' }}>
-                <h1 style={{ fontSize: '1.8rem', color: '#0f172a', marginBottom: '5px' }}>
-                    Gestão de Equipe
-                </h1>
-                <p style={{ color: '#64748b', margin: 0, fontSize: '0.9rem' }}>
-                    Gerencie colaboradores, custos e memória de cálculo.
-                </p>
+            <div className="header-top">
+                <div>
+                    <h1 style={{ fontSize: '1.8rem', color: 'var(--text-primary)', marginBottom: '5px' }}>
+                        Gestão de Equipe
+                    </h1>
+                    <p style={{ color: '#64748b', margin: 0, fontSize: '0.9rem' }}>
+                        Gerencie colaboradores, custos e memória de cálculo.
+                    </p>
+                </div>
+                
+                {/* Adicionei a classe 'btn-relatorio-topo' para poder esconder no PDF */}
+                <button 
+                    className="btn-relatorio-topo"
+                    onClick={() => setModalRelatorioAberto(true)}
+                    style={{
+                        background: 'transparent', border: '1px solid var(--cor-primaria)', color: 'var(--cor-primaria)',
+                        padding: '8px 16px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s'
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = 'rgba(249, 115, 22, 0.1)'}
+                    onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                >
+                    <FileBarChart2 size={18} />
+                    Relatório Histórico
+                </button>
             </div>
 
-            {/* --- NOVO COMPONENTE DE RESUMO --- */}
             <ResumoFinanceiro 
                 custoFolha={custoFolha}
                 custoProducao={custoProducao}
@@ -103,10 +183,7 @@ export function Funcionarios() {
                 loading={loading}
             />
 
-            {/* Filtro de Relatório Histórico */}
-            <FiltroHistorico onBuscar={buscarRelatorio} />
-
-            {/* Toolbar de Filtros da Tabela */}
+            {/* A Toolbar será escondida automaticamente no PDF */}
             <div className="toolbar-container">
                 <div className="toolbar-row principal">
                     <div className="search-group">
@@ -174,14 +251,20 @@ export function Funcionarios() {
                         <button className="btn-reset" onClick={limparFiltros} title="Limpar Filtros">
                             <RotateCcw size={18} />
                         </button>
-                        <button className="btn-icon btn-csv" onClick={exportarCSV} title="Exportar CSV">
-                            <Download size={18} />
+                        
+                        {/* BOTÃO DE DOWNLOAD PDF ATUALIZADO */}
+                        <button 
+                            className="btn-icon btn-csv" 
+                            onClick={exportarPDF} 
+                            title="Baixar Tabela Atual (PDF)"
+                            disabled={gerandoPdf}
+                        >
+                            {gerandoPdf ? '...' : <Download size={18} />}
                         </button>
                     </div>
                 </div>
             </div>
 
-            {/* Tabela de Dados */}
             <TabelaFuncionarios 
                 funcionarios={dadosExibicao} 
                 loading={loading} 
@@ -190,7 +273,6 @@ export function Funcionarios() {
                 onVerDetalhes={setFuncionarioDetalhes}
             />
 
-            {/* Modais */}
             {modalAberto && (
                 <ModalFuncionario 
                     key={funcionarioEdicao ? funcionarioEdicao.id : 'novo'}
@@ -204,6 +286,13 @@ export function Funcionarios() {
                 <ModalDetalhes
                     funcionario={funcionarioDetalhes}
                     onClose={() => setFuncionarioDetalhes(null)}
+                />
+            )}
+
+            {modalRelatorioAberto && (
+                <ModalRelatorioCusto
+                    onClose={() => setModalRelatorioAberto(false)}
+                    onBuscar={buscarRelatorio}
                 />
             )}
         </div>
