@@ -1,0 +1,140 @@
+/* Container Principal */
+.filtro-container {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.filtro-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.filtro-titulo {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Área dos Inputs (Onde estava o problema de sobreposição) */
+.filtro-controles {
+    display: flex;
+    align-items: flex-end; /* Alinha labels e inputs na base */
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.filtro-grupo {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.filtro-grupo label {
+    font-size: 0.8rem;
+    color: #64748b;
+    font-weight: 600;
+}
+
+/* === NOVA ESTRUTURA DO INPUT (Input Group) === */
+/* Em vez de absolute, usamos flex para colocar icone e input lado a lado */
+.input-box {
+    display: flex;
+    align-items: center;
+    background-color: white;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 0 10px;
+    height: 38px;
+    width: 150px; /* Largura fixa para evitar colapso */
+    transition: all 0.2s;
+}
+
+.input-box:focus-within {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.icon-input {
+    color: #94a3b8;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+.input-box input {
+    border: none;
+    background: transparent;
+    outline: none;
+    color: #334155;
+    font-family: inherit;
+    font-size: 0.9rem;
+    width: 100%;
+    cursor: pointer;
+}
+
+/* Força o calendário nativo a aparecer */
+.input-box input::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.6;
+}
+.input-box input::-webkit-calendar-picker-indicator:hover {
+    opacity: 1;
+}
+
+/* === SELECTS === */
+.select-status {
+    height: 38px;
+    padding: 0 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background-color: white;
+    color: #334155;
+    font-size: 0.9rem;
+    cursor: pointer;
+    outline: none;
+    min-width: 180px;
+}
+
+/* Cores do Status */
+.select-status.ativos { border-color: #3b82f6; color: #3b82f6; background-color: #eff6ff; }
+.select-status.pendentes { border-color: #ef4444; color: #ef4444; background-color: #fef2f2; }
+.select-status.pagos { border-color: #22c55e; color: #22c55e; background-color: #f0fdf4; }
+
+/* Botão Limpar */
+.btn-limpar {
+    background: none;
+    border: none;
+    color: #ef4444;
+    font-size: 0.75rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+}
+.btn-limpar:hover { background-color: #fee2e2; border-radius: 4px; }
+
+/* Separador */
+.filtro-divisor {
+    width: 1px;
+    height: 28px;
+    background-color: #e2e8f0;
+    margin: 0 4px;
+    align-self: center;
+}
+
+@media (max-width: 600px) {
+    .filtro-controles { flex-direction: column; align-items: stretch; }
+    .input-box, .select-status { width: 100%; }
+    .filtro-divisor { display: none; }
+}

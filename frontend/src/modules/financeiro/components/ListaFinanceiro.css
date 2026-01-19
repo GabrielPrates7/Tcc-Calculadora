@@ -1,8 +1,17 @@
+/* ARQUIVO: src/modules/financeiro/components/ListaFinanceiro.css */
+
 .lista-container {
-    background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 20px;
+    background: white; 
+    border-radius: 8px; 
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
 }
+
 .toolbar-financeiro { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; }
 
+/* Mantemos search-box e filters iguais ao anterior... */
 .search-box {
     display: flex; align-items: center; background: #f1f5f9; padding: 8px 12px;
     border-radius: 6px; flex: 1; min-width: 200px;
@@ -14,25 +23,114 @@
     display: flex; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0;
     padding: 0 8px; border-radius: 6px; height: 38px;
 }
-.filter-wrapper select { border: none; background: transparent; outline: none; color: #475569; font-size: 0.85rem; }
+.filter-wrapper select { border: none; background: transparent; outline: none; color: #475569; font-size: 0.85rem; cursor: pointer; }
 
 .btn-add-main {
     color: white; border: none; padding: 0 16px; height: 38px; border-radius: 6px;
-    font-weight: 600; display: flex; align-items: center; gap: 6px; cursor: pointer;
+    font-weight: 600; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: opacity 0.2s;
+}
+.btn-add-main:hover { opacity: 0.9; }
+
+/* === NOVO LAYOUT DE TABELA === */
+
+.tabela-header {
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    background-color: #f8fafc;
+    border-radius: 6px 6px 0 0;
+    border: 1px solid #e2e8f0;
+    border-bottom: none;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
 }
 
-.lista-scroll { max-height: 400px; overflow-y: auto; border-top: 1px solid #f1f5f9; }
-.empty-state { padding: 40px; text-align: center; color: #94a3b8; }
+.lista-scroll { 
+    max-height: 500px; 
+    overflow-y: auto; 
+    border: 1px solid #e2e8f0; 
+    border-top: none; 
+    border-radius: 0 0 6px 6px;
+}
 
-.lista-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f1f5f9; }
-.lista-item:last-child { border-bottom: none; }
+.lista-item-row { 
+    display: flex; 
+    align-items: center; 
+    padding: 12px 15px; 
+    border-bottom: 1px solid #f1f5f9; 
+    transition: background 0.1s;
+}
+.lista-item-row:last-child { border-bottom: none; }
+.lista-item-row:hover { background-color: #f8fafc; }
 
-.item-nome { display: block; font-weight: 500; color: #334155; }
-.item-sub { font-size: 0.75rem; color: #94a3b8; }
-.item-valor { font-weight: bold; margin-right: 15px; }
+/* Item Inativo (Desabilitado visualmente) */
+.lista-item-row.inativo {
+    opacity: 0.6;
+    background-color: #fcfcfc;
+}
 
-.acoes-item { display: inline-flex; gap: 6px; }
-.btn-icon-sm { border: none; width: 28px; height: 28px; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+/* Colunas */
+.col-switch { width: 60px; display: flex; justify-content: center; }
+.col-info { flex: 2; display: flex; flex-direction: column; justify-content: center; min-width: 150px; }
+.col-data { width: 120px; color: #64748b; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; }
+.col-status { width: 100px; display: flex; justify-content: center; }
+.col-valor { width: 120px; text-align: right; padding-right: 20px; font-weight: 600; }
+.col-acoes { width: 80px; display: flex; gap: 6px; justify-content: flex-end; }
 
-.lista-footer { border-top: 2px solid #f1f5f9; padding-top: 15px; margin-top: 10px; display: flex; justify-content: space-between; align-items: center; }
-.footer-valor { font-size: 1.2rem; font-weight: bold; }
+/* Textos */
+.text-nome { font-weight: 600; color: #334155; font-size: 0.95rem; }
+.text-beneficiario { font-size: 0.75rem; color: #94a3b8; display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+.text-muted { color: #cbd5e1; }
+
+/* Switch Button */
+.btn-switch {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 1px solid #e2e8f0;
+    background: white;
+    color: #cbd5e1;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+}
+.btn-switch:hover { border-color: #94a3b8; color: #64748b; }
+.btn-switch.on { background-color: #eff6ff; color: #3b82f6; border-color: #bfdbfe; }
+.btn-switch.off { background-color: #f1f5f9; }
+
+/* Badges */
+.badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    display: flex; align-items: center; gap: 4px;
+}
+.badge-pago { background-color: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+.badge-pendente { background-color: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+
+/* Ações */
+.btn-icon-sm { border: none; width: 30px; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s; background: transparent; color: #94a3b8; }
+.btn-edit:hover { background-color: #eff6ff; color: #3b82f6; }
+.btn-del:hover { background-color: #fef2f2; color: #ef4444; }
+
+.empty-state { padding: 60px; text-align: center; color: #94a3b8; display: flex; flex-direction: column; align-items: center; }
+
+.lista-footer { margin-top: 20px; border-top: 2px solid #f1f5f9; padding-top: 15px; display: flex; justify-content: space-between; align-items: center; }
+.footer-valor { font-size: 1.3rem; font-weight: 700; }
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .tabela-header { display: none; } /* Esconde cabeçalho no mobile */
+    .lista-item-row { flex-wrap: wrap; gap: 10px; position: relative; padding-bottom: 50px; }
+    
+    .col-switch { position: absolute; top: 10px; left: 10px; width: auto; }
+    .col-info { margin-left: 50px; width: 100%; flex: none; } /* Abre espaço pro switch */
+    
+    .col-data, .col-status { width: auto; font-size: 0.8rem; }
+    .col-valor { width: 100%; text-align: left; padding: 0; margin-left: 50px; font-size: 1.1rem; }
+    
+    .col-acoes { position: absolute; bottom: 10px; right: 10px; width: auto; }
+}

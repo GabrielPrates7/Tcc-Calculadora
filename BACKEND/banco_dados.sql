@@ -2,12 +2,12 @@
 -- PostgreSQL database dump
 --
 
-\restrict wwtelGaQ6cClG2bVyzWEMBKgIM3Jh1ocAc9NMJXHEOcwheN9N6vyIgIYUkrTBEE
+\restrict U1v03879TTKaZeycAT09Ng8KPiM3dEeD7UDt9pPnG0ZDdo4FSCu96yJ4Xvltdeq
 
 -- Dumped from database version 18.1
 -- Dumped by pg_dump version 18.1
 
--- Started on 2026-01-15 22:24:16
+-- Started on 2026-01-18 22:10:48
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -439,15 +439,13 @@ INSERT INTO public.faturamento VALUES (1, 200000.00, '2026-01-01 23:36:07.669449
 -- Data for Name: funcionarios; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public.funcionarios VALUES (33, 'João Fulano', 100.00, 8.33, 2.78, 8.33, 8.00, 3.20, 100.00, 0.00, 230.64, '2026-01-11 21:05:53.095436', 'Marceneiro', false, 'producao', '2026-01-11', NULL, NULL);
 INSERT INTO public.funcionarios VALUES (35, 'Flavio Silva', 800.00, 66.67, 22.22, 66.67, 64.00, 25.60, 20.00, 0.00, 1065.16, '2026-01-12 20:43:54.136938', 'Mecanico', false, 'administrativo', '2026-01-12', NULL, NULL);
 INSERT INTO public.funcionarios VALUES (38, 'teste', 8888.00, 740.67, 246.89, 740.67, 711.04, 284.42, 9.00, 0.00, 11620.68, '2026-01-12 21:40:41.89995', 'teste', true, 'administrativo', '2026-01-13', NULL, NULL);
 INSERT INTO public.funcionarios VALUES (39, 'Jorge', 8777.00, 731.42, 243.81, 731.42, 702.16, 280.86, 77.00, 0.00, 11543.66, '2026-01-12 21:44:06.342947', 'Mec', true, 'administrativo', '2026-01-13', NULL, NULL);
 INSERT INTO public.funcionarios VALUES (40, 'Marlon 2', 4000.00, 333.33, 111.11, 333.33, 320.00, 128.00, 40.00, 0.00, 5265.78, '2026-01-12 22:00:17.161761', 'Teste2', true, 'administrativo', '2026-01-13', NULL, NULL);
-INSERT INTO public.funcionarios VALUES (41, 'Cleber', 1200.00, 100.00, 33.33, 100.00, 96.00, 38.40, 0.00, 0.00, 1567.73, '2026-01-12 22:20:40.175275', 'Dev', false, 'administrativo', '2026-01-13', NULL, NULL);
 INSERT INTO public.funcionarios VALUES (42, 'Testee', 23.00, 1.92, 0.64, 1.92, 1.84, 0.74, 0.00, 0.00, 30.05, '2026-01-12 22:27:04.92084', 'Casss', false, 'producao', '2026-01-13', '2026-01-13', 'Pedido de Demissão');
-INSERT INTO public.funcionarios VALUES (43, 'Xxxxx', 8000.00, 666.67, 222.22, 666.67, 640.00, 256.00, 99.00, 0.00, 10550.56, '2026-01-12 22:33:03.798948', 'xxxxxx', false, 'producao', '2026-01-13', '2026-01-13', 'Pedido de Demissão');
-INSERT INTO public.funcionarios VALUES (34, 'Carlossss', 3000.00, 250.00, 83.33, 250.00, 240.00, 96.00, 80.00, 0.00, 3999.33, '2026-01-11 21:28:14.367412', 'Ajudanteee', false, 'administrativo', '2026-01-11', '2026-01-11', 'Demissão sem Justa Causa');
+INSERT INTO public.funcionarios VALUES (34, 'Carlossss', 3000.00, 250.00, 83.33, 250.00, 240.00, 96.00, 80.00, 0.00, 3999.33, '2026-01-11 21:28:14.367412', 'Ajudanteee', false, 'administrativo', '2022-01-10', '2022-08-15', 'Demissão sem Justa Causa');
+INSERT INTO public.funcionarios VALUES (41, 'Cleber', 1200.00, 100.00, 33.33, 100.00, 96.00, 38.40, 0.00, 0.00, 1567.73, '2026-01-12 22:20:40.175275', 'Dev', false, 'administrativo', '2023-02-01', '2023-11-30', NULL);
 INSERT INTO public.funcionarios VALUES (23, 'Marlon', 4000.00, 333.33, 111.11, 333.33, 320.00, 128.00, 40.00, 0.00, 5265.78, '2026-01-09 01:23:42.563801', 'Marceneiro', true, 'producao', '2026-01-11', NULL, NULL);
 INSERT INTO public.funcionarios VALUES (24, 'João Paulo', 2600.00, 216.67, 72.22, 216.67, 208.00, 83.20, 40.00, 0.00, 3436.76, '2026-01-09 01:24:44.851477', 'Teste 2', true, 'producao', '2026-01-11', NULL, NULL);
 INSERT INTO public.funcionarios VALUES (25, 'Guilherme', 1800.00, 150.00, 50.00, 150.00, 144.00, 57.60, 40.00, 0.00, 2391.60, '2026-01-09 01:25:14.836262', 'teste3', true, 'producao', '2026-01-11', NULL, NULL);
@@ -458,7 +456,10 @@ INSERT INTO public.funcionarios VALUES (29, 'Magno', 2500.00, 208.33, 69.44, 208
 INSERT INTO public.funcionarios VALUES (30, 'Fabrício', 4000.00, 333.33, 111.11, 333.33, 320.00, 128.00, 41.00, 0.00, 5266.78, '2026-01-09 01:27:37.611717', 'teste7', true, 'producao', '2026-01-11', NULL, NULL);
 INSERT INTO public.funcionarios VALUES (31, 'Gerivam', 4200.00, 350.00, 116.67, 350.00, 336.00, 134.40, 42.00, 0.00, 5529.07, '2026-01-09 01:28:06.916726', 'teste8', true, 'producao', '2026-01-11', NULL, NULL);
 INSERT INTO public.funcionarios VALUES (32, 'Diego', 1800.00, 150.00, 50.00, 150.00, 144.00, 57.60, 43.00, 0.00, 2394.60, '2026-01-09 01:28:41.372678', 'teste9', true, 'producao', '2026-01-11', NULL, NULL);
-INSERT INTO public.funcionarios VALUES (37, 'Joao', 440.00, 36.67, 12.22, 36.67, 35.20, 14.08, 50.00, 0.00, 624.84, '2026-01-12 21:32:02.49164', 'Mec', false, 'producao', '2026-01-13', NULL, NULL);
+INSERT INTO public.funcionarios VALUES (33, 'João Fulano', 100.00, 8.33, 2.78, 8.33, 8.00, 3.20, 100.00, 0.00, 230.64, '2026-01-11 21:05:53.095436', 'Marceneiro', false, 'producao', '2020-05-20', '2026-01-11', NULL);
+INSERT INTO public.funcionarios VALUES (44, 'Klebson Lopes', 5000.00, 416.67, 138.89, 416.67, 400.00, 160.00, 60.00, 0.00, 6592.22, '2026-01-18 19:41:43.069718', 'Marceneiro 3', true, 'administrativo', '2026-01-18', NULL, NULL);
+INSERT INTO public.funcionarios VALUES (37, 'Joao', 440.00, 36.67, 12.22, 36.67, 35.20, 14.08, 50.00, 0.00, 624.84, '2026-01-12 21:32:02.49164', 'Mec', false, 'producao', '2026-01-13', '2026-01-14', 'Demissão sem Justa Causa');
+INSERT INTO public.funcionarios VALUES (43, 'Xxxxx', 8000.00, 666.67, 222.22, 666.67, 640.00, 256.00, 99.00, 0.00, 10550.56, '2026-01-12 22:33:03.798948', 'xxxxxx', false, 'producao', '2026-01-13', '2026-01-13', 'Aposentadoria');
 
 
 --
@@ -529,7 +530,7 @@ SELECT pg_catalog.setval('public.faturamento_id_seq', 1, true);
 -- Name: funcionarios_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.funcionarios_id_seq', 43, true);
+SELECT pg_catalog.setval('public.funcionarios_id_seq', 44, true);
 
 
 --
@@ -613,11 +614,11 @@ ALTER TABLE ONLY public.orcamentos
     ADD CONSTRAINT orcamentos_pkey PRIMARY KEY (id);
 
 
--- Completed on 2026-01-15 22:24:16
+-- Completed on 2026-01-18 22:10:48
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict wwtelGaQ6cClG2bVyzWEMBKgIM3Jh1ocAc9NMJXHEOcwheN9N6vyIgIYUkrTBEE
+\unrestrict U1v03879TTKaZeycAT09Ng8KPiM3dEeD7UDt9pPnG0ZDdo4FSCu96yJ4Xvltdeq
 
