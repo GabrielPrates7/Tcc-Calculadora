@@ -19,9 +19,9 @@ export function Financeiro() {
         investimentos, 
         salvarItem, 
         excluirItem, 
-        atualizarFaturamento,    // Atualiza o global (fallback)
-        buscarFaturamentoMensal, // NOVO: Busca do mês específico
-        salvarFaturamentoMensal  // NOVO: Salva no mês específico
+        buscarFaturamentoMensal, 
+        salvarFaturamentoMensal,
+        somarFaturamentoPeriodo // IMPORTANTE: Nova função do hook
     } = useFinanceiro();
 
     // --- DATAS PADRÃO (MÊS ATUAL) ---
@@ -41,9 +41,8 @@ export function Financeiro() {
     const [filtroDataFim, setFiltroDataFim] = useState(getFimMes());
     const [filtroStatus, setFiltroStatus] = useState<StatusFilter>('todos');
 
-    // ESTADO LOCAL PARA O FATURAMENTO DO MÊS SELECIONADO
-    // Se for null, significa que não tem faturamento específico cadastrado (ou estamos vendo múltiplos meses)
-    const [faturamentoMesAtual, setFaturamentoMesAtual] = useState<number | null>(null);
+    // ESTADO LOCAL: Guarda o valor do faturamento a ser exibido (pode ser mês único ou soma)
+    const [faturamentoExibido, setFaturamentoExibido] = useState<number>(0);
 
     const [modalConfig, setModalConfig] = useState<{
         aberto: boolean;
@@ -57,39 +56,44 @@ export function Financeiro() {
         return analisarIntervalo(filtroDataInicio, filtroDataFim);
     }, [filtroDataInicio, filtroDataFim]);
 
-    // 2. BUSCAR FATURAMENTO QUANDO MUDAR O MÊS (Efeito Colateral)
+    // 2. BUSCAR OU SOMAR FATURAMENTO (Lógica Inteligente)
     useEffect(() => {
         const carregarFaturamento = async () => {
-            if (infoDatas.isMesUnico && infoDatas.ano) {
-                // Se selecionou apenas 1 mês (ex: Janeiro), busca no banco
-                // infoDatas.meses[0] retorna 0 para Jan, mas o banco espera 1. Então somamos 1.
-                const valor = await buscarFaturamentoMensal(infoDatas.meses[0] + 1, infoDatas.ano);
-                
-                // Atualiza o estado com o valor do banco (ou null se não tiver)
-                setFaturamentoMesAtual(valor); 
+            // Se o período é válido (tem ano)
+            if (infoDatas.ano) {
+                if (infoDatas.isMesUnico) {
+                    // Cenario A: Mês Único (Ex: Janeiro) -> Busca valor exato
+                    // infoDatas.meses[0] é 0 (Jan), banco quer 1. Somamos +1.
+                    const valor = await buscarFaturamentoMensal(infoDatas.meses[0] + 1, infoDatas.ano);
+                    setFaturamentoExibido(valor || 0);
+                } 
+                else if (infoDatas.meses.length > 0) {
+                    // Cenario B: Vários Meses (Ex: Jan a Mar) -> Soma tudo
+                    const mesesBanco = infoDatas.meses.map(m => m + 1); // Converte [0,1,2] para [1,2,3]
+                    const total = await somarFaturamentoPeriodo(mesesBanco, infoDatas.ano);
+                    setFaturamentoExibido(total);
+                } 
+                else {
+                    setFaturamentoExibido(0);
+                }
             } else {
-                setFaturamentoMesAtual(null); // Se for periodo composto, reseta para usar o global
+                setFaturamentoExibido(0);
             }
         };
         carregarFaturamento();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [infoDatas.meses, infoDatas.ano, infoDatas.isMesUnico]); 
-    // OBS: Não coloque 'buscarFaturamentoMensal' aqui para evitar loop infinito
 
 
     // 3. CÁLCULO DINÂMICO DO DASHBOARD (O Cérebro)
     const dashboardCalculado = useMemo(() => {
         const somarFiltrados = (lista: ItemFinanceiro[]) => {
             return lista.filter(item => {
-                // Se não está ativo, não conta no custo fixo
                 if (!item.ativo) return false;
                 
                 const dataItem = item.dataVencimento ? item.dataVencimento.substring(0, 10) : '';
                 
-                // Se não tem filtro de data, soma tudo
                 if (!filtroDataInicio && !filtroDataFim) return true;
-                
-                // Se tem filtro, item sem data não entra
                 if (!dataItem) return false;
 
                 let match = true;
@@ -102,25 +106,21 @@ export function Financeiro() {
         const totalDespesasFiltradas = somarFiltrados(despesas);
         const totalInvestimentosFiltrados = somarFiltrados(investimentos);
         
-        // DECISÃO DO FATURAMENTO A USAR:
-        // 1. Se temos um faturamento específico do mês carregado do banco, usa ele.
-        // 2. Se não (é null), usa o Faturamento Global (Configuração Geral) como fallback.
-        const faturamentoParaCalculo = faturamentoMesAtual !== null 
-            ? faturamentoMesAtual 
-            : dashboardOriginal.faturamento;
+        // Agora usamos sempre o valor que veio do banco (Soma ou Mês Único)
+        const faturamentoFinal = faturamentoExibido;
 
-        const taxaCustoFixo = faturamentoParaCalculo > 0 
-            ? ((totalDespesasFiltradas + totalInvestimentosFiltrados) / faturamentoParaCalculo) * 100 
+        const taxaCustoFixo = faturamentoFinal > 0 
+            ? ((totalDespesasFiltradas + totalInvestimentosFiltrados) / faturamentoFinal) * 100 
             : 0;
 
         return {
             ...dashboardOriginal,
-            faturamento: faturamentoParaCalculo, // O visual vai mostrar qual valor está sendo usado
+            faturamento: faturamentoFinal, // Mostra o valor correto (Único ou Soma)
             totalDespesas: totalDespesasFiltradas,
             totalInvestimentos: totalInvestimentosFiltrados,
             taxaCustoFixo: taxaCustoFixo,
         };
-    }, [despesas, investimentos, filtroDataInicio, filtroDataFim, dashboardOriginal, faturamentoMesAtual]);
+    }, [despesas, investimentos, filtroDataInicio, filtroDataFim, faturamentoExibido, dashboardOriginal]);
 
 
     // --- HANDLERS ---
@@ -152,15 +152,12 @@ export function Financeiro() {
             
             if (infoDatas.isMesUnico && infoDatas.ano) {
                 // SALVA O MENSAL ESPECÍFICO
-                // infoDatas.meses[0] é 0 (Janeiro), banco quer 1. Somamos +1.
                 const sucesso = await salvarFaturamentoMensal(infoDatas.meses[0] + 1, infoDatas.ano, novoValor);
                 if (sucesso) {
-                    setFaturamentoMesAtual(novoValor); // Atualiza a tela instantaneamente
+                    setFaturamentoExibido(novoValor); // Atualiza a tela instantaneamente
                 }
-            } else {
-                // Fallback: Se algo der errado na lógica, atualiza o global
-                await atualizarFaturamento(novoValor);
-            }
+            } 
+            // Não existe mais "fallback" global, então se não for mês único, não faz nada (ou avisa erro)
             
         } else {
             const rota = tipo === 'despesa' ? 'despesas' : 'investimentos';
@@ -202,10 +199,9 @@ export function Financeiro() {
             <div style={{display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '10px'}}>
                 <h1>Gestão Financeira 💰</h1>
                 
-                {/* A Etiqueta Mágica: Mostra JANEIRO, JAN/FEV, etc */}
                 {infoDatas.label && (
                     <span style={{
-                        backgroundColor: infoDatas.isMesUnico ? '#3b82f6' : '#f97316', // Azul se for mês único, Laranja se for composto
+                        backgroundColor: infoDatas.isMesUnico ? '#3b82f6' : '#f97316', 
                         color: 'white',
                         padding: '4px 12px',
                         borderRadius: '20px',
@@ -224,7 +220,6 @@ export function Financeiro() {
                 viewAtual={view} 
                 onViewChange={setView} 
                 onEditFaturamento={handleEditFaturamento}
-                // Props novas para controlar a UI do card
                 labelMes={infoDatas.isMesUnico ? infoDatas.label : undefined}
                 isMesUnico={infoDatas.isMesUnico}
             />
@@ -250,7 +245,6 @@ export function Financeiro() {
             {modalConfig.aberto && (
                 <ModalFinanceiro 
                     tipo={modalConfig.tipo} itemEdicao={modalConfig.itemEdicao} 
-                    // Mostra no modal o valor que está sendo usado no momento (seja o mensal ou o global)
                     valorFaturamentoAtual={dashboardCalculado.faturamento}
                     onClose={() => setModalConfig({ ...modalConfig, aberto: false })} onSalvar={handleSalvarModal}
                 />

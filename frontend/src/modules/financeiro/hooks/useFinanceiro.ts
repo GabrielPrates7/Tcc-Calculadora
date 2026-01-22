@@ -28,6 +28,7 @@ export function useFinanceiro() {
             setLoading(true);
             try {
                 // Carrega tudo em paralelo
+                // O Dashboard agora retorna faturamento: 0, pois calculamos dinamicamente no front
                 const [dash, desp, inv] = await Promise.all([
                     FinanceiroService.getDashboard(),
                     FinanceiroService.getDespesas(),
@@ -69,21 +70,9 @@ export function useFinanceiro() {
         }
     };
 
-    // Atualiza o faturamento Global (Configuração Padrão)
-    const atualizarFaturamento = async (valor: number) => {
-        try {
-            await FinanceiroService.atualizarConfig(valor);
-            recarregar(); 
-            return true;
-        } catch (error) {
-            console.error(error);
-            return false;
-        }
-    };
+    // --- FUNÇÕES DE FATURAMENTO MENSAL E POR PERÍODO ---
 
-    // --- NOVAS FUNÇÕES PARA FATURAMENTO MENSAL ---
-
-    // 1. Busca o faturamento de um mês específico
+    // 1. Busca o faturamento de um mês específico (Ex: Janeiro)
     const buscarFaturamentoMensal = async (mes: number, ano: number) => {
         try {
             const response = await fetch(`${API_BASE}/financeiro/faturamento/${mes}/${ano}`);
@@ -92,10 +81,7 @@ export function useFinanceiro() {
             
             const data = await response.json();
             
-            // Log para debug (verificar se o banco retornou valor)
-            // console.log(`HOOK: Buscando Faturamento ${mes}/${ano}:`, data);
-
-            // CORREÇÃO: Converte string do banco para Number
+            // Garante que é número
             if (data.valor !== null && data.valor !== undefined) {
                 return Number(data.valor);
             }
@@ -114,12 +100,12 @@ export function useFinanceiro() {
 
             const response = await fetch(`${API_BASE}/financeiro/faturamento`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' }, // Header OBRIGATÓRIO
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ mes, ano, valor })
             });
             
             if (response.ok) {
-                console.log("HOOK: Faturamento salvo com sucesso!");
+                // recarregar(); // Opcional: se quiser forçar atualização global
                 return true;
             } else {
                 console.error("HOOK: Erro na resposta da API ao salvar");
@@ -131,6 +117,25 @@ export function useFinanceiro() {
         }
     };
 
+    // 3. NOVO: Soma o faturamento de uma lista de meses (Ex: Jan, Fev, Mar)
+    const somarFaturamentoPeriodo = async (meses: number[], ano: number) => {
+        try {
+            const response = await fetch(`${API_BASE}/financeiro/faturamento/soma`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ meses, ano })
+            });
+            
+            if (!response.ok) return 0;
+            
+            const data = await response.json();
+            return Number(data.valor) || 0;
+        } catch (error) {
+            console.error("Erro ao somar período:", error);
+            return 0;
+        }
+    };
+
     return {
         loading,
         dashboard,
@@ -138,8 +143,9 @@ export function useFinanceiro() {
         investimentos,
         salvarItem,
         excluirItem,
-        atualizarFaturamento,
+        // Funções de faturamento exportadas:
         buscarFaturamentoMensal,
-        salvarFaturamentoMensal
+        salvarFaturamentoMensal,
+        somarFaturamentoPeriodo
     };
 }
