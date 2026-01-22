@@ -2,12 +2,12 @@
 -- PostgreSQL database dump
 --
 
-\restrict U1v03879TTKaZeycAT09Ng8KPiM3dEeD7UDt9pPnG0ZDdo4FSCu96yJ4Xvltdeq
+\restrict fZRlGjGIH5VaLHi8UMtL7Ff6H2gI4wJQ0kAhbpkg1IhoMketRUu6cX1X3Z9c38c
 
 -- Dumped from database version 18.1
 -- Dumped by pg_dump version 18.1
 
--- Started on 2026-01-18 22:10:48
+-- Started on 2026-01-21 23:15:18
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -26,20 +26,20 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
--- TOC entry 232 (class 1259 OID 16501)
--- Name: config_financeiro; Type: TABLE; Schema: public; Owner: postgres
+-- TOC entry 230 (class 1259 OID 16501)
+-- Name: faturamento_padrao; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.config_financeiro (
-    id integer NOT NULL,
-    faturamento_mensal numeric(10,2) DEFAULT 0
+CREATE TABLE public.faturamento_padrao (
+    id integer CONSTRAINT config_financeiro_id_not_null NOT NULL,
+    valor numeric(10,2) DEFAULT 0
 );
 
 
-ALTER TABLE public.config_financeiro OWNER TO postgres;
+ALTER TABLE public.faturamento_padrao OWNER TO postgres;
 
 --
--- TOC entry 231 (class 1259 OID 16500)
+-- TOC entry 229 (class 1259 OID 16500)
 -- Name: config_financeiro_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -55,16 +55,16 @@ CREATE SEQUENCE public.config_financeiro_id_seq
 ALTER SEQUENCE public.config_financeiro_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5096 (class 0 OID 0)
--- Dependencies: 231
+-- TOC entry 5100 (class 0 OID 0)
+-- Dependencies: 229
 -- Name: config_financeiro_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
-ALTER SEQUENCE public.config_financeiro_id_seq OWNED BY public.config_financeiro.id;
+ALTER SEQUENCE public.config_financeiro_id_seq OWNED BY public.faturamento_padrao.id;
 
 
 --
--- TOC entry 230 (class 1259 OID 16487)
+-- TOC entry 228 (class 1259 OID 16487)
 -- Name: configuracao_producao; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -82,7 +82,7 @@ CREATE TABLE public.configuracao_producao (
 ALTER TABLE public.configuracao_producao OWNER TO postgres;
 
 --
--- TOC entry 229 (class 1259 OID 16486)
+-- TOC entry 227 (class 1259 OID 16486)
 -- Name: configuracao_producao_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -98,8 +98,8 @@ CREATE SEQUENCE public.configuracao_producao_id_seq
 ALTER SEQUENCE public.configuracao_producao_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5097 (class 0 OID 0)
--- Dependencies: 229
+-- TOC entry 5101 (class 0 OID 0)
+-- Dependencies: 227
 -- Name: configuracao_producao_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -107,7 +107,7 @@ ALTER SEQUENCE public.configuracao_producao_id_seq OWNED BY public.configuracao_
 
 
 --
--- TOC entry 224 (class 1259 OID 16435)
+-- TOC entry 222 (class 1259 OID 16435)
 -- Name: despesas_fixas; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -115,14 +115,19 @@ CREATE TABLE public.despesas_fixas (
     id integer NOT NULL,
     nome character varying(255) NOT NULL,
     valor numeric(10,2) NOT NULL,
-    criado_em timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+    criado_em timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    ativo boolean DEFAULT true,
+    pago boolean DEFAULT false,
+    beneficiario character varying(255),
+    data_vencimento date,
+    data_pagamento date
 );
 
 
 ALTER TABLE public.despesas_fixas OWNER TO postgres;
 
 --
--- TOC entry 223 (class 1259 OID 16434)
+-- TOC entry 221 (class 1259 OID 16434)
 -- Name: despesas_fixas_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -138,8 +143,8 @@ CREATE SEQUENCE public.despesas_fixas_id_seq
 ALTER SEQUENCE public.despesas_fixas_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5098 (class 0 OID 0)
--- Dependencies: 223
+-- TOC entry 5102 (class 0 OID 0)
+-- Dependencies: 221
 -- Name: despesas_fixas_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -147,25 +152,26 @@ ALTER SEQUENCE public.despesas_fixas_id_seq OWNED BY public.despesas_fixas.id;
 
 
 --
--- TOC entry 222 (class 1259 OID 16425)
--- Name: faturamento; Type: TABLE; Schema: public; Owner: postgres
+-- TOC entry 232 (class 1259 OID 16525)
+-- Name: faturamentos_mensais; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.faturamento (
-    id integer NOT NULL,
-    valor_mensal numeric(15,2) DEFAULT 0,
-    atualizado_em timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE public.faturamentos_mensais (
+    id integer CONSTRAINT faturamentos_id_not_null NOT NULL,
+    mes integer CONSTRAINT faturamentos_mes_not_null NOT NULL,
+    ano integer CONSTRAINT faturamentos_ano_not_null NOT NULL,
+    valor numeric(10,2) CONSTRAINT faturamentos_valor_not_null NOT NULL
 );
 
 
-ALTER TABLE public.faturamento OWNER TO postgres;
+ALTER TABLE public.faturamentos_mensais OWNER TO postgres;
 
 --
--- TOC entry 221 (class 1259 OID 16424)
--- Name: faturamento_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+-- TOC entry 231 (class 1259 OID 16524)
+-- Name: faturamentos_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
-CREATE SEQUENCE public.faturamento_id_seq
+CREATE SEQUENCE public.faturamentos_id_seq
     AS integer
     START WITH 1
     INCREMENT BY 1
@@ -174,15 +180,15 @@ CREATE SEQUENCE public.faturamento_id_seq
     CACHE 1;
 
 
-ALTER SEQUENCE public.faturamento_id_seq OWNER TO postgres;
+ALTER SEQUENCE public.faturamentos_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5099 (class 0 OID 0)
--- Dependencies: 221
--- Name: faturamento_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+-- TOC entry 5103 (class 0 OID 0)
+-- Dependencies: 231
+-- Name: faturamentos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
-ALTER SEQUENCE public.faturamento_id_seq OWNED BY public.faturamento.id;
+ALTER SEQUENCE public.faturamentos_id_seq OWNED BY public.faturamentos_mensais.id;
 
 
 --
@@ -231,7 +237,7 @@ CREATE SEQUENCE public.funcionarios_id_seq
 ALTER SEQUENCE public.funcionarios_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5100 (class 0 OID 0)
+-- TOC entry 5104 (class 0 OID 0)
 -- Dependencies: 219
 -- Name: funcionarios_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -240,7 +246,7 @@ ALTER SEQUENCE public.funcionarios_id_seq OWNED BY public.funcionarios.id;
 
 
 --
--- TOC entry 226 (class 1259 OID 16446)
+-- TOC entry 224 (class 1259 OID 16446)
 -- Name: investimentos; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -248,14 +254,18 @@ CREATE TABLE public.investimentos (
     id integer NOT NULL,
     nome character varying(255) NOT NULL,
     valor numeric(10,2) NOT NULL,
-    criado_em timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+    criado_em timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    ativo boolean DEFAULT true,
+    pago boolean DEFAULT false,
+    beneficiario character varying(255),
+    data_vencimento date
 );
 
 
 ALTER TABLE public.investimentos OWNER TO postgres;
 
 --
--- TOC entry 225 (class 1259 OID 16445)
+-- TOC entry 223 (class 1259 OID 16445)
 -- Name: investimentos_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -271,8 +281,8 @@ CREATE SEQUENCE public.investimentos_id_seq
 ALTER SEQUENCE public.investimentos_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5101 (class 0 OID 0)
--- Dependencies: 225
+-- TOC entry 5105 (class 0 OID 0)
+-- Dependencies: 223
 -- Name: investimentos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -280,7 +290,7 @@ ALTER SEQUENCE public.investimentos_id_seq OWNED BY public.investimentos.id;
 
 
 --
--- TOC entry 228 (class 1259 OID 16470)
+-- TOC entry 226 (class 1259 OID 16470)
 -- Name: orcamentos; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -303,7 +313,7 @@ CREATE TABLE public.orcamentos (
 ALTER TABLE public.orcamentos OWNER TO postgres;
 
 --
--- TOC entry 227 (class 1259 OID 16469)
+-- TOC entry 225 (class 1259 OID 16469)
 -- Name: orcamentos_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -319,8 +329,8 @@ CREATE SEQUENCE public.orcamentos_id_seq
 ALTER SEQUENCE public.orcamentos_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5102 (class 0 OID 0)
--- Dependencies: 227
+-- TOC entry 5106 (class 0 OID 0)
+-- Dependencies: 225
 -- Name: orcamentos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
@@ -328,15 +338,7 @@ ALTER SEQUENCE public.orcamentos_id_seq OWNED BY public.orcamentos.id;
 
 
 --
--- TOC entry 4914 (class 2604 OID 16504)
--- Name: config_financeiro id; Type: DEFAULT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.config_financeiro ALTER COLUMN id SET DEFAULT nextval('public.config_financeiro_id_seq'::regclass);
-
-
---
--- TOC entry 4907 (class 2604 OID 16490)
+-- TOC entry 4908 (class 2604 OID 16490)
 -- Name: configuracao_producao id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -344,7 +346,7 @@ ALTER TABLE ONLY public.configuracao_producao ALTER COLUMN id SET DEFAULT nextva
 
 
 --
--- TOC entry 4901 (class 2604 OID 16438)
+-- TOC entry 4898 (class 2604 OID 16438)
 -- Name: despesas_fixas id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -352,11 +354,19 @@ ALTER TABLE ONLY public.despesas_fixas ALTER COLUMN id SET DEFAULT nextval('publ
 
 
 --
--- TOC entry 4898 (class 2604 OID 16428)
--- Name: faturamento id; Type: DEFAULT; Schema: public; Owner: postgres
+-- TOC entry 4915 (class 2604 OID 16504)
+-- Name: faturamento_padrao id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.faturamento ALTER COLUMN id SET DEFAULT nextval('public.faturamento_id_seq'::regclass);
+ALTER TABLE ONLY public.faturamento_padrao ALTER COLUMN id SET DEFAULT nextval('public.config_financeiro_id_seq'::regclass);
+
+
+--
+-- TOC entry 4917 (class 2604 OID 16528)
+-- Name: faturamentos_mensais id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.faturamentos_mensais ALTER COLUMN id SET DEFAULT nextval('public.faturamentos_id_seq'::regclass);
 
 
 --
@@ -368,7 +378,7 @@ ALTER TABLE ONLY public.funcionarios ALTER COLUMN id SET DEFAULT nextval('public
 
 
 --
--- TOC entry 4903 (class 2604 OID 16449)
+-- TOC entry 4902 (class 2604 OID 16449)
 -- Name: investimentos id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -376,7 +386,7 @@ ALTER TABLE ONLY public.investimentos ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
--- TOC entry 4905 (class 2604 OID 16473)
+-- TOC entry 4906 (class 2604 OID 16473)
 -- Name: orcamentos id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -384,113 +394,130 @@ ALTER TABLE ONLY public.orcamentos ALTER COLUMN id SET DEFAULT nextval('public.o
 
 
 --
--- TOC entry 5090 (class 0 OID 16501)
--- Dependencies: 232
--- Data for Name: config_financeiro; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-INSERT INTO public.config_financeiro VALUES (1, 200000.00);
-
-
---
--- TOC entry 5088 (class 0 OID 16487)
--- Dependencies: 230
+-- TOC entry 5090 (class 0 OID 16487)
+-- Dependencies: 228
 -- Data for Name: configuracao_producao; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public.configuracao_producao VALUES (1, 20, 0, 5, 'dias', 'grupo', 2);
+COPY public.configuracao_producao (id, dias_trabalhados_mes, horas_trabalhadas_dia, qtd_unidades, tipo_tempo, tipo_organizacao, tamanho_grupo) FROM stdin;
+1	20	0	5	dias	grupo	2
+\.
 
 
 --
--- TOC entry 5082 (class 0 OID 16435)
--- Dependencies: 224
+-- TOC entry 5084 (class 0 OID 16435)
+-- Dependencies: 222
 -- Data for Name: despesas_fixas; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public.despesas_fixas VALUES (1, 'Aluguel', 5200.00, '2026-01-01 23:36:07.669449');
-INSERT INTO public.despesas_fixas VALUES (5, 'Cemig', 900.00, '2026-01-01 23:46:31.594272');
-INSERT INTO public.despesas_fixas VALUES (6, 'Copasa', 80.00, '2026-01-01 23:46:43.09192');
-INSERT INTO public.despesas_fixas VALUES (7, 'Internet', 110.00, '2026-01-01 23:46:56.362629');
-INSERT INTO public.despesas_fixas VALUES (8, 'Combustível', 2000.00, '2026-01-01 23:47:06.987629');
-INSERT INTO public.despesas_fixas VALUES (9, 'Telefone', 85.00, '2026-01-01 23:47:19.715439');
-INSERT INTO public.despesas_fixas VALUES (10, 'Pró-labore', 10000.00, '2026-01-01 23:47:30.454392');
-INSERT INTO public.despesas_fixas VALUES (11, 'Caçamba', 960.00, '2026-01-01 23:47:41.303633');
-INSERT INTO public.despesas_fixas VALUES (12, 'IPVA', 375.00, '2026-01-01 23:47:50.521196');
-INSERT INTO public.despesas_fixas VALUES (13, 'Manutenção Máquinas', 300.00, '2026-01-01 23:47:58.595548');
-INSERT INTO public.despesas_fixas VALUES (14, 'Contador', 500.00, '2026-01-01 23:48:10.285192');
-INSERT INTO public.despesas_fixas VALUES (15, 'Consultoria', 265.00, '2026-01-01 23:48:22.247861');
-INSERT INTO public.despesas_fixas VALUES (16, 'Marketing', 1500.00, '2026-01-01 23:48:33.997075');
-INSERT INTO public.despesas_fixas VALUES (17, 'INSS', 160.00, '2026-01-01 23:48:46.409477');
-INSERT INTO public.despesas_fixas VALUES (18, 'Outros', 5000.00, '2026-01-01 23:49:00.638604');
+COPY public.despesas_fixas (id, nome, valor, criado_em, ativo, pago, beneficiario, data_vencimento, data_pagamento) FROM stdin;
+1	Aluguel	5200.00	2026-01-01 23:36:07.669449	t	f		2026-01-21	\N
+21	Aluguel Fevereiro	5200.00	2026-01-19 00:25:54.055729	t	f		2026-02-05	\N
+11	Caçamba	960.00	2026-01-01 23:47:41.303633	t	f		2026-01-05	\N
+5	Cemig	900.00	2026-01-01 23:46:31.594272	t	f		2026-01-05	\N
+8	Combustível	2000.00	2026-01-01 23:47:06.987629	t	f		2026-01-05	\N
+14	Contador	500.00	2026-01-01 23:48:10.285192	t	f		2026-01-05	\N
+15	Consultoria	265.00	2026-01-01 23:48:22.247861	t	f		2026-01-05	\N
+9	Telefone	85.00	2026-01-01 23:47:19.715439	t	f		2026-01-05	\N
+10	Pró-labore	10000.00	2026-01-01 23:47:30.454392	t	f		2026-01-05	\N
+18	Outros	5000.00	2026-01-01 23:49:00.638604	t	f		2026-01-05	\N
+16	Marketing	1500.00	2026-01-01 23:48:33.997075	t	f		2026-01-05	\N
+13	Manutenção Máquinas	300.00	2026-01-01 23:47:58.595548	t	f		2026-01-05	\N
+12	IPVA	375.00	2026-01-01 23:47:50.521196	t	f		2026-01-05	\N
+7	Internet	110.00	2026-01-01 23:46:56.362629	t	f		2026-01-05	\N
+17	INSS	160.00	2026-01-01 23:48:46.409477	t	f		2026-01-05	\N
+6	Copasa	80.00	2026-01-01 23:46:43.09192	t	f		2026-01-05	\N
+\.
 
 
 --
--- TOC entry 5080 (class 0 OID 16425)
--- Dependencies: 222
--- Data for Name: faturamento; Type: TABLE DATA; Schema: public; Owner: postgres
+-- TOC entry 5092 (class 0 OID 16501)
+-- Dependencies: 230
+-- Data for Name: faturamento_padrao; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public.faturamento VALUES (1, 200000.00, '2026-01-01 23:36:07.669449');
+COPY public.faturamento_padrao (id, valor) FROM stdin;
+1	200000.00
+\.
 
 
 --
--- TOC entry 5078 (class 0 OID 16407)
+-- TOC entry 5094 (class 0 OID 16525)
+-- Dependencies: 232
+-- Data for Name: faturamentos_mensais; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.faturamentos_mensais (id, mes, ano, valor) FROM stdin;
+1	2	2026	10000.00
+2	3	2026	300000.00
+\.
+
+
+--
+-- TOC entry 5082 (class 0 OID 16407)
 -- Dependencies: 220
 -- Data for Name: funcionarios; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public.funcionarios VALUES (35, 'Flavio Silva', 800.00, 66.67, 22.22, 66.67, 64.00, 25.60, 20.00, 0.00, 1065.16, '2026-01-12 20:43:54.136938', 'Mecanico', false, 'administrativo', '2026-01-12', NULL, NULL);
-INSERT INTO public.funcionarios VALUES (38, 'teste', 8888.00, 740.67, 246.89, 740.67, 711.04, 284.42, 9.00, 0.00, 11620.68, '2026-01-12 21:40:41.89995', 'teste', true, 'administrativo', '2026-01-13', NULL, NULL);
-INSERT INTO public.funcionarios VALUES (39, 'Jorge', 8777.00, 731.42, 243.81, 731.42, 702.16, 280.86, 77.00, 0.00, 11543.66, '2026-01-12 21:44:06.342947', 'Mec', true, 'administrativo', '2026-01-13', NULL, NULL);
-INSERT INTO public.funcionarios VALUES (40, 'Marlon 2', 4000.00, 333.33, 111.11, 333.33, 320.00, 128.00, 40.00, 0.00, 5265.78, '2026-01-12 22:00:17.161761', 'Teste2', true, 'administrativo', '2026-01-13', NULL, NULL);
-INSERT INTO public.funcionarios VALUES (42, 'Testee', 23.00, 1.92, 0.64, 1.92, 1.84, 0.74, 0.00, 0.00, 30.05, '2026-01-12 22:27:04.92084', 'Casss', false, 'producao', '2026-01-13', '2026-01-13', 'Pedido de Demissão');
-INSERT INTO public.funcionarios VALUES (34, 'Carlossss', 3000.00, 250.00, 83.33, 250.00, 240.00, 96.00, 80.00, 0.00, 3999.33, '2026-01-11 21:28:14.367412', 'Ajudanteee', false, 'administrativo', '2022-01-10', '2022-08-15', 'Demissão sem Justa Causa');
-INSERT INTO public.funcionarios VALUES (41, 'Cleber', 1200.00, 100.00, 33.33, 100.00, 96.00, 38.40, 0.00, 0.00, 1567.73, '2026-01-12 22:20:40.175275', 'Dev', false, 'administrativo', '2023-02-01', '2023-11-30', NULL);
-INSERT INTO public.funcionarios VALUES (23, 'Marlon', 4000.00, 333.33, 111.11, 333.33, 320.00, 128.00, 40.00, 0.00, 5265.78, '2026-01-09 01:23:42.563801', 'Marceneiro', true, 'producao', '2026-01-11', NULL, NULL);
-INSERT INTO public.funcionarios VALUES (24, 'João Paulo', 2600.00, 216.67, 72.22, 216.67, 208.00, 83.20, 40.00, 0.00, 3436.76, '2026-01-09 01:24:44.851477', 'Teste 2', true, 'producao', '2026-01-11', NULL, NULL);
-INSERT INTO public.funcionarios VALUES (25, 'Guilherme', 1800.00, 150.00, 50.00, 150.00, 144.00, 57.60, 40.00, 0.00, 2391.60, '2026-01-09 01:25:14.836262', 'teste3', true, 'producao', '2026-01-11', NULL, NULL);
-INSERT INTO public.funcionarios VALUES (26, 'Lucas', 2000.00, 166.67, 55.56, 166.67, 160.00, 64.00, 40.00, 0.00, 2652.89, '2026-01-09 01:25:58.232184', 'teste4', true, 'producao', '2026-01-11', NULL, NULL);
-INSERT INTO public.funcionarios VALUES (27, 'Igor', 5000.00, 416.67, 138.89, 416.67, 400.00, 160.00, 40.00, 0.00, 6572.22, '2026-01-09 01:26:25.723156', 'teste5', true, 'producao', '2026-01-11', NULL, NULL);
-INSERT INTO public.funcionarios VALUES (28, 'Everaldo', 2000.00, 166.67, 55.56, 166.67, 160.00, 64.00, 40.00, 0.00, 2652.89, '2026-01-09 01:26:45.430474', 'teste6', true, 'producao', '2026-01-11', NULL, NULL);
-INSERT INTO public.funcionarios VALUES (29, 'Magno', 2500.00, 208.33, 69.44, 208.33, 200.00, 80.00, 40.00, 0.00, 3306.11, '2026-01-09 01:27:15.152459', 'teste7', true, 'producao', '2026-01-11', NULL, NULL);
-INSERT INTO public.funcionarios VALUES (30, 'Fabrício', 4000.00, 333.33, 111.11, 333.33, 320.00, 128.00, 41.00, 0.00, 5266.78, '2026-01-09 01:27:37.611717', 'teste7', true, 'producao', '2026-01-11', NULL, NULL);
-INSERT INTO public.funcionarios VALUES (31, 'Gerivam', 4200.00, 350.00, 116.67, 350.00, 336.00, 134.40, 42.00, 0.00, 5529.07, '2026-01-09 01:28:06.916726', 'teste8', true, 'producao', '2026-01-11', NULL, NULL);
-INSERT INTO public.funcionarios VALUES (32, 'Diego', 1800.00, 150.00, 50.00, 150.00, 144.00, 57.60, 43.00, 0.00, 2394.60, '2026-01-09 01:28:41.372678', 'teste9', true, 'producao', '2026-01-11', NULL, NULL);
-INSERT INTO public.funcionarios VALUES (33, 'João Fulano', 100.00, 8.33, 2.78, 8.33, 8.00, 3.20, 100.00, 0.00, 230.64, '2026-01-11 21:05:53.095436', 'Marceneiro', false, 'producao', '2020-05-20', '2026-01-11', NULL);
-INSERT INTO public.funcionarios VALUES (44, 'Klebson Lopes', 5000.00, 416.67, 138.89, 416.67, 400.00, 160.00, 60.00, 0.00, 6592.22, '2026-01-18 19:41:43.069718', 'Marceneiro 3', true, 'administrativo', '2026-01-18', NULL, NULL);
-INSERT INTO public.funcionarios VALUES (37, 'Joao', 440.00, 36.67, 12.22, 36.67, 35.20, 14.08, 50.00, 0.00, 624.84, '2026-01-12 21:32:02.49164', 'Mec', false, 'producao', '2026-01-13', '2026-01-14', 'Demissão sem Justa Causa');
-INSERT INTO public.funcionarios VALUES (43, 'Xxxxx', 8000.00, 666.67, 222.22, 666.67, 640.00, 256.00, 99.00, 0.00, 10550.56, '2026-01-12 22:33:03.798948', 'xxxxxx', false, 'producao', '2026-01-13', '2026-01-13', 'Aposentadoria');
+COPY public.funcionarios (id, nome, salario_base, decimo_terceiro, um_terco_ferias, ferias, inss, multa_fgts, epi, outros_gastos, custo_total_mensal, criado_em, funcao, ativo, setor, data_admissao, data_inativacao, motivo_inativacao) FROM stdin;
+35	Flavio Silva	800.00	66.67	22.22	66.67	64.00	25.60	20.00	0.00	1065.16	2026-01-12 20:43:54.136938	Mecanico	f	administrativo	2026-01-12	\N	\N
+38	teste	8888.00	740.67	246.89	740.67	711.04	284.42	9.00	0.00	11620.68	2026-01-12 21:40:41.89995	teste	t	administrativo	2026-01-13	\N	\N
+39	Jorge	8777.00	731.42	243.81	731.42	702.16	280.86	77.00	0.00	11543.66	2026-01-12 21:44:06.342947	Mec	t	administrativo	2026-01-13	\N	\N
+40	Marlon 2	4000.00	333.33	111.11	333.33	320.00	128.00	40.00	0.00	5265.78	2026-01-12 22:00:17.161761	Teste2	t	administrativo	2026-01-13	\N	\N
+42	Testee	23.00	1.92	0.64	1.92	1.84	0.74	0.00	0.00	30.05	2026-01-12 22:27:04.92084	Casss	f	producao	2026-01-13	2026-01-13	Pedido de Demissão
+34	Carlossss	3000.00	250.00	83.33	250.00	240.00	96.00	80.00	0.00	3999.33	2026-01-11 21:28:14.367412	Ajudanteee	f	administrativo	2022-01-10	2022-08-15	Demissão sem Justa Causa
+41	Cleber	1200.00	100.00	33.33	100.00	96.00	38.40	0.00	0.00	1567.73	2026-01-12 22:20:40.175275	Dev	f	administrativo	2023-02-01	2023-11-30	\N
+23	Marlon	4000.00	333.33	111.11	333.33	320.00	128.00	40.00	0.00	5265.78	2026-01-09 01:23:42.563801	Marceneiro	t	producao	2026-01-11	\N	\N
+24	João Paulo	2600.00	216.67	72.22	216.67	208.00	83.20	40.00	0.00	3436.76	2026-01-09 01:24:44.851477	Teste 2	t	producao	2026-01-11	\N	\N
+25	Guilherme	1800.00	150.00	50.00	150.00	144.00	57.60	40.00	0.00	2391.60	2026-01-09 01:25:14.836262	teste3	t	producao	2026-01-11	\N	\N
+26	Lucas	2000.00	166.67	55.56	166.67	160.00	64.00	40.00	0.00	2652.89	2026-01-09 01:25:58.232184	teste4	t	producao	2026-01-11	\N	\N
+27	Igor	5000.00	416.67	138.89	416.67	400.00	160.00	40.00	0.00	6572.22	2026-01-09 01:26:25.723156	teste5	t	producao	2026-01-11	\N	\N
+28	Everaldo	2000.00	166.67	55.56	166.67	160.00	64.00	40.00	0.00	2652.89	2026-01-09 01:26:45.430474	teste6	t	producao	2026-01-11	\N	\N
+29	Magno	2500.00	208.33	69.44	208.33	200.00	80.00	40.00	0.00	3306.11	2026-01-09 01:27:15.152459	teste7	t	producao	2026-01-11	\N	\N
+30	Fabrício	4000.00	333.33	111.11	333.33	320.00	128.00	41.00	0.00	5266.78	2026-01-09 01:27:37.611717	teste7	t	producao	2026-01-11	\N	\N
+31	Gerivam	4200.00	350.00	116.67	350.00	336.00	134.40	42.00	0.00	5529.07	2026-01-09 01:28:06.916726	teste8	t	producao	2026-01-11	\N	\N
+32	Diego	1800.00	150.00	50.00	150.00	144.00	57.60	43.00	0.00	2394.60	2026-01-09 01:28:41.372678	teste9	t	producao	2026-01-11	\N	\N
+33	João Fulano	100.00	8.33	2.78	8.33	8.00	3.20	100.00	0.00	230.64	2026-01-11 21:05:53.095436	Marceneiro	f	producao	2020-05-20	2026-01-11	\N
+44	Klebson Lopes	5000.00	416.67	138.89	416.67	400.00	160.00	60.00	0.00	6592.22	2026-01-18 19:41:43.069718	Marceneiro 3	t	administrativo	2026-01-18	\N	\N
+37	Joao	440.00	36.67	12.22	36.67	35.20	14.08	50.00	0.00	624.84	2026-01-12 21:32:02.49164	Mec	f	producao	2026-01-13	2026-01-14	Demissão sem Justa Causa
+43	Xxxxx	8000.00	666.67	222.22	666.67	640.00	256.00	99.00	0.00	10550.56	2026-01-12 22:33:03.798948	xxxxxx	f	producao	2026-01-13	2026-01-13	Aposentadoria
+45	Zé inacio	2800.00	233.33	77.78	233.33	224.00	89.60	20.00	0.00	3678.04	2026-01-21 22:30:47.740702	Auxiliar Administrativo	t	administrativo	2026-01-22	\N	\N
+\.
 
 
 --
--- TOC entry 5084 (class 0 OID 16446)
--- Dependencies: 226
+-- TOC entry 5086 (class 0 OID 16446)
+-- Dependencies: 224
 -- Data for Name: investimentos; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public.investimentos VALUES (1, 'Serra', 1140.00, '2026-01-01 23:36:07.669449');
-INSERT INTO public.investimentos VALUES (2, 'Coladeira', 1000.00, '2026-01-01 23:36:07.669449');
-INSERT INTO public.investimentos VALUES (4, ' Serra ', 2730.00, '2026-01-01 23:49:36.741908');
-INSERT INTO public.investimentos VALUES (5, ' Moto ', 250.00, '2026-01-01 23:49:47.278831');
-INSERT INTO public.investimentos VALUES (6, ' BDMG ', 1130.00, '2026-01-01 23:49:56.853213');
-INSERT INTO public.investimentos VALUES (7, ' Saveiro ', 1100.00, '2026-01-01 23:50:06.337032');
-INSERT INTO public.investimentos VALUES (11, 'Compra de Maquinário', 5000.00, '2026-01-09 02:01:56.413547');
-INSERT INTO public.investimentos VALUES (12, 'Teste', 8000.00, '2026-01-11 21:56:14.835452');
+COPY public.investimentos (id, nome, valor, criado_em, ativo, pago, beneficiario, data_vencimento) FROM stdin;
+1	Serra	1140.00	2026-01-01 23:36:07.669449	t	f	\N	\N
+2	Coladeira	1000.00	2026-01-01 23:36:07.669449	t	f	\N	\N
+4	 Serra 	2730.00	2026-01-01 23:49:36.741908	t	f	\N	\N
+5	 Moto 	250.00	2026-01-01 23:49:47.278831	t	f	\N	\N
+6	 BDMG 	1130.00	2026-01-01 23:49:56.853213	t	f	\N	\N
+7	 Saveiro 	1100.00	2026-01-01 23:50:06.337032	t	f	\N	\N
+11	Compra de Maquinário	5000.00	2026-01-09 02:01:56.413547	t	f	\N	\N
+12	Teste	8000.00	2026-01-11 21:56:14.835452	t	f	\N	\N
+\.
 
 
 --
--- TOC entry 5086 (class 0 OID 16470)
--- Dependencies: 228
+-- TOC entry 5088 (class 0 OID 16470)
+-- Dependencies: 226
 -- Data for Name: orcamentos; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public.orcamentos VALUES (2, 'Guarda roupas 2', 4000.00, 5.00, 30.00, 5.00, 13.72, 394.69, 1973.43, 11648.10, '2026-01-05 22:51:00.090763', 'Fulano 1');
-INSERT INTO public.orcamentos VALUES (3, 'Teste', 5000.00, 5.00, 20.00, 10.00, 13.72, 394.69, 1973.43, 12390.06, '2026-01-05 23:02:55.800167', 'José Ribeiro');
+COPY public.orcamentos (id, nome_produto, custo_mercadoria, tempo_gasto, lucro_desejado_pct, imposto_pct, custo_fixo_pct_snapshot, custo_mao_obra_unitario, custo_mao_obra_total, preco_venda, criado_em, cliente) FROM stdin;
+2	Guarda roupas 2	4000.00	5.00	30.00	5.00	13.72	394.69	1973.43	11648.10	2026-01-05 22:51:00.090763	Fulano 1
+3	Teste	5000.00	5.00	20.00	10.00	13.72	394.69	1973.43	12390.06	2026-01-05 23:02:55.800167	José Ribeiro
+\.
 
 
 --
--- TOC entry 5103 (class 0 OID 0)
--- Dependencies: 231
+-- TOC entry 5107 (class 0 OID 0)
+-- Dependencies: 229
 -- Name: config_financeiro_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -498,8 +525,8 @@ SELECT pg_catalog.setval('public.config_financeiro_id_seq', 1, true);
 
 
 --
--- TOC entry 5104 (class 0 OID 0)
--- Dependencies: 229
+-- TOC entry 5108 (class 0 OID 0)
+-- Dependencies: 227
 -- Name: configuracao_producao_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -507,35 +534,35 @@ SELECT pg_catalog.setval('public.configuracao_producao_id_seq', 1, false);
 
 
 --
--- TOC entry 5105 (class 0 OID 0)
--- Dependencies: 223
+-- TOC entry 5109 (class 0 OID 0)
+-- Dependencies: 221
 -- Name: despesas_fixas_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.despesas_fixas_id_seq', 18, true);
+SELECT pg_catalog.setval('public.despesas_fixas_id_seq', 21, true);
 
 
 --
--- TOC entry 5106 (class 0 OID 0)
--- Dependencies: 221
--- Name: faturamento_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+-- TOC entry 5110 (class 0 OID 0)
+-- Dependencies: 231
+-- Name: faturamentos_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.faturamento_id_seq', 1, true);
+SELECT pg_catalog.setval('public.faturamentos_id_seq', 3, true);
 
 
 --
--- TOC entry 5107 (class 0 OID 0)
+-- TOC entry 5111 (class 0 OID 0)
 -- Dependencies: 219
 -- Name: funcionarios_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.funcionarios_id_seq', 44, true);
+SELECT pg_catalog.setval('public.funcionarios_id_seq', 45, true);
 
 
 --
--- TOC entry 5108 (class 0 OID 0)
--- Dependencies: 225
+-- TOC entry 5112 (class 0 OID 0)
+-- Dependencies: 223
 -- Name: investimentos_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -543,8 +570,8 @@ SELECT pg_catalog.setval('public.investimentos_id_seq', 12, true);
 
 
 --
--- TOC entry 5109 (class 0 OID 0)
--- Dependencies: 227
+-- TOC entry 5113 (class 0 OID 0)
+-- Dependencies: 225
 -- Name: orcamentos_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
@@ -553,10 +580,10 @@ SELECT pg_catalog.setval('public.orcamentos_id_seq', 5, true);
 
 --
 -- TOC entry 4929 (class 2606 OID 16508)
--- Name: config_financeiro config_financeiro_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: faturamento_padrao config_financeiro_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.config_financeiro
+ALTER TABLE ONLY public.faturamento_padrao
     ADD CONSTRAINT config_financeiro_pkey PRIMARY KEY (id);
 
 
@@ -579,16 +606,16 @@ ALTER TABLE ONLY public.despesas_fixas
 
 
 --
--- TOC entry 4919 (class 2606 OID 16433)
--- Name: faturamento faturamento_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- TOC entry 4931 (class 2606 OID 16534)
+-- Name: faturamentos_mensais faturamentos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.faturamento
-    ADD CONSTRAINT faturamento_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY public.faturamentos_mensais
+    ADD CONSTRAINT faturamentos_pkey PRIMARY KEY (id);
 
 
 --
--- TOC entry 4917 (class 2606 OID 16423)
+-- TOC entry 4919 (class 2606 OID 16423)
 -- Name: funcionarios funcionarios_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -614,11 +641,20 @@ ALTER TABLE ONLY public.orcamentos
     ADD CONSTRAINT orcamentos_pkey PRIMARY KEY (id);
 
 
--- Completed on 2026-01-18 22:10:48
+--
+-- TOC entry 4933 (class 2606 OID 16536)
+-- Name: faturamentos_mensais uq_faturamento_mes_ano; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.faturamentos_mensais
+    ADD CONSTRAINT uq_faturamento_mes_ano UNIQUE (mes, ano);
+
+
+-- Completed on 2026-01-21 23:15:18
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict U1v03879TTKaZeycAT09Ng8KPiM3dEeD7UDt9pPnG0ZDdo4FSCu96yJ4Xvltdeq
+\unrestrict fZRlGjGIH5VaLHi8UMtL7Ff6H2gI4wJQ0kAhbpkg1IhoMketRUu6cX1X3Z9c38c
 

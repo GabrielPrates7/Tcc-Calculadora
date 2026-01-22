@@ -1,23 +1,27 @@
 // ARQUIVO: src/modules/financeiro/Financeiro.tsx
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useFinanceiro } from './hooks/useFinanceiro';
 import { ResumoFinanceiro } from './components/ResumoFinanceiro';
 import { ListaFinanceiro } from './components/ListaFinanceiro';
 import { ModalFinanceiro } from './components/ModalFinanceiro';
 import { FiltroFinanceiro } from './components/FiltroFinanceiro'; 
 import type { ViewMode, TipoModal, ItemFinanceiro, StatusFilter } from './types'; 
+// Importando o Helper Novo que criamos
+import { analisarIntervalo } from './utils/dateHelper';
 import './Financeiro.css'; 
 
 export function Financeiro() {
     const { 
         loading, 
-        dashboard: dashboardOriginal, // Renomeei para indicar que vem do Banco (Bruto)
+        dashboard: dashboardOriginal, 
         despesas, 
         investimentos, 
         salvarItem, 
         excluirItem, 
-        atualizarFaturamento 
+        atualizarFaturamento,    // Atualiza o global (fallback)
+        buscarFaturamentoMensal, // NOVO: Busca do mês específico
+        salvarFaturamentoMensal  // NOVO: Salva no mês específico
     } = useFinanceiro();
 
     // --- DATAS PADRÃO (MÊS ATUAL) ---
@@ -32,10 +36,14 @@ export function Financeiro() {
 
     const [view, setView] = useState<ViewMode>('despesas');
     
-    // Inicializa com as datas do Mês Atual preenchidas
+    // Inicializa filtrando o mês atual
     const [filtroDataInicio, setFiltroDataInicio] = useState(getInicioMes());
     const [filtroDataFim, setFiltroDataFim] = useState(getFimMes());
     const [filtroStatus, setFiltroStatus] = useState<StatusFilter>('todos');
+
+    // ESTADO LOCAL PARA O FATURAMENTO DO MÊS SELECIONADO
+    // Se for null, significa que não tem faturamento específico cadastrado (ou estamos vendo múltiplos meses)
+    const [faturamentoMesAtual, setFaturamentoMesAtual] = useState<number | null>(null);
 
     const [modalConfig, setModalConfig] = useState<{
         aberto: boolean;
@@ -44,26 +52,49 @@ export function Financeiro() {
         itemEdicao: ItemFinanceiro | null;
     }>({ aberto: false, tipo: 'despesa', modo: 'criar', itemEdicao: null });
 
-    // --- CÉREBRO MATEMÁTICO (Cálculo Dinâmico) ---
+    // 1. ANALISAR AS DATAS (Gera a Label "JANEIRO" e define se é mês único)
+    const infoDatas = useMemo(() => {
+        return analisarIntervalo(filtroDataInicio, filtroDataFim);
+    }, [filtroDataInicio, filtroDataFim]);
+
+    // 2. BUSCAR FATURAMENTO QUANDO MUDAR O MÊS (Efeito Colateral)
+    useEffect(() => {
+        const carregarFaturamento = async () => {
+            if (infoDatas.isMesUnico && infoDatas.ano) {
+                // Se selecionou apenas 1 mês (ex: Janeiro), busca no banco
+                // infoDatas.meses[0] retorna 0 para Jan, mas o banco espera 1. Então somamos 1.
+                const valor = await buscarFaturamentoMensal(infoDatas.meses[0] + 1, infoDatas.ano);
+                
+                // Atualiza o estado com o valor do banco (ou null se não tiver)
+                setFaturamentoMesAtual(valor); 
+            } else {
+                setFaturamentoMesAtual(null); // Se for periodo composto, reseta para usar o global
+            }
+        };
+        carregarFaturamento();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [infoDatas.meses, infoDatas.ano, infoDatas.isMesUnico]); 
+    // OBS: Não coloque 'buscarFaturamentoMensal' aqui para evitar loop infinito
+
+
+    // 3. CÁLCULO DINÂMICO DO DASHBOARD (O Cérebro)
     const dashboardCalculado = useMemo(() => {
-        // Função que soma apenas o que está dentro do filtro de data
         const somarFiltrados = (lista: ItemFinanceiro[]) => {
             return lista.filter(item => {
-                // Se item não está ativo, não entra na conta do Custo Fixo
+                // Se não está ativo, não conta no custo fixo
                 if (!item.ativo) return false;
-
+                
                 const dataItem = item.dataVencimento ? item.dataVencimento.substring(0, 10) : '';
                 
-                // Se não tem filtro de data selecionado, soma tudo
+                // Se não tem filtro de data, soma tudo
                 if (!filtroDataInicio && !filtroDataFim) return true;
-
-                // Se TEM filtro de data, itens sem data de vencimento são ignorados no cálculo do período
+                
+                // Se tem filtro, item sem data não entra
                 if (!dataItem) return false;
 
                 let match = true;
                 if (filtroDataInicio) match = match && dataItem >= filtroDataInicio;
                 if (filtroDataFim) match = match && dataItem <= filtroDataFim;
-                
                 return match;
             }).reduce((acc, curr) => acc + Number(curr.valor), 0);
         };
@@ -71,24 +102,30 @@ export function Financeiro() {
         const totalDespesasFiltradas = somarFiltrados(despesas);
         const totalInvestimentosFiltrados = somarFiltrados(investimentos);
         
-        // Recalcula a Taxa de Custo Fixo baseada na soma filtrada
-        // Fórmula: ((Despesas + Investimentos) / Faturamento) * 100
-        const taxaCustoFixo = dashboardOriginal.faturamento > 0 
-            ? ((totalDespesasFiltradas + totalInvestimentosFiltrados) / dashboardOriginal.faturamento) * 100 
+        // DECISÃO DO FATURAMENTO A USAR:
+        // 1. Se temos um faturamento específico do mês carregado do banco, usa ele.
+        // 2. Se não (é null), usa o Faturamento Global (Configuração Geral) como fallback.
+        const faturamentoParaCalculo = faturamentoMesAtual !== null 
+            ? faturamentoMesAtual 
+            : dashboardOriginal.faturamento;
+
+        const taxaCustoFixo = faturamentoParaCalculo > 0 
+            ? ((totalDespesasFiltradas + totalInvestimentosFiltrados) / faturamentoParaCalculo) * 100 
             : 0;
 
-        // Retorna um novo objeto de dashboard com os valores atualizados
         return {
             ...dashboardOriginal,
+            faturamento: faturamentoParaCalculo, // O visual vai mostrar qual valor está sendo usado
             totalDespesas: totalDespesasFiltradas,
             totalInvestimentos: totalInvestimentosFiltrados,
             taxaCustoFixo: taxaCustoFixo,
-            // Mantemos o faturamento original pois ele é uma média fixa configurada
         };
-    }, [despesas, investimentos, filtroDataInicio, filtroDataFim, dashboardOriginal]);
+    }, [despesas, investimentos, filtroDataInicio, filtroDataFim, dashboardOriginal, faturamentoMesAtual]);
+
 
     // --- HANDLERS ---
     const handleNovo = () => setModalConfig({ aberto: true, tipo: view === 'despesas' ? 'despesa' : 'investimento', modo: 'criar', itemEdicao: null });
+    
     const handleEditar = (item: ItemFinanceiro) => setModalConfig({ aberto: true, tipo: view === 'despesas' ? 'despesa' : 'investimento', modo: 'editar', itemEdicao: item });
 
     const handleClonar = (item: ItemFinanceiro) => {
@@ -100,17 +137,31 @@ export function Financeiro() {
         });
     };
 
-    const handleEditFaturamento = () => setModalConfig({ aberto: true, tipo: 'faturamento', modo: 'editar', itemEdicao: null });
-    
-    const handleAlternarAtivo = async (item: ItemFinanceiro) => {
-        const rota = view === 'despesas' ? 'despesas' : 'investimentos';
-        await salvarItem(rota, { ...item, ativo: !item.ativo });
+    const handleEditFaturamento = () => {
+        // Só permite abrir o modal se estiver visualizando um único mês
+        if (infoDatas.isMesUnico) {
+            setModalConfig({ aberto: true, tipo: 'faturamento', modo: 'editar', itemEdicao: null });
+        }
     };
 
     const handleSalvarModal = async (dados: Partial<ItemFinanceiro>) => {
         const { tipo, itemEdicao, modo } = modalConfig;
+        
         if (tipo === 'faturamento') {
-            await atualizarFaturamento(Number(dados.valor));
+            const novoValor = Number(dados.valor);
+            
+            if (infoDatas.isMesUnico && infoDatas.ano) {
+                // SALVA O MENSAL ESPECÍFICO
+                // infoDatas.meses[0] é 0 (Janeiro), banco quer 1. Somamos +1.
+                const sucesso = await salvarFaturamentoMensal(infoDatas.meses[0] + 1, infoDatas.ano, novoValor);
+                if (sucesso) {
+                    setFaturamentoMesAtual(novoValor); // Atualiza a tela instantaneamente
+                }
+            } else {
+                // Fallback: Se algo der errado na lógica, atualiza o global
+                await atualizarFaturamento(novoValor);
+            }
+            
         } else {
             const rota = tipo === 'despesa' ? 'despesas' : 'investimentos';
             const idParaSalvar = modo === 'editar' ? itemEdicao?.id : undefined;
@@ -124,25 +175,58 @@ export function Financeiro() {
         setFiltroStatus('todos');
     };
 
+    const handleAlternarAtivo = async (item: ItemFinanceiro) => {
+        const rota = view === 'despesas' ? 'despesas' : 'investimentos';
+        await salvarItem(rota, { ...item, ativo: !item.ativo });
+    };
+
+    const handleExcluir = (id: number) => {
+        excluirItem(view === 'despesas' ? 'despesas' : 'investimentos', id);
+    };
+
     if (loading) {
         return (
             <div className="financeiro-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-                <div className="spinner" style={{ width: 40, height: 40, border: '4px solid #334155', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-                Carregando finanças...
+                <div style={{ color: '#94a3b8', fontSize: '1.2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                    <div className="spinner" style={{ width: 40, height: 40, border: '4px solid #334155', borderTopColor: '#3b82f6', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                    Carregando finanças...
+                </div>
+                <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
             </div>
         );
     }
 
     return (
         <div className="financeiro-container">
-            <h1>Gestão Financeira 💰</h1>
-            
-            {/* Passamos o dashboard CALCULADO, que muda conforme o filtro */}
+            {/* CABEÇALHO COM BADGE VISUAL */}
+            <div style={{display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '10px'}}>
+                <h1>Gestão Financeira 💰</h1>
+                
+                {/* A Etiqueta Mágica: Mostra JANEIRO, JAN/FEV, etc */}
+                {infoDatas.label && (
+                    <span style={{
+                        backgroundColor: infoDatas.isMesUnico ? '#3b82f6' : '#f97316', // Azul se for mês único, Laranja se for composto
+                        color: 'white',
+                        padding: '4px 12px',
+                        borderRadius: '20px',
+                        fontWeight: 'bold',
+                        fontSize: '0.75rem',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                        letterSpacing: '0.05em'
+                    }}>
+                        {infoDatas.label}
+                    </span>
+                )}
+            </div>
+
             <ResumoFinanceiro 
                 dados={dashboardCalculado} 
                 viewAtual={view} 
                 onViewChange={setView} 
                 onEditFaturamento={handleEditFaturamento}
+                // Props novas para controlar a UI do card
+                labelMes={infoDatas.isMesUnico ? infoDatas.label : undefined}
+                isMesUnico={infoDatas.isMesUnico}
             />
 
             <FiltroFinanceiro 
@@ -159,13 +243,15 @@ export function Financeiro() {
                 filtroDataFim={filtroDataFim}
                 filtroStatus={filtroStatus}
                 onNovo={handleNovo} onEditar={handleEditar} onClonar={handleClonar}
-                onExcluir={(id) => excluirItem(view === 'despesas' ? 'despesas' : 'investimentos', id)}
+                onExcluir={handleExcluir}
                 onAlternarAtivo={handleAlternarAtivo}
             />
             
             {modalConfig.aberto && (
                 <ModalFinanceiro 
-                    tipo={modalConfig.tipo} itemEdicao={modalConfig.itemEdicao} valorFaturamentoAtual={dashboardOriginal.faturamento}
+                    tipo={modalConfig.tipo} itemEdicao={modalConfig.itemEdicao} 
+                    // Mostra no modal o valor que está sendo usado no momento (seja o mensal ou o global)
+                    valorFaturamentoAtual={dashboardCalculado.faturamento}
                     onClose={() => setModalConfig({ ...modalConfig, aberto: false })} onSalvar={handleSalvarModal}
                 />
             )}

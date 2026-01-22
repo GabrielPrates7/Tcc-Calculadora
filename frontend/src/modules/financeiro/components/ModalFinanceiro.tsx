@@ -10,7 +10,7 @@ interface Props {
     itemEdicao: ItemFinanceiro | null;
     valorFaturamentoAtual?: number;
     onClose: () => void;
-    // Atualizamos a assinatura para receber um objeto completo
+    // We updated the signature to receive a complete object
     onSalvar: (dados: {
         nome: string; 
         valor: number;
@@ -22,17 +22,17 @@ interface Props {
 }
 
 export function ModalFinanceiro({ tipo, itemEdicao, valorFaturamentoAtual, onClose, onSalvar }: Props) {
-    // States dos campos
+    // State for fields
     const [nome, setNome] = useState(itemEdicao?.nome || '');
     const [valor, setValor] = useState(
         tipo === 'faturamento' ? String(valorFaturamentoAtual || 0) : String(itemEdicao?.valor || '')
     );
     
-    // Novos States
+    // New States
     const [beneficiario, setBeneficiario] = useState(itemEdicao?.beneficiario || '');
     const [dataVencimento, setDataVencimento] = useState(itemEdicao?.dataVencimento || '');
-    const [ativo, setAtivo] = useState(itemEdicao?.ativo ?? true); // Padrão: True
-    const [pago, setPago] = useState(itemEdicao?.pago ?? false);   // Padrão: False
+    const [ativo, setAtivo] = useState(itemEdicao?.ativo ?? true); // Default: True
+    const [pago, setPago] = useState(itemEdicao?.pago ?? false);   // Default: False
 
     const [salvando, setSalvando] = useState(false);
 
@@ -56,7 +56,7 @@ export function ModalFinanceiro({ tipo, itemEdicao, valorFaturamentoAtual, onClo
     };
 
     const getTitulo = () => {
-        if (tipo === 'faturamento') return 'Faturamento Mensal';
+        if (tipo === 'faturamento') return 'Definir Faturamento'; // Simplified title
         if (itemEdicao) return 'Editar Item';
         return tipo === 'despesa' ? 'Nova Despesa' : 'Novo Investimento';
     };
@@ -80,7 +80,7 @@ export function ModalFinanceiro({ tipo, itemEdicao, valorFaturamentoAtual, onClo
                 </div>
 
                 <div className="modal-body">
-                    {/* --- FORMULÁRIO COMPLETO (Despesas/Investimentos) --- */}
+                    {/* --- COMPLETE FORM (Expenses/Investments) --- */}
                     {tipo !== 'faturamento' && (
                         <>
                             <div className="form-group">
@@ -104,7 +104,7 @@ export function ModalFinanceiro({ tipo, itemEdicao, valorFaturamentoAtual, onClo
                                 />
                             </div>
 
-                            {/* Grid 2 Colunas */}
+                            {/* Grid 2 Columns */}
                             <div className="form-row">
                                 <div className="form-group" style={{ flex: 1 }}>
                                     <label>Valor (R$)</label>
@@ -125,7 +125,7 @@ export function ModalFinanceiro({ tipo, itemEdicao, valorFaturamentoAtual, onClo
                                 </div>
                             </div>
 
-                            {/* Área de Switches (Ativo / Pago) */}
+                            {/* Switch Area (Active / Paid) */}
                             <div className="switches-container">
                                 <div 
                                     className={`switch-card ${ativo ? 'active' : ''}`} 
@@ -158,16 +158,20 @@ export function ModalFinanceiro({ tipo, itemEdicao, valorFaturamentoAtual, onClo
                         </>
                     )}
 
-                    {/* --- FORMULÁRIO SIMPLES (Faturamento) --- */}
+                    {/* --- SIMPLE FORM (Revenue) --- */}
                     {tipo === 'faturamento' && (
                         <div className="form-group">
-                            <label>Valor Mensal Médio (R$)</label>
+                            <label>Valor do Faturamento (R$)</label>
                             <input 
                                 type="number" 
                                 value={valor} 
                                 onChange={e => setValor(e.target.value)}
                                 autoFocus
+                                placeholder="0.00"
                             />
+                            <p style={{fontSize: '0.8rem', color: '#64748b', marginTop: '8px'}}>
+                                Este valor será usado para calcular a Taxa de Custo Fixo do período selecionado.
+                            </p>
                         </div>
                     )}
 
