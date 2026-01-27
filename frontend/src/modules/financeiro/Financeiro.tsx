@@ -1,13 +1,14 @@
 // ARQUIVO: src/modules/financeiro/Financeiro.tsx
 
 import { useState, useMemo, useEffect } from 'react';
+import { FileText } from 'lucide-react'; // NOVO: Ícone do PDF
 import { useFinanceiro } from './hooks/useFinanceiro';
 import { ResumoFinanceiro } from './components/ResumoFinanceiro';
 import { ListaFinanceiro } from './components/ListaFinanceiro';
 import { ModalFinanceiro } from './components/ModalFinanceiro';
 import { FiltroFinanceiro } from './components/FiltroFinanceiro'; 
+import { ModalRelatorio } from './components/ModalRelatorio'; // NOVO: O Modal de PDF
 import type { ViewMode, TipoModal, ItemFinanceiro, StatusFilter } from './types'; 
-// Importando o Helper Novo que criamos
 import { analisarIntervalo } from './utils/dateHelper';
 import './Financeiro.css'; 
 
@@ -21,7 +22,7 @@ export function Financeiro() {
         excluirItem, 
         buscarFaturamentoMensal, 
         salvarFaturamentoMensal,
-        somarFaturamentoPeriodo // IMPORTANTE: Nova função do hook
+        somarFaturamentoPeriodo
     } = useFinanceiro();
 
     // --- DATAS PADRÃO (MÊS ATUAL) ---
@@ -41,8 +42,11 @@ export function Financeiro() {
     const [filtroDataFim, setFiltroDataFim] = useState(getFimMes());
     const [filtroStatus, setFiltroStatus] = useState<StatusFilter>('todos');
 
-    // ESTADO LOCAL: Guarda o valor do faturamento a ser exibido (pode ser mês único ou soma)
+    // ESTADO LOCAL: Guarda o valor do faturamento a ser exibido
     const [faturamentoExibido, setFaturamentoExibido] = useState<number>(0);
+
+    // NOVO: Estado para controlar o Modal de Relatório PDF
+    const [modalRelatorioAberto, setModalRelatorioAberto] = useState(false);
 
     const [modalConfig, setModalConfig] = useState<{
         aberto: boolean;
@@ -51,25 +55,21 @@ export function Financeiro() {
         itemEdicao: ItemFinanceiro | null;
     }>({ aberto: false, tipo: 'despesa', modo: 'criar', itemEdicao: null });
 
-    // 1. ANALISAR AS DATAS (Gera a Label "JANEIRO" e define se é mês único)
+    // 1. ANALISAR AS DATAS
     const infoDatas = useMemo(() => {
         return analisarIntervalo(filtroDataInicio, filtroDataFim);
     }, [filtroDataInicio, filtroDataFim]);
 
-    // 2. BUSCAR OU SOMAR FATURAMENTO (Lógica Inteligente)
+    // 2. BUSCAR OU SOMAR FATURAMENTO
     useEffect(() => {
         const carregarFaturamento = async () => {
-            // Se o período é válido (tem ano)
             if (infoDatas.ano) {
                 if (infoDatas.isMesUnico) {
-                    // Cenario A: Mês Único (Ex: Janeiro) -> Busca valor exato
-                    // infoDatas.meses[0] é 0 (Jan), banco quer 1. Somamos +1.
                     const valor = await buscarFaturamentoMensal(infoDatas.meses[0] + 1, infoDatas.ano);
                     setFaturamentoExibido(valor || 0);
                 } 
                 else if (infoDatas.meses.length > 0) {
-                    // Cenario B: Vários Meses (Ex: Jan a Mar) -> Soma tudo
-                    const mesesBanco = infoDatas.meses.map(m => m + 1); // Converte [0,1,2] para [1,2,3]
+                    const mesesBanco = infoDatas.meses.map(m => m + 1);
                     const total = await somarFaturamentoPeriodo(mesesBanco, infoDatas.ano);
                     setFaturamentoExibido(total);
                 } 
@@ -85,7 +85,7 @@ export function Financeiro() {
     }, [infoDatas.meses, infoDatas.ano, infoDatas.isMesUnico]); 
 
 
-    // 3. CÁLCULO DINÂMICO DO DASHBOARD (O Cérebro)
+    // 3. CÁLCULO DINÂMICO DO DASHBOARD
     const dashboardCalculado = useMemo(() => {
         const somarFiltrados = (lista: ItemFinanceiro[]) => {
             return lista.filter(item => {
@@ -106,16 +106,16 @@ export function Financeiro() {
         const totalDespesasFiltradas = somarFiltrados(despesas);
         const totalInvestimentosFiltrados = somarFiltrados(investimentos);
         
-        // Agora usamos sempre o valor que veio do banco (Soma ou Mês Único)
         const faturamentoFinal = faturamentoExibido;
 
+        // Fórmula: (Despesas Fixas / Faturamento) * 100
         const taxaCustoFixo = faturamentoFinal > 0 
-            ? ((totalDespesasFiltradas + totalInvestimentosFiltrados) / faturamentoFinal) * 100 
+            ? (totalDespesasFiltradas / faturamentoFinal) * 100 
             : 0;
 
         return {
             ...dashboardOriginal,
-            faturamento: faturamentoFinal, // Mostra o valor correto (Único ou Soma)
+            faturamento: faturamentoFinal,
             totalDespesas: totalDespesasFiltradas,
             totalInvestimentos: totalInvestimentosFiltrados,
             taxaCustoFixo: taxaCustoFixo,
@@ -138,7 +138,6 @@ export function Financeiro() {
     };
 
     const handleEditFaturamento = () => {
-        // Só permite abrir o modal se estiver visualizando um único mês
         if (infoDatas.isMesUnico) {
             setModalConfig({ aberto: true, tipo: 'faturamento', modo: 'editar', itemEdicao: null });
         }
@@ -151,14 +150,11 @@ export function Financeiro() {
             const novoValor = Number(dados.valor);
             
             if (infoDatas.isMesUnico && infoDatas.ano) {
-                // SALVA O MENSAL ESPECÍFICO
                 const sucesso = await salvarFaturamentoMensal(infoDatas.meses[0] + 1, infoDatas.ano, novoValor);
                 if (sucesso) {
-                    setFaturamentoExibido(novoValor); // Atualiza a tela instantaneamente
+                    setFaturamentoExibido(novoValor);
                 }
             } 
-            // Não existe mais "fallback" global, então se não for mês único, não faz nada (ou avisa erro)
-            
         } else {
             const rota = tipo === 'despesa' ? 'despesas' : 'investimentos';
             const idParaSalvar = modo === 'editar' ? itemEdicao?.id : undefined;
@@ -195,24 +191,39 @@ export function Financeiro() {
 
     return (
         <div className="financeiro-container">
-            {/* CABEÇALHO COM BADGE VISUAL */}
-            <div style={{display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '10px'}}>
-                <h1>Gestão Financeira 💰</h1>
-                
-                {infoDatas.label && (
-                    <span style={{
-                        backgroundColor: infoDatas.isMesUnico ? '#3b82f6' : '#f97316', 
-                        color: 'white',
-                        padding: '4px 12px',
-                        borderRadius: '20px',
-                        fontWeight: 'bold',
-                        fontSize: '0.75rem',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                        letterSpacing: '0.05em'
-                    }}>
-                        {infoDatas.label}
-                    </span>
-                )}
+            {/* CABEÇALHO ATUALIZADO */}
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
+                <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
+                    <h1>Gestão Financeira 💰</h1>
+                    
+                    {infoDatas.label && (
+                        <span style={{
+                            backgroundColor: infoDatas.isMesUnico ? '#3b82f6' : '#f97316', 
+                            color: 'white',
+                            padding: '4px 12px',
+                            borderRadius: '20px',
+                            fontWeight: 'bold',
+                            fontSize: '0.75rem',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                            letterSpacing: '0.05em'
+                        }}>
+                            {infoDatas.label}
+                        </span>
+                    )}
+                </div>
+
+                {/* NOVO: BOTÃO DE RELATÓRIO PDF */}
+                <button 
+                    onClick={() => setModalRelatorioAberto(true)}
+                    style={{
+                        display: 'flex', alignItems: 'center', gap: '8px',
+                        backgroundColor: '#1e293b', color: 'white', border: 'none',
+                        padding: '8px 16px', borderRadius: '6px', cursor: 'pointer',
+                        fontWeight: 600, fontSize: '0.9rem', boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
+                    }}
+                >
+                    <FileText size={18} /> Relatório PDF
+                </button>
             </div>
 
             <ResumoFinanceiro 
@@ -242,11 +253,22 @@ export function Financeiro() {
                 onAlternarAtivo={handleAlternarAtivo}
             />
             
+            {/* Modal de Edição (Padrão) */}
             {modalConfig.aberto && (
                 <ModalFinanceiro 
                     tipo={modalConfig.tipo} itemEdicao={modalConfig.itemEdicao} 
                     valorFaturamentoAtual={dashboardCalculado.faturamento}
                     onClose={() => setModalConfig({ ...modalConfig, aberto: false })} onSalvar={handleSalvarModal}
+                />
+            )}
+
+            {/* NOVO: Modal de Relatório PDF */}
+            {modalRelatorioAberto && (
+                <ModalRelatorio 
+                    despesas={despesas}
+                    investimentos={investimentos}
+                    onClose={() => setModalRelatorioAberto(false)}
+                    somarFaturamento={somarFaturamentoPeriodo}
                 />
             )}
         </div>
