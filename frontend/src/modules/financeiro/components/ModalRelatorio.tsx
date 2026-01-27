@@ -6,19 +6,16 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { ItemFinanceiro } from '../types';
 import { analisarIntervalo } from '../utils/dateHelper';
-import './ModalFinanceiro.css'; // Reutilizamos o CSS do modal existente
+import './ModalFinanceiro.css';
 
 interface Props {
     despesas: ItemFinanceiro[];
     investimentos: ItemFinanceiro[];
     onClose: () => void;
-    // Função para buscar o faturamento exato do período escolhido no relatório
     somarFaturamento: (meses: number[], ano: number) => Promise<number>;
 }
 
 export function ModalRelatorio({ despesas, investimentos, onClose, somarFaturamento }: Props) {
-    
-    // Inicia com o mês atual por padrão
     const hoje = new Date();
     const inicioPadrao = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
     const fimPadrao = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().split('T')[0];
@@ -27,24 +24,31 @@ export function ModalRelatorio({ despesas, investimentos, onClose, somarFaturame
     const [dataFim, setDataFim] = useState(fimPadrao);
     const [gerando, setGerando] = useState(false);
 
-    // --- LÓGICA DE GERAÇÃO DO PDF ---
+    // --- CORREÇÃO DO BUG DE DATA (-1 DIA) ---
+    // Em vez de usar new Date(), apenas manipulamos a string direta.
+    // Isso ignora totalmente o fuso horário e mostra exatamente o que está escrito.
+    const formatarDataSemFuso = (dataString: string) => {
+        if (!dataString) return '-';
+        // Pega apenas os 10 primeiros caracteres (YYYY-MM-DD) para ignorar hora se houver
+        const limpa = dataString.substring(0, 10);
+        const [ano, mes, dia] = limpa.split('-');
+        return `${dia}/${mes}/${ano}`;
+    };
+
     const handleGerarPDF = async () => {
         setGerando(true);
         try {
-            // 1. Analisa as datas escolhidas para buscar o faturamento correto
             const infoDatas = analisarIntervalo(dataInicio, dataFim);
             let faturamentoPeriodo = 0;
 
             if (infoDatas.ano && infoDatas.meses.length > 0) {
-                // Busca no banco a soma do faturamento para os meses selecionados
                 const mesesBanco = infoDatas.meses.map(m => m + 1);
                 faturamentoPeriodo = await somarFaturamento(mesesBanco, infoDatas.ano);
             }
 
-            // 2. Filtra os itens baseados na data escolhida
             const filtrarPorData = (lista: ItemFinanceiro[]) => {
                 return lista.filter(item => {
-                    if (!item.ativo) return false; // Relatório só considera ativos
+                    if (!item.ativo) return false;
                     const d = item.dataVencimento ? item.dataVencimento.substring(0, 10) : '';
                     return d >= dataInicio && d <= dataFim;
                 });
@@ -53,113 +57,126 @@ export function ModalRelatorio({ despesas, investimentos, onClose, somarFaturame
             const despesasFiltradas = filtrarPorData(despesas);
             const investimentosFiltrados = filtrarPorData(investimentos);
 
-            // 3. Cálculos Totais
             const totalDespesas = despesasFiltradas.reduce((acc, i) => acc + Number(i.valor), 0);
             const totalInvestimentos = investimentosFiltrados.reduce((acc, i) => acc + Number(i.valor), 0);
             
-            // Taxa Custo Fixo (Só Despesas / Faturamento)
             const taxaCustoFixo = faturamentoPeriodo > 0 
                 ? (totalDespesas / faturamentoPeriodo) * 100 
                 : 0;
 
-            // --- INÍCIO DO PDF ---
+            // --- GERAÇÃO DO PDF ---
             const doc = new jsPDF();
+            const pageWidth = doc.internal.pageSize.width;
+            
+            const AZUL_ESCURO = [30, 41, 59]; 
+            const AZUL_CLARO = [59, 130, 246]; 
+            const VERMELHO = [239, 68, 68];
+            const ROXO = [139, 92, 246];
+            const CINZA_FUNDO = [241, 245, 249];
 
-            // Título
-            doc.setFontSize(18);
-            doc.setTextColor(40);
-            doc.text("Relatório de Inteligência Financeira", 14, 22);
-
-            // Subtítulo (Período)
-            doc.setFontSize(11);
-            doc.setTextColor(100);
-            doc.text(`Período de Análise: ${new Date(dataInicio).toLocaleDateString('pt-BR')} até ${new Date(dataFim).toLocaleDateString('pt-BR')}`, 14, 30);
-
-            // --- CARD DE RESUMO (Desenhado manualmente) ---
-            doc.setDrawColor(200);
-            doc.setFillColor(245, 247, 250);
-            doc.roundedRect(14, 35, 180, 25, 3, 3, 'FD');
-
-            doc.setFontSize(10);
-            doc.setTextColor(100);
-            doc.text("Faturamento", 20, 42);
-            doc.text("Total Despesas", 70, 42);
-            doc.text("Investimentos", 120, 42);
-            doc.text("Taxa Custo Fixo", 160, 42);
-
-            doc.setFontSize(12);
-            doc.setTextColor(0); // Preto
+            // CABEÇALHO
+            doc.setFillColor(AZUL_ESCURO[0], AZUL_ESCURO[1], AZUL_ESCURO[2]);
+            doc.rect(0, 0, pageWidth, 40, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(22);
             doc.setFont("helvetica", "bold");
+            doc.text("Relatório Financeiro", 14, 20);
             
-            const BRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+            // CORREÇÃO APLICADA AQUI NO SUBTÍTULO
+            doc.text(`Período de Análise: ${formatarDataSemFuso(dataInicio)} até ${formatarDataSemFuso(dataFim)}`, 14, 30);
             
-            doc.text(BRL(faturamentoPeriodo), 20, 50);
-            doc.setTextColor(239, 68, 68); // Vermelho
-            doc.text(BRL(totalDespesas), 70, 50);
-            doc.setTextColor(139, 92, 246); // Roxo
-            doc.text(BRL(totalInvestimentos), 120, 50);
-            
-            // Cor da taxa dinâmica
-            if (taxaCustoFixo > 30) doc.setTextColor(239, 68, 68); // Vermelho
-            else if (taxaCustoFixo > 15) doc.setTextColor(245, 158, 11); // Laranja
-            else doc.setTextColor(34, 197, 94); // Verde
-            
-            doc.text(`${taxaCustoFixo.toFixed(2)}%`, 160, 50);
-
-            // --- TABELA DE DESPESAS ---
             doc.setFontSize(14);
-            doc.setTextColor(40);
-            doc.text("Detalhamento de Despesas Fixas", 14, 70);
+            doc.text("Denarius", pageWidth - 35, 25);
+
+            // CARDS
+            const startY = 50;
+            const cardWidth = 45;
+            const cardHeight = 25;
+            const gap = 10;
+            const margin = 14;
+
+            const drawCard = (x: number, title: string, value: string, colorRGB: number[]) => {
+                doc.setFillColor(CINZA_FUNDO[0], CINZA_FUNDO[1], CINZA_FUNDO[2]);
+                doc.setDrawColor(200);
+                doc.roundedRect(x, startY, cardWidth, cardHeight, 2, 2, 'FD');
+                doc.setFillColor(colorRGB[0], colorRGB[1], colorRGB[2]);
+                doc.rect(x, startY, 2, cardHeight, 'F');
+                doc.setTextColor(100);
+                doc.setFontSize(8);
+                doc.text(title.toUpperCase(), x + 5, startY + 8);
+                doc.setTextColor(30);
+                doc.setFontSize(11);
+                doc.setFont("helvetica", "bold");
+                doc.text(value, x + 5, startY + 18);
+            };
+
+            const BRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+            drawCard(margin, "Faturamento", BRL(faturamentoPeriodo), AZUL_CLARO);
+            drawCard(margin + cardWidth + gap, "Despesas", BRL(totalDespesas), VERMELHO);
+            drawCard(margin + (cardWidth + gap) * 2, "Investimentos", BRL(totalInvestimentos), ROXO);
+            drawCard(margin + (cardWidth + gap) * 3, "Taxa Custo Fixo", `${taxaCustoFixo.toFixed(2)}%`, taxaCustoFixo > 30 ? VERMELHO : [34, 197, 94]);
+
+            // TABELAS
+            doc.setFontSize(14);
+            doc.setTextColor(30);
+            doc.text("Detalhamento de Despesas", 14, 90);
 
             autoTable(doc, {
-                startY: 75,
+                startY: 95,
                 head: [['Vencimento', 'Descrição', 'Beneficiário', 'Status', 'Valor']],
-                body: despesasFiltradas.map(d => [
-                    new Date(d.dataVencimento || '').toLocaleDateString('pt-BR'),
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                body: despesasFiltradas.map((d: any) => [
+                    // CORREÇÃO APLICADA AQUI NA TABELA
+                    formatarDataSemFuso(d.dataVencimento),
                     d.nome,
                     d.beneficiario || '-',
                     d.pago ? 'Pago' : 'Pendente',
                     BRL(Number(d.valor))
                 ]),
-                styles: { fontSize: 9 },
-                headStyles: { fillColor: [239, 68, 68] }, // Vermelho
+                theme: 'striped',
+                headStyles: { fillColor: [239, 68, 68], textColor: 255, fontStyle: 'bold' },
+                styles: { fontSize: 9, cellPadding: 3 },
+                alternateRowStyles: { fillColor: [254, 242, 242] }
             });
 
-            // --- TABELA DE INVESTIMENTOS ---
-// --- TABELA DE INVESTIMENTOS ---
-            
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const finalY = (doc as any).lastAutoTable.finalY + 15;
-
             doc.setFontSize(14);
-
-            doc.setFontSize(14);
-            doc.setTextColor(40);
+            doc.setTextColor(30);
             doc.text("Detalhamento de Investimentos", 14, finalY);
 
             autoTable(doc, {
                 startY: finalY + 5,
                 head: [['Vencimento', 'Descrição', 'Valor']],
-                body: investimentosFiltrados.map(i => [
-                    new Date(i.dataVencimento || '').toLocaleDateString('pt-BR'),
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                body: investimentosFiltrados.map((i: any) => [
+                    // CORREÇÃO APLICADA AQUI NA TABELA
+                    formatarDataSemFuso(i.dataVencimento),
                     i.nome,
                     BRL(Number(i.valor))
                 ]),
-                styles: { fontSize: 9 },
-                headStyles: { fillColor: [139, 92, 246] }, // Roxo
+                theme: 'striped',
+                headStyles: { fillColor: [139, 92, 246], textColor: 255, fontStyle: 'bold' },
+                styles: { fontSize: 9, cellPadding: 3 },
+                alternateRowStyles: { fillColor: [243, 232, 255] }
             });
 
-            // Rodapé
+            // RODAPÉ
             const pageCount = doc.getNumberOfPages();
             for(let i = 1; i <= pageCount; i++) {
                 doc.setPage(i);
                 doc.setFontSize(8);
                 doc.setTextColor(150);
-                doc.text('Gerado pelo Sistema Denarius Financeiro', 14, doc.internal.pageSize.height - 10);
-                doc.text(`Página ${i} de ${pageCount}`, doc.internal.pageSize.width - 30, doc.internal.pageSize.height - 10);
+                doc.setDrawColor(200);
+                doc.line(14, doc.internal.pageSize.height - 15, pageWidth - 14, doc.internal.pageSize.height - 15);
+                // Data de geração continua com new Date() pois pega a hora ATUAL do computador (não tem erro de fuso nesse caso)
+                doc.text(`Gerado em ${new Date().toLocaleString('pt-BR')}`, 14, doc.internal.pageSize.height - 8);
+                doc.text(`Página ${i} de ${pageCount}`, pageWidth - 30, doc.internal.pageSize.height - 8);
             }
 
-            // Salvar
             doc.save(`Relatorio_Financeiro_${dataInicio}_a_${dataFim}.pdf`);
 
         } catch (error) {
@@ -182,7 +199,7 @@ export function ModalRelatorio({ despesas, investimentos, onClose, somarFaturame
 
                 <div className="modal-body">
                     <p style={{ color: '#64748b', marginBottom: '20px' }}>
-                        Selecione o período que deseja analisar. O sistema buscará o faturamento e as despesas desta data para calcular a taxa histórica.
+                        Selecione o período para gerar o relatório detalhado em PDF.
                     </p>
 
                     <div className="form-group">
@@ -195,14 +212,39 @@ export function ModalRelatorio({ despesas, investimentos, onClose, somarFaturame
                         <input type="date" value={dataFim} onChange={e => setDataFim(e.target.value)} />
                     </div>
 
-                    <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
+                    <div style={{ marginTop: '25px', display: 'flex', justifyContent: 'center' }}>
                         <button 
-                            className="btn-save-modal" 
-                            style={{ backgroundColor: '#1e293b', width: '100%' }}
+                            className="btn-premium"
                             onClick={handleGerarPDF}
                             disabled={gerando}
+                            style={{
+                                background: 'linear-gradient(135deg, #1e293b 0%, #3b82f6 100%)',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '8px',
+                                padding: '12px 24px',
+                                width: '100%',
+                                fontSize: '1rem',
+                                fontWeight: '600',
+                                cursor: gerando ? 'wait' : 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '10px',
+                                boxShadow: '0 4px 15px rgba(59, 130, 246, 0.4)',
+                                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                            }}
+                            onMouseOver={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-2px)';
+                                e.currentTarget.style.boxShadow = '0 6px 20px rgba(59, 130, 246, 0.6)';
+                            }}
+                            onMouseOut={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = '0 4px 15px rgba(59, 130, 246, 0.4)';
+                            }}
                         >
-                            <Download size={18} /> {gerando ? 'Gerando...' : 'Baixar Relatório PDF'}
+                            <Download size={20} /> 
+                            {gerando ? 'Gerando Arquivo...' : 'BAIXAR RELATÓRIO PREMIUM'}
                         </button>
                     </div>
                 </div>

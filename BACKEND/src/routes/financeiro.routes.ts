@@ -78,4 +78,75 @@ router.post('/investimentos', async (req, res) => { const { nome, valor, ativo, 
 router.put('/investimentos/:id', async (req, res) => { const { id } = req.params; const { nome, valor, ativo, pago, beneficiario, data_vencimento } = req.body; await pool.query(`UPDATE investimentos SET nome=$1, valor=$2, ativo=$3, pago=$4, beneficiario=$5, data_vencimento=$6 WHERE id=$7`, [nome, valor, ativo, pago, beneficiario, data_vencimento, id]); res.json({ message: 'Atualizado' }); });
 router.delete('/investimentos/:id', async (req, res) => { await pool.query('DELETE FROM investimentos WHERE id = $1', [req.params.id]); res.json({ message: 'Deletado' }); });
 
+router.post('/snapshots', async (req: Request, res: Response) => {
+    const { 
+        descricao, 
+        faturamento, 
+        totalDespesas, 
+        totalInvestimentos, 
+        taxaCustoFixo, 
+        dadosBackup // Recebe o objeto { despesas: [], investimentos: [] }
+    } = req.body;
+
+    try {
+        await pool.query(
+            `INSERT INTO snapshots_financeiros 
+            (descricao, faturamento, total_despesas, total_investimentos, taxa_custo_fixo, dados_backup) 
+            VALUES ($1, $2, $3, $4, $5, $6)`,
+            [
+                descricao || 'Checkpoint Manual',
+                faturamento,
+                totalDespesas,
+                totalInvestimentos,
+                taxaCustoFixo,
+                JSON.stringify(dadosBackup) // Salva o JSON no banco
+            ]
+        );
+        res.json({ message: 'Snapshot salvo com sucesso!' });
+    } catch (err) {
+        console.error("Erro ao salvar snapshot:", err);
+        res.status(500).json({ error: 'Erro ao salvar histórico' });
+    }
+});
+
+// LISTAR CHECKPOINTS
+router.get('/snapshots', async (req: Request, res: Response) => {
+    try {
+        // Busca apenas o resumo (sem o JSON pesado) para a lista
+        const result = await pool.query(
+            `SELECT id, criado_em, descricao, faturamento, total_despesas, taxa_custo_fixo 
+             FROM snapshots_financeiros 
+             ORDER BY criado_em DESC`
+        );
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Erro ao buscar histórico' });
+    }
+});
+
+// RECUPERAR UM CHECKPOINT COMPLETO (Para gerar PDF)
+router.get('/snapshots/:id', async (req: Request, res: Response) => {
+    try {
+        const result = await pool.query('SELECT * FROM snapshots_financeiros WHERE id = $1', [req.params.id]);
+        if (result.rows.length > 0) {
+            res.json(result.rows[0]);
+        } else {
+            res.status(404).json({ error: 'Snapshot não encontrado' });
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Erro ao carregar detalhes' });
+    }
+});
+router.delete('/snapshots/:id', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM snapshots_financeiros WHERE id = $1', [req.params.id]);
+        res.json({ message: 'Deletado' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Erro ao deletar' });
+    }
+});
+
 export default router;
