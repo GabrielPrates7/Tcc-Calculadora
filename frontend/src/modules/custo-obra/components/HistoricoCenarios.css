@@ -1,0 +1,81 @@
+.historico-container {
+    margin-top: 40px;
+    border-top: 1px solid #334155;
+    padding-top: 20px;
+}
+
+.historico-container h3 {
+    color: #94a3b8;
+    margin-bottom: 20px;
+    font-size: 1.2rem;
+}
+
+.lista-historico {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.item-historico {
+    background: #1e293b;
+    padding: 20px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border: 1px solid #334155;
+    transition: 0.2s;
+}
+
+.item-historico:hover {
+    border-color: #f97316;
+}
+
+.item-info h4 { margin: 0 0 5px 0; color: white; font-size: 1.1rem; }
+.item-info .data { color: #64748b; font-size: 0.85rem; display: flex; align-items: center; gap: 5px; }
+.item-info .detalhes-tecnicos { margin-top: 8px; font-size: 0.9rem; color: #cbd5e1; background: #0f172a; padding: 4px 8px; border-radius: 4px; display: inline-block;}
+
+.item-valor { text-align: right; margin-right: 20px; }
+.item-valor .label { display: block; font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; }
+.item-valor .valor { color: #f97316; font-size: 1.4rem; }
+
+.btn-mini-pdf {
+    background: #334155;
+    border: none;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s;
+}
+.btn-mini-pdf:hover { background: #ef4444; }
+/* ... CSS anterior ... */
+
+.item-acao-group {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-icon-text {
+    background: none; border: none; color: #64748b; cursor: pointer; padding: 2px;
+}
+.btn-icon-text:hover { color: #f97316; }
+
+.btn-mini-action {
+    width: 36px; height: 36px; border-radius: 6px; border: none;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: 0.2s; color: white;
+}
+
+.btn-mini-action.pdf { background: #334155; }
+.btn-mini-action.pdf:hover { background: #3b82f6; }
+
+.btn-mini-action.delete { background: #334155; }
+.btn-mini-action.delete:hover { background: #ef4444; }
+
+.btn-mini-action.restore { background: #334155; }
+.btn-mini-action.restore:hover { background: #10b981; }

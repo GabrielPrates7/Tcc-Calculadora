@@ -187,4 +187,6 @@ export function ModalFinanceiro({ tipo, itemEdicao, valorFaturamentoAtual, onClo
             </div>
         </div>
     );
+
+    
 }
