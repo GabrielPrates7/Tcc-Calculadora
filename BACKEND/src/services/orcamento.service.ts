@@ -7,57 +7,54 @@ interface CriarOrcamentoDTO {
     tempoGasto: number;
     lucroPct: number;
     impostoPct: number;
+    // NOVO: Precisamos receber o valor do cenário selecionado no Dropdown
+    valorHoraSelecionado?: number; 
 }
 
 export class OrcamentoService {
 
     // --- 1. LÓGICA DE CÁLCULO (Motor Financeiro) ---
-    // Aqui corrigimos as queries para bater com o banco_dados.sql
     private async calcularValores(dados: CriarOrcamentoDTO) {
         
         // A. CÁLCULO DA TAXA DE CUSTO FIXO (Financeiro)
-        // Busca despesas ativas
         const despesasRes = await pool.query("SELECT SUM(valor) as total FROM despesas_fixas WHERE ativo = true");
-        // Busca o último faturamento lançado (ordenado por ano/mês)
         const fatRes = await pool.query("SELECT valor FROM faturamentos_mensais ORDER BY ano DESC, mes DESC LIMIT 1");
         
         const totalDespesas = Number(despesasRes.rows[0]?.total) || 0;
-        const faturamento = Number(fatRes.rows[0]?.valor) || 1; // Evita divisão por zero
-        
-        // Fórmula: (Despesas / Faturamento) * 100
+        const faturamento = Number(fatRes.rows[0]?.valor) || 1; 
         const custoFixoPct = (totalDespesas / faturamento) * 100;
 
         // B. CÁLCULO DO CUSTO DA MÃO DE OBRA (Custo de Obra)
-        // Soma apenas funcionários da PRODUÇÃO ativos
-        const funcRes = await pool.query("SELECT SUM(custo_total_mensal) as total FROM funcionarios WHERE ativo = true AND setor = 'producao'");
-        const configRes = await pool.query("SELECT * FROM configuracao_producao LIMIT 1");
-        
-        const totalSalarios = Number(funcRes.rows[0]?.total) || 0;
-        const config = configRes.rows[0];
+        let custoUnitarioMO = 0;
 
-        // Define o divisor de tempo (Horas ou Dias) baseado na configuração
-        let tempoDisponivel = 1;
-        if (config.tipo_tempo === 'horas') {
-            tempoDisponivel = Number(config.horas_trabalhadas_dia) * 22; // Ex: 176h mensais
+        // SE o frontend enviou o valor do Dropdown, nós usamos ele!
+        if (dados.valorHoraSelecionado && dados.valorHoraSelecionado > 0) {
+            custoUnitarioMO = dados.valorHoraSelecionado;
         } else {
-            tempoDisponivel = Number(config.dias_trabalhados_mes); // Ex: 20 dias
-        }
+            // FALLBACK: Se não enviou, calcula com base nos funcionários ativos hoje
+            const funcRes = await pool.query("SELECT SUM(custo_total_mensal) as total FROM funcionarios WHERE ativo = true AND setor = 'producao'");
+            const configRes = await pool.query("SELECT * FROM configuracao_producao LIMIT 1");
+            
+            const totalSalarios = Number(funcRes.rows[0]?.total) || 0;
+            const config = configRes.rows[0];
 
-        // Divisor Final = Tempo x Capacidade (Qtd Equipes ou Pessoas)
-        const capacidade = Number(config.qtd_unidades) || 1;
-        const divisorMO = tempoDisponivel * capacidade;
-        
-        // Preço unitário (R$/hora ou R$/dia)
-        const custoUnitarioMO = divisorMO > 0 ? totalSalarios / divisorMO : 0;
+            let tempoDisponivel = 1;
+            if (config?.tipo_tempo === 'horas') {
+                tempoDisponivel = Number(config.horas_trabalhadas_dia) * 22; 
+            } else if (config) {
+                tempoDisponivel = Number(config.dias_trabalhados_mes); 
+            }
+
+            const capacidade = Number(config?.qtd_unidades) || 1;
+            const divisorMO = tempoDisponivel * capacidade;
+            custoUnitarioMO = divisorMO > 0 ? totalSalarios / divisorMO : 0;
+        }
 
         // C. CÁLCULO DO PREÇO DE VENDA (Markup Divisor)
         const custoMaoDeObraTotal = custoUnitarioMO * dados.tempoGasto;
         const custoProducao = dados.custoMercadoria + custoMaoDeObraTotal;
         
-        // Soma das taxas (Custo Fixo + Lucro + Imposto)
         const somaTaxasPct = custoFixoPct + dados.lucroPct + dados.impostoPct;
-        
-        // O famoso "Divisor" (1 - taxas)
         const divisorMarkup = 1 - (somaTaxasPct / 100);
 
         if (divisorMarkup <= 0) {
@@ -105,7 +102,6 @@ export class OrcamentoService {
     }
 
     async listarOrcamentos() {
-        // Mapeamos os nomes do banco (snake_case) para o frontend (camelCase ou amigável)
         const query = `
             SELECT 
                 id,
@@ -165,5 +161,32 @@ export class OrcamentoService {
     async deletarOrcamento(id: number) {
         await pool.query('DELETE FROM orcamentos WHERE id = $1', [id]);
         return { message: 'Orçamento excluído com sucesso.' };
+    }
+
+    // --- 3. NOVO MÉTODO: BUSCAR CENÁRIOS PARA O DROPDOWN ---
+    async listarCenariosMaoObra() {
+        try {
+            // Busca o histórico salvo pela tabela do Módulo de Custo de Obra
+            const query = `
+                SELECT 
+                    id, 
+                    titulo, 
+                    valor_unitario_final as "valorUnitario"
+                FROM historico_custo_obra 
+                ORDER BY id DESC
+            `;
+            const res = await pool.query(query);
+            
+            // Retorna no formato exato que a interface CenarioMaoObra do Frontend espera
+            return res.rows.map(row => ({
+                id: row.id,
+                titulo: row.titulo,
+                valorUnitario: Number(row.valorUnitario),
+                unidade: 'horas' // Valor padrão amigável para a UI
+            }));
+        } catch (error) {
+            console.error("Erro ao buscar histórico de custo de obra:", error);
+            return []; // Evita quebrar a aplicação se a tabela estiver vazia
+        }
     }
 }

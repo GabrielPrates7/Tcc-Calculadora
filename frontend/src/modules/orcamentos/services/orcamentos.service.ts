@@ -18,31 +18,26 @@ export const OrcamentosService = {
    */
   async buscarDadosIniciais(): Promise<DadosIniciaisOrcamento> {
     try {
-      const [resObra, resFin, resOrc] = await Promise.all([
-        fetch(`${API_URL}/calculo-obra`),
+      // MUDANÇA 1: Apontamos para a nova rota que devolve a lista completa de cenários
+      const [resHistorico, resFin, resOrc] = await Promise.all([
+        fetch(`${API_URL}/orcamentos/historico-obra`), 
         fetch(`${API_URL}/financeiro/dashboard`),
         fetch(`${API_URL}/orcamentos`)
       ]);
 
       // Verifica se alguma requisição falhou antes de tentar converter para JSON
-      if (!resObra.ok || !resFin.ok || !resOrc.ok) {
+      if (!resHistorico.ok || !resFin.ok || !resOrc.ok) {
         throw new Error('Erro ao buscar dados nos endpoints do servidor.');
       }
 
-      const dataObra = await resObra.json();
+      // MUDANÇA 2: Pegamos a lista (array) vinda do backend
+      const cenarios = await resHistorico.json(); 
       const dataFin = await resFin.json();
       const listaOrcamentos = await resOrc.json();
 
-      // Mapeia a configuração vinda do banco para o formato do seu componente de UI
-      const cenarioAtual: CenarioMaoObra = {
-        id: 0, // ID 0 reservado para o cenário "em tempo real"
-        titulo: `Configuração Atual (${dataObra.calculo?.tipoTempo || 'H'})`,
-        valorUnitario: Number(dataObra.calculo?.valorUnitario || 0),
-        unidade: dataObra.calculo?.tipoTempo === 'dias' ? 'dias' : 'horas'
-      };
-
       return {
-        listaCenarios: [cenarioAtual],
+        // MUDANÇA 3: Passamos a lista inteira para o componente, removendo o "cenarioAtual" fixo
+        listaCenarios: Array.isArray(cenarios) ? cenarios : [],
         taxaFixa: Number(dataFin?.taxaCustoFixo || 0),
         listaOrcamentos: Array.isArray(listaOrcamentos) ? listaOrcamentos : []
       };
