@@ -1,114 +1,68 @@
 import { Router, Request, Response } from 'express';
-import { pool } from '../services/db';
+import { OrcamentoService } from '../services/orcamento.service';
 
 const router = Router();
+const orcamentoService = new OrcamentoService();
 
-// --- 1. LISTAR TODOS (GET) ---
+// GET: Listar
 router.get('/', async (req: Request, res: Response) => {
     try {
-        const query = `
-            SELECT 
-                id,
-                cliente,
-                nome_produto, 
-                custo_mercadoria as custo_materiais, 
-                tempo_gasto as horas_trabalhadas, 
-                lucro_desejado_pct as lucro_desejado, 
-                imposto_pct as imposto, 
-                preco_venda
-            FROM orcamentos 
-            ORDER BY id DESC
-        `;
-        const result = await pool.query(query);
-        res.json(result.rows);
+        const orcamentos = await orcamentoService.listarOrcamentos();
+        res.json(orcamentos);
     } catch (err) {
-        console.error("Erro ao buscar orçamentos:", err);
-        res.status(500).json({ error: 'Erro ao buscar orçamentos' });
+        console.error(err);
+        res.status(500).json({ error: 'Erro ao buscar orçamentos.' });
     }
 });
 
-// --- 2. SALVAR NOVO (POST) ---
+// POST: Criar
 router.post('/', async (req: Request, res: Response) => {
-    const { 
-        cliente, nome_produto, custo_materiais, horas_trabalhadas, 
-        lucro_desejado, imposto, preco_venda 
-    } = req.body;
-
     try {
-        const query = `
-            INSERT INTO orcamentos 
-            (cliente, nome_produto, custo_mercadoria, tempo_gasto, lucro_desejado_pct, imposto_pct, preco_venda)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
-            RETURNING *
-        `;
-        
-        const values = [
-            cliente || 'Cliente Padrão',
-            nome_produto, 
-            Number(custo_materiais), 
-            Number(horas_trabalhadas), 
-            Number(lucro_desejado), 
-            Number(imposto), 
-            Number(preco_venda)
-        ];
+        // Mapeia o body do request para o DTO esperado
+        const dados = {
+            cliente: req.body.cliente,
+            nomeProduto: req.body.nome_produto,
+            custoMercadoria: Number(req.body.custo_materiais),
+            tempoGasto: Number(req.body.horas_trabalhadas),
+            lucroPct: Number(req.body.lucro_desejado),
+            impostoPct: Number(req.body.imposto)
+        };
 
-        const result = await pool.query(query, values);
-        res.json(result.rows[0]);
-    } catch (err) {
-        console.error("Erro ao salvar:", err);
-        res.status(500).json({ error: 'Erro ao salvar' });
+        const novoOrcamento = await orcamentoService.criarOrcamento(dados);
+        res.json(novoOrcamento);
+    } catch (err: any) {
+        console.error(err);
+        res.status(400).json({ error: err.message || 'Erro ao criar orçamento.' });
     }
 });
 
-// --- 3. ATUALIZAR EXISTENTE (PUT) - NOVO! ---
+// PUT: Atualizar
 router.put('/:id', async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const { 
-        cliente, nome_produto, custo_materiais, horas_trabalhadas, 
-        lucro_desejado, imposto, preco_venda 
-    } = req.body;
-
     try {
-        const query = `
-            UPDATE orcamentos SET
-                cliente = $1,
-                nome_produto = $2,
-                custo_mercadoria = $3,
-                tempo_gasto = $4,
-                lucro_desejado_pct = $5,
-                imposto_pct = $6,
-                preco_venda = $7
-            WHERE id = $8
-        `;
-        
-        const values = [
-            cliente,
-            nome_produto, 
-            Number(custo_materiais), 
-            Number(horas_trabalhadas), 
-            Number(lucro_desejado), 
-            Number(imposto), 
-            Number(preco_venda),
-            id
-        ];
+        const dados = {
+            cliente: req.body.cliente,
+            nomeProduto: req.body.nome_produto,
+            custoMercadoria: Number(req.body.custo_materiais),
+            tempoGasto: Number(req.body.horas_trabalhadas),
+            lucroPct: Number(req.body.lucro_desejado),
+            impostoPct: Number(req.body.imposto)
+        };
 
-        await pool.query(query, values);
-        res.json({ message: 'Orçamento atualizado com sucesso!' });
+        const atualizado = await orcamentoService.atualizarOrcamento(Number(req.params.id), dados);
+        res.json(atualizado);
     } catch (err) {
-        console.error("Erro ao atualizar:", err);
-        res.status(500).json({ error: 'Erro ao atualizar' });
+        console.error(err);
+        res.status(500).json({ error: 'Erro ao atualizar orçamento.' });
     }
 });
 
-// --- 4. EXCLUIR (DELETE) ---
+// DELETE: Excluir
 router.delete('/:id', async (req: Request, res: Response) => {
-    const { id } = req.params;
     try {
-        await pool.query('DELETE FROM orcamentos WHERE id = $1', [id]);
-        res.json({ message: 'Orçamento excluído' });
+        await orcamentoService.deletarOrcamento(Number(req.params.id));
+        res.json({ message: 'Excluído com sucesso' });
     } catch (err) {
-        console.error("Erro ao excluir:", err);
-        res.status(500).json({ error: 'Erro ao excluir' });
+        res.status(500).json({ error: 'Erro ao excluir.' });
     }
 });
 

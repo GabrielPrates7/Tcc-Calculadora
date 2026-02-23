@@ -7,18 +7,14 @@ export interface Orcamento {
     lucro_desejado: number;
     imposto: number;
     preco_venda: number;
+    // Novo: salva qual cenário foi usado para histórico
+    id_cenario_mo?: number; 
 }
 
-export interface DetalhesCalculo {
-    pv: number;     // Preço Venda
-    mat: number;    // Materiais
-    mo: number;     // Mão de Obra
-    valImposto: number;
-    valLucro: number;
-    valFixo: number;
-    impPct: number;
-    lucPct: number;
-    fixoPct: number;
-    matPct: number;
-    moPct: number;
+// Nova interface para o Dropdown
+export interface CenarioMaoObra {
+    id: number;
+    titulo: string;       // Ex: "Custo Padrão 2026"
+    valorUnitario: number;// Ex: 25.50
+    unidade: 'horas' | 'dias';
 }

@@ -11,7 +11,7 @@ export function Orcamentos() {
     const { 
         loading, 
         listaOrcamentos, 
-        valorHora, 
+        listaCenarios, // MUDANÇA: Recebe a lista de cenários em vez de valorHora fixo
         taxaFixa, 
         salvarOrcamento, 
         excluirOrcamento 
@@ -34,6 +34,10 @@ export function Orcamentos() {
     // Filtra o objeto completo para edição
     const orcamentoEdicao = listaOrcamentos.find(o => o.id === idEditando) || null;
 
+    // Helper para o Modal: Pega o valor do primeiro cenário como referência
+    // (Futuramente, o orçamento salvo poderia ter seu próprio "id_cenario" para buscar o valor exato)
+    const valorHoraPadrao = listaCenarios.length > 0 ? listaCenarios[0].valorUnitario : 0;
+
     if (loading) return <div style={{padding: 40, color:'white'}}>Carregando sistema...</div>;
 
     return (
@@ -43,7 +47,7 @@ export function Orcamentos() {
             <div className="orcamento-grid">
                 {/* ESQUERDA: Form + Cálculo */}
                 <CalculadoraOrcamento 
-                    valorHora={valorHora}
+                    listaCenarios={listaCenarios} // MUDANÇA: Passamos a lista para o dropdown
                     taxaFixa={taxaFixa}
                     orcamentoEdicao={orcamentoEdicao}
                     onSalvar={salvarOrcamento}
@@ -64,7 +68,7 @@ export function Orcamentos() {
             {orcamentoSelecionado && (
                 <ModalDemonstrativo 
                     orcamento={orcamentoSelecionado}
-                    valorHora={valorHora}
+                    valorHora={valorHoraPadrao} // Passamos o valor do cenário padrão
                     onClose={() => setOrcamentoSelecionado(null)}
                 />
             )}
