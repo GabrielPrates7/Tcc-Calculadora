@@ -164,29 +164,34 @@ export class OrcamentoService {
     }
 
     // --- 3. NOVO MÉTODO: BUSCAR CENÁRIOS PARA O DROPDOWN ---
+// --- 3. BUSCAR CENÁRIOS PARA O DROPDOWN (Com Sistema Anti-Quebra) ---
+    // --- BUSCAR CENÁRIOS PARA O DROPDOWN (100% DINÂMICO JSONB) ---
     async listarCenariosMaoObra() {
         try {
-            // Busca o histórico salvo pela tabela do Módulo de Custo de Obra
+            // Usamos configuracao_usada->>'tipo' para ler o JSON direto no banco de dados
             const query = `
                 SELECT 
                     id, 
                     titulo, 
-                    valor_unitario_final as "valorUnitario"
+                    valor_unitario_final as "valorUnitario",
+                    configuracao_usada->>'tipo' as unidade
                 FROM historico_custo_obra 
                 ORDER BY id DESC
             `;
             const res = await pool.query(query);
             
-            // Retorna no formato exato que a interface CenarioMaoObra do Frontend espera
             return res.rows.map(row => ({
                 id: row.id,
                 titulo: row.titulo,
                 valorUnitario: Number(row.valorUnitario),
-                unidade: 'horas' // Valor padrão amigável para a UI
+                // Puxa exatamente o que estava no JSON (dias ou horas).
+                unidade: row.unidade ? row.unidade : 'unid.' 
             }));
+            
         } catch (error) {
-            console.error("Erro ao buscar histórico de custo de obra:", error);
-            return []; // Evita quebrar a aplicação se a tabela estiver vazia
+            console.error("Erro ao buscar histórico extraindo do JSON:", error);
+            // Retorna array vazio para não quebrar a tela em caso de falha
+            return []; 
         }
     }
 }
