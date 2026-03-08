@@ -7,22 +7,45 @@ const router = Router();
 // --- 1. DASHBOARD ---
 router.get('/dashboard', async (req: Request, res: Response) => {
     try {
-        // Faturamento Padrão não existe mais. Retornamos 0 ou deixamos o Front calcular.
-        // O Front agora vai buscar o faturamento específico, então aqui mandamos 0.
-        const faturamento = 0; 
+        // 1. Pega o ÚLTIMO faturamento (Ex: Março de 2026 = 200.000)
+        const fatRes = await pool.query('SELECT mes, ano, valor FROM faturamentos_mensais ORDER BY ano DESC, mes DESC LIMIT 1');
+        const faturamentoData = fatRes.rows[0];
+        
+        const faturamento = Number(faturamentoData?.valor) || 0;
+        
+        // 2. Descobre qual foi o mês/ano desse faturamento
+        const mesFiltro = faturamentoData?.mes || new Date().getMonth() + 1;
+        const anoFiltro = faturamentoData?.ano || new Date().getFullYear();
 
-        const despesasRes = await pool.query('SELECT SUM(valor) as total FROM despesas_fixas WHERE ativo = true');
+        // 3. Busca as despesas APENAS daquele mês específico! (Resolve o bug dos 31%)
+        const despesasRes = await pool.query(`
+            SELECT SUM(valor) as total 
+            FROM despesas_fixas 
+            WHERE ativo = true 
+            AND EXTRACT(MONTH FROM data_vencimento) = $1 
+            AND EXTRACT(YEAR FROM data_vencimento) = $2
+        `, [mesFiltro, anoFiltro]);
         const totalDespesas = Number(despesasRes.rows[0]?.total) || 0;
 
-        const investRes = await pool.query('SELECT SUM(valor) as total FROM investimentos WHERE ativo = true');
+        // 4. Busca os investimentos do mês
+        const investRes = await pool.query(`
+            SELECT SUM(valor) as total 
+            FROM investimentos 
+            WHERE ativo = true
+            AND EXTRACT(MONTH FROM data_vencimento) = $1 
+            AND EXTRACT(YEAR FROM data_vencimento) = $2
+        `, [mesFiltro, anoFiltro]);
         const totalInvestimentos = Number(investRes.rows[0]?.total) || 0;
 
-        // Taxa global agora é irrelevante aqui, o front calcula por período.
-        const taxaCustoFixo = 0; 
+        // 5. Calcula a Taxa de Custo Fixo Perfeita
+        let taxaCustoFixo = 0;
+        if (faturamento > 0) {
+            taxaCustoFixo = (totalDespesas / faturamento) * 100;
+        }
 
         res.json({ faturamento, totalDespesas, totalInvestimentos, taxaCustoFixo });
     } catch (err) {
-        console.error(err);
+        console.error("Erro no dashboard:", err);
         res.status(500).json({ error: 'Erro no dashboard' });
     }
 });

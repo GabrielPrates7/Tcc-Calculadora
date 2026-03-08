@@ -1,0 +1,262 @@
+/* CONTAINER PRINCIPAL */
+.kanban-container {
+    padding: 20px 30px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #f8fafc; /* Fundo cinza claro igual ao resto do sistema */
+}
+
+.kanban-header {
+    margin-bottom: 20px;
+}
+
+.kanban-header h1 {
+    margin: 0 0 5px 0;
+    color: #0f172a;
+    font-size: 1.8rem;
+}
+
+.kanban-header p {
+    color: #64748b;
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+/* --- BARRA DE FERRAMENTAS (FILTROS) --- */
+.kanban-header {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.kanban-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.search-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background-color: #f1f5f9;
+    padding: 8px 15px;
+    border-radius: 6px;
+    flex: 1;
+    min-width: 250px;
+    border: 1px solid transparent;
+    transition: border 0.2s;
+}
+
+.search-box:focus-within {
+    border-color: #3b82f6;
+    background-color: white;
+}
+
+.search-box input {
+    border: none;
+    background: transparent;
+    outline: none;
+    width: 100%;
+    font-size: 0.95rem;
+    color: #334155;
+}
+
+.filtros-box {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.filtros-box select {
+    padding: 8px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background-color: white;
+    color: #334155;
+    font-size: 0.9rem;
+    outline: none;
+    cursor: pointer;
+}
+
+.checkbox-atraso {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #475569;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+
+.checkbox-atraso:hover { background-color: #fee2e2; }
+
+.empty-column {
+    text-align: center;
+    padding: 20px;
+    color: #94a3b8;
+    font-size: 0.9rem;
+    border: 2px dashed #cbd5e1;
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+/* O QUADRO (FLEXBOX PARA COLUNAS) */
+.kanban-board {
+    display: flex;
+    gap: 20px;
+    overflow-x: auto;
+    padding-bottom: 15px;
+    flex: 1; /* Ocupa o resto da tela */
+}
+
+/* AS COLUNAS */
+.kanban-column {
+    background-color: #e2e8f0;
+    border-radius: 10px;
+    min-width: 320px;
+    width: 320px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-height: calc(100vh - 120px);
+}
+
+.column-header {
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #334155;
+    border-bottom: 2px solid #cbd5e1;
+}
+
+.column-header h2 {
+    margin: 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    flex: 1;
+}
+
+.card-count {
+    background: #cbd5e1;
+    color: #334155;
+    font-size: 0.8rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 20px;
+}
+
+/* ÁREA ONDE OS CARTÕES FICAM */
+.column-body {
+    padding: 15px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    flex: 1;
+}
+
+/* O CARTÃO DA O.S. */
+.kanban-card {
+    background-color: white;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    border-left: 4px solid #3b82f6; /* Azul do Denarius */
+    cursor: grab;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.kanban-card:active {
+    cursor: grabbing;
+    transform: scale(0.98); /* Dá um efeito de "agarrar" o cartão */
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.os-numero {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #94a3b8;
+}
+
+.cliente-nome {
+    margin: 0 0 4px 0;
+    font-size: 1.05rem;
+    color: #1e293b;
+}
+
+.produto-nome {
+    margin: 0 0 15px 0;
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px dashed #e2e8f0;
+    padding-top: 10px;
+}
+
+.valor-os {
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.prazo-os {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8rem;
+    color: #64748b;
+}
+
+/* Alerta de atraso */
+.prazo-os.atrasado {
+    color: #ef4444;
+    font-weight: bold;
+}
+
+/* ETIQUETAS FINANCEIRAS (BADGES) */
+.badge-fin {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+}
+
+.badge-pendente { background-color: #fee2e2; color: #b91c1c; }
+.badge-sinal { background-color: #fef08a; color: #854d0e; }
+.badge-pago { background-color: #dcfce7; color: #15803d; }
+
+/* Custom Scrollbar para as colunas */
+.column-body::-webkit-scrollbar { width: 6px; }
+.column-body::-webkit-scrollbar-track { background: transparent; }
+.column-body::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+.kanban-board::-webkit-scrollbar { height: 8px; }
+.kanban-board::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }

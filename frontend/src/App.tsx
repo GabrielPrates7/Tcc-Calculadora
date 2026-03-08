@@ -5,6 +5,9 @@ import { Financeiro } from './modules/financeiro/Financeiro';
 import { Funcionarios } from './modules/funcionarios/Funcionarios';
 import { CustoObra } from './modules/custo-obra/CustoObra';
 
+// 👇 IMPORTANDO O NOSSO NOVO KANBAN 👇
+import { OrdemServicoKanban } from './modules/ordemServico/ordemServico';
+
 function App() {
   return (
     <BrowserRouter>
@@ -20,6 +23,9 @@ function App() {
             <Route path="/financeiro" element={<Financeiro />} />
             <Route path="/funcionarios" element={<Funcionarios />} />
             <Route path="/custo-obra" element={<CustoObra />} />
+            
+            {/* 👇 NOVA ROTA ADICIONADA AQUI 👇 */}
+            <Route path="/ordens-servico" element={<OrdemServicoKanban />} />
           </Routes>
         </main>
       </div>

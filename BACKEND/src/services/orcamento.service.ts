@@ -7,7 +7,6 @@ interface CriarOrcamentoDTO {
     tempoGasto: number;
     lucroPct: number;
     impostoPct: number;
-    // NOVO: Precisamos receber o valor do cenário selecionado no Dropdown
     valorHoraSelecionado?: number; 
 }
 
@@ -16,12 +15,24 @@ export class OrcamentoService {
     // --- 1. LÓGICA DE CÁLCULO (Motor Financeiro) ---
     private async calcularValores(dados: CriarOrcamentoDTO) {
         
-        // A. CÁLCULO DA TAXA DE CUSTO FIXO (Financeiro)
-        const despesasRes = await pool.query("SELECT SUM(valor) as total FROM despesas_fixas WHERE ativo = true");
-        const fatRes = await pool.query("SELECT valor FROM faturamentos_mensais ORDER BY ano DESC, mes DESC LIMIT 1");
+        // A. CÁLCULO DA TAXA DE CUSTO FIXO (Filtrado pelo Mês/Ano do último Faturamento)
+        const fatRes = await pool.query("SELECT mes, ano, valor FROM faturamentos_mensais ORDER BY ano DESC, mes DESC LIMIT 1");
+        const faturamentoData = fatRes.rows[0];
+        const faturamento = Number(faturamentoData?.valor) || 1; // Evita divisão por zero
+        
+        // Pega o mês e ano do faturamento para filtrar as despesas iguais à tela de Dashboard
+        const mesFiltro = faturamentoData?.mes || new Date().getMonth() + 1;
+        const anoFiltro = faturamentoData?.ano || new Date().getFullYear();
+
+        const despesasRes = await pool.query(`
+            SELECT SUM(valor) as total 
+            FROM despesas_fixas 
+            WHERE ativo = true 
+            AND EXTRACT(MONTH FROM CAST(data_vencimento AS DATE)) = $1 
+            AND EXTRACT(YEAR FROM CAST(data_vencimento AS DATE)) = $2
+        `, [mesFiltro, anoFiltro]);
         
         const totalDespesas = Number(despesasRes.rows[0]?.total) || 0;
-        const faturamento = Number(fatRes.rows[0]?.valor) || 1; 
         const custoFixoPct = (totalDespesas / faturamento) * 100;
 
         // B. CÁLCULO DO CUSTO DA MÃO DE OBRA (Custo de Obra)
@@ -163,9 +174,7 @@ export class OrcamentoService {
         return { message: 'Orçamento excluído com sucesso.' };
     }
 
-    // --- 3. NOVO MÉTODO: BUSCAR CENÁRIOS PARA O DROPDOWN ---
-// --- 3. BUSCAR CENÁRIOS PARA O DROPDOWN (Com Sistema Anti-Quebra) ---
-    // --- BUSCAR CENÁRIOS PARA O DROPDOWN (100% DINÂMICO JSONB) ---
+    // --- 3. BUSCAR CENÁRIOS PARA O DROPDOWN (100% DINÂMICO JSONB) ---
     async listarCenariosMaoObra() {
         try {
             // Usamos configuracao_usada->>'tipo' para ler o JSON direto no banco de dados

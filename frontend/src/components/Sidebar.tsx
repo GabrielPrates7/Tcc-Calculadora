@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, HardHat, DollarSign, Calculator,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, ClipboardList // <-- Ícone novo adicionado aqui!
 } from 'lucide-react';
 import './Sidebar.css';
 
@@ -19,6 +19,8 @@ export function Sidebar() {
     { id: 'custo-obra', label: 'Custo de Obra', icon: HardHat, path: '/custo-obra' },
     { id: 'financeiro', label: 'Financeiro', icon: DollarSign, path: '/financeiro' },
     { id: 'orcamentos', label: 'Orçamentos', icon: Calculator, path: '/orcamentos' },
+    // 👇 NOVA TELA ADICIONADA AQUI 👇
+    { id: 'ordens-servico', label: 'Ordens de Serviço', icon: ClipboardList, path: '/ordens-servico' }, 
   ];
 
   return (

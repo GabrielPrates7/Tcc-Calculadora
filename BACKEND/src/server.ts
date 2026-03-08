@@ -7,6 +7,7 @@ import funcionariosRoutes from './routes/funcionarios.routes';
 import financeiroRoutes from './routes/financeiro.routes';
 import obraRoutes from './routes/obra.routes'; // Confirme se o arquivo chama 'obra.routes.ts' ou 'calculo-obra.routes.ts'
 import orcamentosRoutes from './routes/orcamentos.routes';
+import ordemServicoRoutes from './routes/ordemServico.routes';
 
 const app = express();
 
@@ -36,6 +37,7 @@ app.use('/calculo-obra', obraRoutes);
 // Módulo Orçamentos
 app.use('/orcamentos', orcamentosRoutes);
 
+app.use('/ordens-servico', ordemServicoRoutes);
 
 // --- 4. INICIALIZAÇÃO ---
 app.listen(3000, () => {
