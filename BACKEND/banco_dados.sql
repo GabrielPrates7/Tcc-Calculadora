@@ -2,12 +2,12 @@
 -- PostgreSQL database dump
 --
 
-\restrict iz6mjmJfBHBflB9ChNmyNPTDnEsxaQ8lGuEzNtTsheFk3AfYRt7McQjxKedpgyi
+\restrict ee2AXhnQEa6ucnyx5ajXafa14StvV0lQhlOsTIZjdPfo5AwaJOIlSTeCS3EEOLV
 
 -- Dumped from database version 18.1
 -- Dumped by pg_dump version 18.1
 
--- Started on 2026-01-26 23:07:26
+-- Started on 2026-03-08 03:10:38
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -60,7 +60,7 @@ CREATE SEQUENCE public.configuracao_producao_id_seq
 ALTER SEQUENCE public.configuracao_producao_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5100 (class 0 OID 0)
+-- TOC entry 5126 (class 0 OID 0)
 -- Dependencies: 227
 -- Name: configuracao_producao_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -105,7 +105,7 @@ CREATE SEQUENCE public.despesas_fixas_id_seq
 ALTER SEQUENCE public.despesas_fixas_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5101 (class 0 OID 0)
+-- TOC entry 5127 (class 0 OID 0)
 -- Dependencies: 221
 -- Name: despesas_fixas_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -145,7 +145,7 @@ CREATE SEQUENCE public.faturamentos_id_seq
 ALTER SEQUENCE public.faturamentos_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5102 (class 0 OID 0)
+-- TOC entry 5128 (class 0 OID 0)
 -- Dependencies: 229
 -- Name: faturamentos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -199,12 +199,54 @@ CREATE SEQUENCE public.funcionarios_id_seq
 ALTER SEQUENCE public.funcionarios_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5103 (class 0 OID 0)
+-- TOC entry 5129 (class 0 OID 0)
 -- Dependencies: 219
 -- Name: funcionarios_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
 ALTER SEQUENCE public.funcionarios_id_seq OWNED BY public.funcionarios.id;
+
+
+--
+-- TOC entry 234 (class 1259 OID 16578)
+-- Name: historico_custo_obra; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.historico_custo_obra (
+    id integer NOT NULL,
+    data_alteracao timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    custo_total_folha numeric(10,2),
+    configuracao_usada jsonb,
+    valor_unitario_final numeric(10,2),
+    titulo character varying(255)
+);
+
+
+ALTER TABLE public.historico_custo_obra OWNER TO postgres;
+
+--
+-- TOC entry 233 (class 1259 OID 16577)
+-- Name: historico_custo_obra_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.historico_custo_obra_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.historico_custo_obra_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 5130 (class 0 OID 0)
+-- Dependencies: 233
+-- Name: historico_custo_obra_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.historico_custo_obra_id_seq OWNED BY public.historico_custo_obra.id;
 
 
 --
@@ -243,7 +285,7 @@ CREATE SEQUENCE public.investimentos_id_seq
 ALTER SEQUENCE public.investimentos_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5104 (class 0 OID 0)
+-- TOC entry 5131 (class 0 OID 0)
 -- Dependencies: 223
 -- Name: investimentos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -291,12 +333,55 @@ CREATE SEQUENCE public.orcamentos_id_seq
 ALTER SEQUENCE public.orcamentos_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5105 (class 0 OID 0)
+-- TOC entry 5132 (class 0 OID 0)
 -- Dependencies: 225
 -- Name: orcamentos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
 ALTER SEQUENCE public.orcamentos_id_seq OWNED BY public.orcamentos.id;
+
+
+--
+-- TOC entry 236 (class 1259 OID 16591)
+-- Name: ordens_servico; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.ordens_servico (
+    id integer NOT NULL,
+    orcamento_id integer NOT NULL,
+    status_producao character varying(50) DEFAULT 'fila'::character varying,
+    status_financeiro character varying(50) DEFAULT 'pendente'::character varying,
+    data_entrega date,
+    criado_em timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    atualizado_em timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.ordens_servico OWNER TO postgres;
+
+--
+-- TOC entry 235 (class 1259 OID 16590)
+-- Name: ordens_servico_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.ordens_servico_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.ordens_servico_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 5133 (class 0 OID 0)
+-- Dependencies: 235
+-- Name: ordens_servico_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.ordens_servico_id_seq OWNED BY public.ordens_servico.id;
 
 
 --
@@ -335,7 +420,7 @@ CREATE SEQUENCE public.snapshots_financeiros_id_seq
 ALTER SEQUENCE public.snapshots_financeiros_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5106 (class 0 OID 0)
+-- TOC entry 5134 (class 0 OID 0)
 -- Dependencies: 231
 -- Name: snapshots_financeiros_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -344,7 +429,7 @@ ALTER SEQUENCE public.snapshots_financeiros_id_seq OWNED BY public.snapshots_fin
 
 
 --
--- TOC entry 4908 (class 2604 OID 16490)
+-- TOC entry 4918 (class 2604 OID 16490)
 -- Name: configuracao_producao id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -352,7 +437,7 @@ ALTER TABLE ONLY public.configuracao_producao ALTER COLUMN id SET DEFAULT nextva
 
 
 --
--- TOC entry 4898 (class 2604 OID 16438)
+-- TOC entry 4908 (class 2604 OID 16438)
 -- Name: despesas_fixas id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -360,7 +445,7 @@ ALTER TABLE ONLY public.despesas_fixas ALTER COLUMN id SET DEFAULT nextval('publ
 
 
 --
--- TOC entry 4915 (class 2604 OID 16528)
+-- TOC entry 4925 (class 2604 OID 16528)
 -- Name: faturamentos_mensais id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -368,7 +453,7 @@ ALTER TABLE ONLY public.faturamentos_mensais ALTER COLUMN id SET DEFAULT nextval
 
 
 --
--- TOC entry 4886 (class 2604 OID 16410)
+-- TOC entry 4896 (class 2604 OID 16410)
 -- Name: funcionarios id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -376,7 +461,15 @@ ALTER TABLE ONLY public.funcionarios ALTER COLUMN id SET DEFAULT nextval('public
 
 
 --
--- TOC entry 4902 (class 2604 OID 16449)
+-- TOC entry 4928 (class 2604 OID 16581)
+-- Name: historico_custo_obra id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.historico_custo_obra ALTER COLUMN id SET DEFAULT nextval('public.historico_custo_obra_id_seq'::regclass);
+
+
+--
+-- TOC entry 4912 (class 2604 OID 16449)
 -- Name: investimentos id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -384,7 +477,7 @@ ALTER TABLE ONLY public.investimentos ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
--- TOC entry 4906 (class 2604 OID 16473)
+-- TOC entry 4916 (class 2604 OID 16473)
 -- Name: orcamentos id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -392,7 +485,15 @@ ALTER TABLE ONLY public.orcamentos ALTER COLUMN id SET DEFAULT nextval('public.o
 
 
 --
--- TOC entry 4916 (class 2604 OID 16570)
+-- TOC entry 4930 (class 2604 OID 16594)
+-- Name: ordens_servico id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ordens_servico ALTER COLUMN id SET DEFAULT nextval('public.ordens_servico_id_seq'::regclass);
+
+
+--
+-- TOC entry 4926 (class 2604 OID 16570)
 -- Name: snapshots_financeiros id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -400,16 +501,16 @@ ALTER TABLE ONLY public.snapshots_financeiros ALTER COLUMN id SET DEFAULT nextva
 
 
 --
--- TOC entry 5090 (class 0 OID 16487)
+-- TOC entry 5112 (class 0 OID 16487)
 -- Dependencies: 228
 -- Data for Name: configuracao_producao; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public.configuracao_producao VALUES (1, 20, 0, 5, 'dias', 'grupo', 2);
+INSERT INTO public.configuracao_producao VALUES (1, 0, 299, 1, 'horas', 'individual', 3);
 
 
 --
--- TOC entry 5084 (class 0 OID 16435)
+-- TOC entry 5106 (class 0 OID 16435)
 -- Dependencies: 222
 -- Data for Name: despesas_fixas; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -428,24 +529,38 @@ INSERT INTO public.despesas_fixas VALUES (13, 'Manutenção Máquinas', 300.00, 
 INSERT INTO public.despesas_fixas VALUES (12, 'IPVA', 375.00, '2026-01-01 23:47:50.521196', true, false, '', '2026-01-05', NULL);
 INSERT INTO public.despesas_fixas VALUES (7, 'Internet', 110.00, '2026-01-01 23:46:56.362629', true, false, '', '2026-01-05', NULL);
 INSERT INTO public.despesas_fixas VALUES (17, 'INSS', 160.00, '2026-01-01 23:48:46.409477', true, false, '', '2026-01-05', NULL);
-INSERT INTO public.despesas_fixas VALUES (6, 'Copasa', 80.00, '2026-01-01 23:46:43.09192', true, false, '', '2026-01-05', NULL);
 INSERT INTO public.despesas_fixas VALUES (22, 'Combustível', 2000.00, '2026-01-21 23:30:36.329418', true, false, '', '2026-02-06', NULL);
 INSERT INTO public.despesas_fixas VALUES (1, 'Aluguel', 5200.00, '2026-01-01 23:36:07.669449', true, false, '', '2026-01-21', NULL);
+INSERT INTO public.despesas_fixas VALUES (23, 'Aluguel', 5200.00, '2026-03-07 23:59:46.582835', true, false, '', '2026-03-07', NULL);
+INSERT INTO public.despesas_fixas VALUES (24, 'Caçamba', 960.00, '2026-03-07 23:59:55.646548', true, false, '', '2026-03-07', NULL);
+INSERT INTO public.despesas_fixas VALUES (25, 'Cemig', 900.00, '2026-03-08 00:00:05.53592', true, false, '', '2026-03-08', NULL);
+INSERT INTO public.despesas_fixas VALUES (26, 'Combustível', 2000.00, '2026-03-08 00:00:29.798452', true, false, '', '2026-03-08', NULL);
+INSERT INTO public.despesas_fixas VALUES (27, 'Consultoria', 265.00, '2026-03-08 00:00:40.236409', true, false, '', '2026-03-08', NULL);
+INSERT INTO public.despesas_fixas VALUES (28, 'Contador', 500.00, '2026-03-08 00:00:50.627036', true, false, '', '2026-03-08', NULL);
+INSERT INTO public.despesas_fixas VALUES (6, 'Copasa', 80.00, '2026-01-01 23:46:43.09192', true, false, '', '2026-03-08', NULL);
+INSERT INTO public.despesas_fixas VALUES (29, 'Telefone', 85.00, '2026-03-08 00:01:47.405607', true, false, '', '2026-03-08', NULL);
+INSERT INTO public.despesas_fixas VALUES (30, 'Pró-labore', 10000.00, '2026-03-08 00:01:58.437893', true, false, '', '2026-03-08', NULL);
+INSERT INTO public.despesas_fixas VALUES (31, 'Outros', 5000.00, '2026-03-08 00:02:09.387119', true, false, '', '2026-03-08', NULL);
+INSERT INTO public.despesas_fixas VALUES (32, 'Marketing', 1500.00, '2026-03-08 00:02:20.403391', true, false, '', '2026-03-08', NULL);
+INSERT INTO public.despesas_fixas VALUES (33, 'Manutenção Máquinas', 300.00, '2026-03-08 00:02:28.97574', true, false, '', '2026-03-08', NULL);
+INSERT INTO public.despesas_fixas VALUES (34, 'Internet', 110.00, '2026-03-08 00:05:24.49891', true, false, '', '2026-03-08', NULL);
+INSERT INTO public.despesas_fixas VALUES (35, 'IPVA', 375.00, '2026-03-08 00:07:30.64129', true, false, '', '2026-03-08', NULL);
+INSERT INTO public.despesas_fixas VALUES (36, 'INSS', 160.00, '2026-03-08 00:08:04.151117', true, false, '', '2026-03-08', NULL);
 
 
 --
--- TOC entry 5092 (class 0 OID 16525)
+-- TOC entry 5114 (class 0 OID 16525)
 -- Dependencies: 230
 -- Data for Name: faturamentos_mensais; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
 INSERT INTO public.faturamentos_mensais VALUES (1, 2, 2026, 10000.00);
-INSERT INTO public.faturamentos_mensais VALUES (2, 3, 2026, 300000.00);
 INSERT INTO public.faturamentos_mensais VALUES (4, 1, 2026, 200000.00);
+INSERT INTO public.faturamentos_mensais VALUES (2, 3, 2026, 200000.00);
 
 
 --
--- TOC entry 5082 (class 0 OID 16407)
+-- TOC entry 5104 (class 0 OID 16407)
 -- Dependencies: 220
 -- Data for Name: funcionarios; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -466,16 +581,29 @@ INSERT INTO public.funcionarios VALUES (28, 'Everaldo', 2000.00, 166.67, 55.56, 
 INSERT INTO public.funcionarios VALUES (29, 'Magno', 2500.00, 208.33, 69.44, 208.33, 200.00, 80.00, 40.00, 0.00, 3306.11, '2026-01-09 01:27:15.152459', 'teste7', true, 'producao', '2026-01-11', NULL, NULL);
 INSERT INTO public.funcionarios VALUES (30, 'Fabrício', 4000.00, 333.33, 111.11, 333.33, 320.00, 128.00, 41.00, 0.00, 5266.78, '2026-01-09 01:27:37.611717', 'teste7', true, 'producao', '2026-01-11', NULL, NULL);
 INSERT INTO public.funcionarios VALUES (31, 'Gerivam', 4200.00, 350.00, 116.67, 350.00, 336.00, 134.40, 42.00, 0.00, 5529.07, '2026-01-09 01:28:06.916726', 'teste8', true, 'producao', '2026-01-11', NULL, NULL);
-INSERT INTO public.funcionarios VALUES (32, 'Diego', 1800.00, 150.00, 50.00, 150.00, 144.00, 57.60, 43.00, 0.00, 2394.60, '2026-01-09 01:28:41.372678', 'teste9', true, 'producao', '2026-01-11', NULL, NULL);
 INSERT INTO public.funcionarios VALUES (33, 'João Fulano', 100.00, 8.33, 2.78, 8.33, 8.00, 3.20, 100.00, 0.00, 230.64, '2026-01-11 21:05:53.095436', 'Marceneiro', false, 'producao', '2020-05-20', '2026-01-11', NULL);
 INSERT INTO public.funcionarios VALUES (44, 'Klebson Lopes', 5000.00, 416.67, 138.89, 416.67, 400.00, 160.00, 60.00, 0.00, 6592.22, '2026-01-18 19:41:43.069718', 'Marceneiro 3', true, 'administrativo', '2026-01-18', NULL, NULL);
 INSERT INTO public.funcionarios VALUES (37, 'Joao', 440.00, 36.67, 12.22, 36.67, 35.20, 14.08, 50.00, 0.00, 624.84, '2026-01-12 21:32:02.49164', 'Mec', false, 'producao', '2026-01-13', '2026-01-14', 'Demissão sem Justa Causa');
-INSERT INTO public.funcionarios VALUES (43, 'Xxxxx', 8000.00, 666.67, 222.22, 666.67, 640.00, 256.00, 99.00, 0.00, 10550.56, '2026-01-12 22:33:03.798948', 'xxxxxx', false, 'producao', '2026-01-13', '2026-01-13', 'Aposentadoria');
 INSERT INTO public.funcionarios VALUES (45, 'Zé inacio', 2800.00, 233.33, 77.78, 233.33, 224.00, 89.60, 20.00, 0.00, 3678.04, '2026-01-21 22:30:47.740702', 'Auxiliar Administrativo', true, 'administrativo', '2026-01-22', NULL, NULL);
+INSERT INTO public.funcionarios VALUES (32, 'Diego', 1800.00, 150.00, 50.00, 150.00, 144.00, 57.60, 43.00, 0.00, 2394.60, '2026-01-09 01:28:41.372678', 'teste9', true, 'producao', '2026-01-11', NULL, NULL);
+INSERT INTO public.funcionarios VALUES (43, 'Xxxxx', 8000.00, 666.67, 222.22, 666.67, 640.00, 256.00, 99.00, 0.00, 10550.56, '2026-01-12 22:33:03.798948', 'xxxxxx', false, 'producao', '2026-01-13', '2026-01-14', 'Término de Contrato');
 
 
 --
--- TOC entry 5086 (class 0 OID 16446)
+-- TOC entry 5118 (class 0 OID 16578)
+-- Dependencies: 234
+-- Data for Name: historico_custo_obra; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO public.historico_custo_obra VALUES (20, '2026-01-30 02:32:52.53559', 39468.70, '{"tipo": "horas", "tempo": 199, "equipes": 5, "organizacao": "grupo", "tamanhoGrupo": 2}', 39.67, 'teste2');
+INSERT INTO public.historico_custo_obra VALUES (22, '2026-02-05 23:01:04.20666', 39468.70, '{"tipo": "dias", "tempo": 40, "equipes": 5, "organizacao": "grupo", "tamanhoGrupo": 2}', 197.34, 'Teste 3');
+INSERT INTO public.historico_custo_obra VALUES (23, '2026-02-22 21:57:41.756548', 39468.70, '{"tipo": "dias", "tempo": 20, "equipes": 5, "organizacao": "grupo", "tamanhoGrupo": 2}', 394.69, 'Principal');
+INSERT INTO public.historico_custo_obra VALUES (24, '2026-03-07 23:11:12.255426', 39468.70, '{"tipo": "dias", "tempo": 25, "equipes": 5, "organizacao": "grupo", "tamanhoGrupo": 3}', 315.75, 'Teste 4');
+INSERT INTO public.historico_custo_obra VALUES (25, '2026-03-07 23:11:40.847193', 39468.70, '{"tipo": "horas", "tempo": 299, "equipes": 1, "organizacao": "individual", "tamanhoGrupo": 3}', 132.00, 'Teste 5');
+
+
+--
+-- TOC entry 5108 (class 0 OID 16446)
 -- Dependencies: 224
 -- Data for Name: investimentos; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -490,27 +618,36 @@ INSERT INTO public.investimentos VALUES (7, ' Saveiro ', 1100.00, '2026-01-01 23
 
 
 --
--- TOC entry 5088 (class 0 OID 16470)
+-- TOC entry 5110 (class 0 OID 16470)
 -- Dependencies: 226
 -- Data for Name: orcamentos; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public.orcamentos VALUES (2, 'Guarda roupas 2', 4000.00, 5.00, 30.00, 5.00, 13.72, 394.69, 1973.43, 11648.10, '2026-01-05 22:51:00.090763', 'Fulano 1');
-INSERT INTO public.orcamentos VALUES (3, 'Teste', 5000.00, 5.00, 20.00, 10.00, 13.72, 394.69, 1973.43, 12390.06, '2026-01-05 23:02:55.800167', 'José Ribeiro');
+INSERT INTO public.orcamentos VALUES (8, 'Mesa', 4000.00, 5.00, 30.00, 5.00, 13.72, 394.69, 1973.45, 11648.13, '2026-03-08 00:48:15.777066', 'Jose');
 
 
 --
--- TOC entry 5094 (class 0 OID 16567)
+-- TOC entry 5120 (class 0 OID 16591)
+-- Dependencies: 236
+-- Data for Name: ordens_servico; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO public.ordens_servico VALUES (1, 8, 'fila', 'pendente', '2026-03-13', '2026-03-08 03:00:53.233136', '2026-03-08 03:02:03.574298');
+
+
+--
+-- TOC entry 5116 (class 0 OID 16567)
 -- Dependencies: 232
 -- Data for Name: snapshots_financeiros; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
 INSERT INTO public.snapshots_financeiros VALUES (2, '2026-01-26 21:45:55.151422', 'Teste', 200000.00, 27435.00, 12350.00, 13.72, '{"despesas": [{"id": 18, "nome": "Outros", "pago": false, "ativo": true, "valor": 5000, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 17, "nome": "INSS", "pago": false, "ativo": true, "valor": 160, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 16, "nome": "Marketing", "pago": false, "ativo": true, "valor": 1500, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 15, "nome": "Consultoria", "pago": false, "ativo": true, "valor": 265, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 14, "nome": "Contador", "pago": false, "ativo": true, "valor": 500, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 13, "nome": "Manutenção Máquinas", "pago": false, "ativo": true, "valor": 300, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 12, "nome": "IPVA", "pago": false, "ativo": true, "valor": 375, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 11, "nome": "Caçamba", "pago": false, "ativo": true, "valor": 960, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 10, "nome": "Pró-labore", "pago": false, "ativo": true, "valor": 10000, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 9, "nome": "Telefone", "pago": false, "ativo": true, "valor": 85, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 8, "nome": "Combustível", "pago": false, "ativo": true, "valor": 2000, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 7, "nome": "Internet", "pago": false, "ativo": true, "valor": 110, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 6, "nome": "Copasa", "pago": false, "ativo": true, "valor": 80, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 5, "nome": "Cemig", "pago": false, "ativo": true, "valor": 900, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 1, "nome": "Aluguel", "pago": false, "ativo": true, "valor": 5200, "beneficiario": "", "dataVencimento": "2026-01-21T03:00:00.000Z"}, {"id": 21, "nome": "Aluguel Fevereiro", "pago": false, "ativo": true, "valor": 5200, "beneficiario": "", "dataVencimento": "2026-02-05T03:00:00.000Z"}, {"id": 22, "nome": "Combustível", "pago": false, "ativo": true, "valor": 2000, "beneficiario": "", "dataVencimento": "2026-02-06T03:00:00.000Z"}], "investimentos": [{"id": 11, "nome": "Compra de Maquinário", "pago": false, "ativo": true, "valor": 5000, "beneficiario": "", "dataVencimento": "2026-01-21T03:00:00.000Z"}, {"id": 7, "nome": " Saveiro ", "pago": false, "ativo": true, "valor": 1100, "beneficiario": "", "dataVencimento": "2026-01-21T03:00:00.000Z"}, {"id": 6, "nome": " BDMG ", "pago": false, "ativo": true, "valor": 1130, "beneficiario": "", "dataVencimento": "2026-01-21T03:00:00.000Z"}, {"id": 5, "nome": " Moto ", "pago": false, "ativo": true, "valor": 250, "beneficiario": "", "dataVencimento": "2026-01-21T03:00:00.000Z"}, {"id": 4, "nome": " Serra ", "pago": false, "ativo": true, "valor": 2730, "beneficiario": "", "dataVencimento": "2026-01-21T03:00:00.000Z"}, {"id": 2, "nome": "Coladeira", "pago": false, "ativo": true, "valor": 1000, "beneficiario": "", "dataVencimento": "2026-01-21T03:00:00.000Z"}, {"id": 1, "nome": "Serra", "pago": false, "ativo": true, "valor": 1140, "beneficiario": "", "dataVencimento": "2026-01-21T03:00:00.000Z"}]}');
 INSERT INTO public.snapshots_financeiros VALUES (3, '2026-01-26 22:05:57.844724', 'Teste2', 10000.00, 7200.00, 0.00, 72.00, '{"despesas": [{"id": 18, "nome": "Outros", "pago": false, "ativo": true, "valor": 5000, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 17, "nome": "INSS", "pago": false, "ativo": true, "valor": 160, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 16, "nome": "Marketing", "pago": false, "ativo": true, "valor": 1500, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 15, "nome": "Consultoria", "pago": false, "ativo": true, "valor": 265, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 14, "nome": "Contador", "pago": false, "ativo": true, "valor": 500, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 13, "nome": "Manutenção Máquinas", "pago": false, "ativo": true, "valor": 300, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 12, "nome": "IPVA", "pago": false, "ativo": true, "valor": 375, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 11, "nome": "Caçamba", "pago": false, "ativo": true, "valor": 960, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 10, "nome": "Pró-labore", "pago": false, "ativo": true, "valor": 10000, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 9, "nome": "Telefone", "pago": false, "ativo": true, "valor": 85, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 8, "nome": "Combustível", "pago": false, "ativo": true, "valor": 2000, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 7, "nome": "Internet", "pago": false, "ativo": true, "valor": 110, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 6, "nome": "Copasa", "pago": false, "ativo": true, "valor": 80, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 5, "nome": "Cemig", "pago": false, "ativo": true, "valor": 900, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 1, "nome": "Aluguel", "pago": false, "ativo": true, "valor": 5200, "beneficiario": "", "dataVencimento": "2026-01-21T03:00:00.000Z"}, {"id": 21, "nome": "Aluguel Fevereiro", "pago": false, "ativo": true, "valor": 5200, "beneficiario": "", "dataVencimento": "2026-02-05T03:00:00.000Z"}, {"id": 22, "nome": "Combustível", "pago": false, "ativo": true, "valor": 2000, "beneficiario": "", "dataVencimento": "2026-02-06T03:00:00.000Z"}], "investimentos": [{"id": 11, "nome": "Compra de Maquinário", "pago": false, "ativo": true, "valor": 5000, "beneficiario": "", "dataVencimento": "2026-01-21T03:00:00.000Z"}, {"id": 7, "nome": " Saveiro ", "pago": false, "ativo": true, "valor": 1100, "beneficiario": "", "dataVencimento": "2026-01-21T03:00:00.000Z"}, {"id": 6, "nome": " BDMG ", "pago": false, "ativo": true, "valor": 1130, "beneficiario": "", "dataVencimento": "2026-01-21T03:00:00.000Z"}, {"id": 5, "nome": " Moto ", "pago": false, "ativo": true, "valor": 250, "beneficiario": "", "dataVencimento": "2026-01-21T03:00:00.000Z"}, {"id": 4, "nome": " Serra ", "pago": false, "ativo": true, "valor": 2730, "beneficiario": "", "dataVencimento": "2026-01-21T03:00:00.000Z"}, {"id": 2, "nome": "Coladeira", "pago": false, "ativo": true, "valor": 1000, "beneficiario": "", "dataVencimento": "2026-01-21T03:00:00.000Z"}, {"id": 1, "nome": "Serra", "pago": false, "ativo": true, "valor": 1140, "beneficiario": "", "dataVencimento": "2026-01-21T03:00:00.000Z"}]}');
+INSERT INTO public.snapshots_financeiros VALUES (5, '2026-03-08 00:10:19.090715', 'Custo fixo de Março', 200000.00, 27435.00, 0.00, 13.72, '{"despesas": [{"id": 18, "nome": "Outros", "pago": false, "ativo": true, "valor": 5000, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 17, "nome": "INSS", "pago": false, "ativo": true, "valor": 160, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 16, "nome": "Marketing", "pago": false, "ativo": true, "valor": 1500, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 15, "nome": "Consultoria", "pago": false, "ativo": true, "valor": 265, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 14, "nome": "Contador", "pago": false, "ativo": true, "valor": 500, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 13, "nome": "Manutenção Máquinas", "pago": false, "ativo": true, "valor": 300, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 12, "nome": "IPVA", "pago": false, "ativo": true, "valor": 375, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 11, "nome": "Caçamba", "pago": false, "ativo": true, "valor": 960, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 10, "nome": "Pró-labore", "pago": false, "ativo": true, "valor": 10000, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 9, "nome": "Telefone", "pago": false, "ativo": true, "valor": 85, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 8, "nome": "Combustível", "pago": false, "ativo": true, "valor": 2000, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 7, "nome": "Internet", "pago": false, "ativo": true, "valor": 110, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 5, "nome": "Cemig", "pago": false, "ativo": true, "valor": 900, "beneficiario": "", "dataVencimento": "2026-01-05T03:00:00.000Z"}, {"id": 1, "nome": "Aluguel", "pago": false, "ativo": true, "valor": 5200, "beneficiario": "", "dataVencimento": "2026-01-21T03:00:00.000Z"}, {"id": 21, "nome": "Aluguel Fevereiro", "pago": false, "ativo": true, "valor": 5200, "beneficiario": "", "dataVencimento": "2026-02-05T03:00:00.000Z"}, {"id": 22, "nome": "Combustível", "pago": false, "ativo": true, "valor": 2000, "beneficiario": "", "dataVencimento": "2026-02-06T03:00:00.000Z"}, {"id": 24, "nome": "Caçamba", "pago": false, "ativo": true, "valor": 960, "beneficiario": "", "dataVencimento": "2026-03-07T03:00:00.000Z"}, {"id": 23, "nome": "Aluguel", "pago": false, "ativo": true, "valor": 5200, "beneficiario": "", "dataVencimento": "2026-03-07T03:00:00.000Z"}, {"id": 36, "nome": "INSS", "pago": false, "ativo": true, "valor": 160, "beneficiario": "", "dataVencimento": "2026-03-08T03:00:00.000Z"}, {"id": 35, "nome": "IPVA", "pago": false, "ativo": true, "valor": 375, "beneficiario": "", "dataVencimento": "2026-03-08T03:00:00.000Z"}, {"id": 34, "nome": "Internet", "pago": false, "ativo": true, "valor": 110, "beneficiario": "", "dataVencimento": "2026-03-08T03:00:00.000Z"}, {"id": 33, "nome": "Manutenção Máquinas", "pago": false, "ativo": true, "valor": 300, "beneficiario": "", "dataVencimento": "2026-03-08T03:00:00.000Z"}, {"id": 32, "nome": "Marketing", "pago": false, "ativo": true, "valor": 1500, "beneficiario": "", "dataVencimento": "2026-03-08T03:00:00.000Z"}, {"id": 31, "nome": "Outros", "pago": false, "ativo": true, "valor": 5000, "beneficiario": "", "dataVencimento": "2026-03-08T03:00:00.000Z"}, {"id": 30, "nome": "Pró-labore", "pago": false, "ativo": true, "valor": 10000, "beneficiario": "", "dataVencimento": "2026-03-08T03:00:00.000Z"}, {"id": 29, "nome": "Telefone", "pago": false, "ativo": true, "valor": 85, "beneficiario": "", "dataVencimento": "2026-03-08T03:00:00.000Z"}, {"id": 28, "nome": "Contador", "pago": false, "ativo": true, "valor": 500, "beneficiario": "", "dataVencimento": "2026-03-08T03:00:00.000Z"}, {"id": 27, "nome": "Consultoria", "pago": false, "ativo": true, "valor": 265, "beneficiario": "", "dataVencimento": "2026-03-08T03:00:00.000Z"}, {"id": 26, "nome": "Combustível", "pago": false, "ativo": true, "valor": 2000, "beneficiario": "", "dataVencimento": "2026-03-08T03:00:00.000Z"}, {"id": 25, "nome": "Cemig", "pago": false, "ativo": true, "valor": 900, "beneficiario": "", "dataVencimento": "2026-03-08T03:00:00.000Z"}, {"id": 6, "nome": "Copasa", "pago": false, "ativo": true, "valor": 80, "beneficiario": "", "dataVencimento": "2026-03-08T03:00:00.000Z"}], "investimentos": [{"id": 11, "nome": "Compra de Maquinário", "pago": false, "ativo": true, "valor": 5000, "beneficiario": "", "dataVencimento": "2026-01-21T03:00:00.000Z"}, {"id": 7, "nome": " Saveiro ", "pago": false, "ativo": true, "valor": 1100, "beneficiario": "", "dataVencimento": "2026-01-21T03:00:00.000Z"}, {"id": 6, "nome": " BDMG ", "pago": false, "ativo": true, "valor": 1130, "beneficiario": "", "dataVencimento": "2026-01-21T03:00:00.000Z"}, {"id": 5, "nome": " Moto ", "pago": false, "ativo": true, "valor": 250, "beneficiario": "", "dataVencimento": "2026-01-21T03:00:00.000Z"}, {"id": 4, "nome": " Serra ", "pago": false, "ativo": true, "valor": 2730, "beneficiario": "", "dataVencimento": "2026-01-21T03:00:00.000Z"}, {"id": 2, "nome": "Coladeira", "pago": false, "ativo": true, "valor": 1000, "beneficiario": "", "dataVencimento": "2026-01-21T03:00:00.000Z"}, {"id": 1, "nome": "Serra", "pago": false, "ativo": true, "valor": 1140, "beneficiario": "", "dataVencimento": "2026-01-21T03:00:00.000Z"}]}');
 
 
 --
--- TOC entry 5107 (class 0 OID 0)
+-- TOC entry 5135 (class 0 OID 0)
 -- Dependencies: 227
 -- Name: configuracao_producao_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
@@ -519,25 +656,25 @@ SELECT pg_catalog.setval('public.configuracao_producao_id_seq', 1, false);
 
 
 --
--- TOC entry 5108 (class 0 OID 0)
+-- TOC entry 5136 (class 0 OID 0)
 -- Dependencies: 221
 -- Name: despesas_fixas_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.despesas_fixas_id_seq', 22, true);
+SELECT pg_catalog.setval('public.despesas_fixas_id_seq', 37, true);
 
 
 --
--- TOC entry 5109 (class 0 OID 0)
+-- TOC entry 5137 (class 0 OID 0)
 -- Dependencies: 229
 -- Name: faturamentos_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.faturamentos_id_seq', 5, true);
+SELECT pg_catalog.setval('public.faturamentos_id_seq', 7, true);
 
 
 --
--- TOC entry 5110 (class 0 OID 0)
+-- TOC entry 5138 (class 0 OID 0)
 -- Dependencies: 219
 -- Name: funcionarios_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
@@ -546,7 +683,16 @@ SELECT pg_catalog.setval('public.funcionarios_id_seq', 45, true);
 
 
 --
--- TOC entry 5111 (class 0 OID 0)
+-- TOC entry 5139 (class 0 OID 0)
+-- Dependencies: 233
+-- Name: historico_custo_obra_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.historico_custo_obra_id_seq', 25, true);
+
+
+--
+-- TOC entry 5140 (class 0 OID 0)
 -- Dependencies: 223
 -- Name: investimentos_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
@@ -555,25 +701,34 @@ SELECT pg_catalog.setval('public.investimentos_id_seq', 12, true);
 
 
 --
--- TOC entry 5112 (class 0 OID 0)
+-- TOC entry 5141 (class 0 OID 0)
 -- Dependencies: 225
 -- Name: orcamentos_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.orcamentos_id_seq', 5, true);
+SELECT pg_catalog.setval('public.orcamentos_id_seq', 9, true);
 
 
 --
--- TOC entry 5113 (class 0 OID 0)
+-- TOC entry 5142 (class 0 OID 0)
+-- Dependencies: 235
+-- Name: ordens_servico_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.ordens_servico_id_seq', 1, true);
+
+
+--
+-- TOC entry 5143 (class 0 OID 0)
 -- Dependencies: 231
 -- Name: snapshots_financeiros_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.snapshots_financeiros_id_seq', 3, true);
+SELECT pg_catalog.setval('public.snapshots_financeiros_id_seq', 5, true);
 
 
 --
--- TOC entry 4927 (class 2606 OID 16499)
+-- TOC entry 4944 (class 2606 OID 16499)
 -- Name: configuracao_producao configuracao_producao_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -582,7 +737,7 @@ ALTER TABLE ONLY public.configuracao_producao
 
 
 --
--- TOC entry 4921 (class 2606 OID 16444)
+-- TOC entry 4938 (class 2606 OID 16444)
 -- Name: despesas_fixas despesas_fixas_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -591,7 +746,7 @@ ALTER TABLE ONLY public.despesas_fixas
 
 
 --
--- TOC entry 4929 (class 2606 OID 16534)
+-- TOC entry 4946 (class 2606 OID 16534)
 -- Name: faturamentos_mensais faturamentos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -600,7 +755,7 @@ ALTER TABLE ONLY public.faturamentos_mensais
 
 
 --
--- TOC entry 4919 (class 2606 OID 16423)
+-- TOC entry 4936 (class 2606 OID 16423)
 -- Name: funcionarios funcionarios_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -609,7 +764,16 @@ ALTER TABLE ONLY public.funcionarios
 
 
 --
--- TOC entry 4923 (class 2606 OID 16455)
+-- TOC entry 4952 (class 2606 OID 16587)
+-- Name: historico_custo_obra historico_custo_obra_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.historico_custo_obra
+    ADD CONSTRAINT historico_custo_obra_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4940 (class 2606 OID 16455)
 -- Name: investimentos investimentos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -618,7 +782,7 @@ ALTER TABLE ONLY public.investimentos
 
 
 --
--- TOC entry 4925 (class 2606 OID 16482)
+-- TOC entry 4942 (class 2606 OID 16482)
 -- Name: orcamentos orcamentos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -627,7 +791,16 @@ ALTER TABLE ONLY public.orcamentos
 
 
 --
--- TOC entry 4933 (class 2606 OID 16576)
+-- TOC entry 4954 (class 2606 OID 16602)
+-- Name: ordens_servico ordens_servico_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ordens_servico
+    ADD CONSTRAINT ordens_servico_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4950 (class 2606 OID 16576)
 -- Name: snapshots_financeiros snapshots_financeiros_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -636,7 +809,7 @@ ALTER TABLE ONLY public.snapshots_financeiros
 
 
 --
--- TOC entry 4931 (class 2606 OID 16536)
+-- TOC entry 4948 (class 2606 OID 16536)
 -- Name: faturamentos_mensais uq_faturamento_mes_ano; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -644,11 +817,20 @@ ALTER TABLE ONLY public.faturamentos_mensais
     ADD CONSTRAINT uq_faturamento_mes_ano UNIQUE (mes, ano);
 
 
--- Completed on 2026-01-26 23:07:26
+--
+-- TOC entry 4955 (class 2606 OID 16603)
+-- Name: ordens_servico ordens_servico_orcamento_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.ordens_servico
+    ADD CONSTRAINT ordens_servico_orcamento_id_fkey FOREIGN KEY (orcamento_id) REFERENCES public.orcamentos(id) ON DELETE CASCADE;
+
+
+-- Completed on 2026-03-08 03:10:38
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict iz6mjmJfBHBflB9ChNmyNPTDnEsxaQ8lGuEzNtTsheFk3AfYRt7McQjxKedpgyi
+\unrestrict ee2AXhnQEa6ucnyx5ajXafa14StvV0lQhlOsTIZjdPfo5AwaJOIlSTeCS3EEOLV
 
