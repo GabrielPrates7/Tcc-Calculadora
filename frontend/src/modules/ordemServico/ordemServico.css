@@ -260,3 +260,245 @@
 .column-body::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 .kanban-board::-webkit-scrollbar { height: 8px; }
 .kanban-board::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
+
+/* --- MODAL DE DETALHES DA O.S. --- */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(15, 23, 42, 0.75);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+}
+
+.modal-os {
+    background: #ffffff;
+    width: 100%;
+    max-width: 600px;
+    border-radius: 12px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+}
+
+.modal-os-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    border-bottom: 1px solid #e2e8f0;
+    background-color: #f8fafc;
+}
+
+.modal-os-header h2 { margin: 0 0 5px 0; color: #0f172a; font-size: 1.4rem; }
+.modal-coluna-atual { font-size: 0.9rem; color: #64748b; }
+.modal-coluna-atual strong { color: #3b82f6; }
+
+.btn-close {
+    background: transparent;
+    border: none;
+    color: #64748b;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.btn-close:hover { color: #ef4444; transform: scale(1.1); }
+
+.modal-os-body { padding: 25px; }
+
+/* Grid de Informações */
+.os-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.os-info-box {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background-color: #f8fafc;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.os-info-box label { display: block; font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 700; margin-bottom: 4px; }
+.os-info-box p { margin: 0; color: #0f172a; font-size: 1.05rem; font-weight: 500; }
+.valor-destaque { font-weight: 800 !important; color: #16a34a !important; font-size: 1.2rem !important; }
+
+/* Painel Financeiro */
+.os-financeiro-panel {
+    border-top: 1px dashed #cbd5e1;
+    padding-top: 20px;
+}
+
+.os-financeiro-panel h3 { margin: 0 0 5px 0; color: #0f172a; font-size: 1.1rem; }
+.os-financeiro-panel p { margin: 0 0 15px 0; color: #64748b; font-size: 0.9rem; }
+
+.botoes-financeiro {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-fin {
+    flex: 1;
+    padding: 12px;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    background-color: #f1f5f9;
+    color: #475569;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-fin:hover { background-color: #e2e8f0; }
+
+/* Estados Ativos dos Botões Financeiros */
+.btn-pendente.ativo { background-color: #fee2e2; border-color: #ef4444; color: #b91c1c; }
+.btn-sinal.ativo { background-color: #fef08a; border-color: #eab308; color: #854d0e; }
+.btn-pago.ativo { background-color: #dcfce7; border-color: #22c55e; color: #15803d; }
+
+/* Estilo do Botão de Imprimir */
+.btn-print-os {
+    background-color: #334155;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: 0.2s;
+    width: 100%;
+    justify-content: center;
+}
+.btn-print-os:hover { background-color: #0f172a; }
+
+
+/* ========================================= */
+/* MÁGICA DE IMPRESSÃO - FICHA DE PRODUÇÃO   */
+/* ========================================= */
+
+/* 1. O layout do papel DEVE ficar invisível na tela normal do computador */
+.print-layout {
+    display: none;
+}
+
+/* Quando o botão de imprimir for clicado, o navegador entra aqui: */
+@media print {
+    /* 2. Esconde o site de fundo */
+    body * { visibility: hidden; }
+
+    /* 3. Tira o modal do modo flutuante e deixa a folha branca */
+    .modal-overlay {
+        position: absolute !important;
+        left: 0 !important; top: 0 !important;
+        background: white !important;
+        width: 100% !important; height: auto !important;
+        padding: 0 !important; margin: 0 !important;
+        backdrop-filter: none !important;
+    }
+
+    /* 4. Tira as bordas do modal */
+    .modal-os {
+        border: none !important;
+        box-shadow: none !important;
+        width: 100% !important; max-width: 100% !important;
+        padding: 0 !important; margin: 0 !important;
+    }
+
+    /* 5. O PULO DO GATO: Esconde apenas as peças antigas do sistema, deixando o recipiente vivo! */
+    .modal-os-header, 
+    .os-info-grid, 
+    .os-financeiro-panel,
+    .btn-close {
+        display: none !important;
+    }
+
+    /* 6. Acorda o Template de Papel e os pais dele! */
+    .modal-os, 
+    .modal-os-body, 
+    .print-layout, 
+    .print-layout * {
+        visibility: visible !important;
+    }
+
+    .print-layout {
+        display: block !important;
+        width: 100%;
+        padding: 10mm; /* Margem bonita na folha A4 */
+        color: #000 !important; /* Força tinta preta na impressora */
+    }
+
+    /* Estilizando o cabeçalho do Papel */
+    .print-header {
+        text-align: center;
+        border-bottom: 2px solid #000;
+        padding-bottom: 10px;
+        margin-bottom: 25px;
+    }
+    .print-header h1 { margin: 0; font-size: 22pt; font-weight: 800; letter-spacing: 2px; }
+    .print-header h2 { margin: 5px 0 0 0; font-size: 14pt; color: #333; }
+
+    /* Caixas de Informação */
+    .print-info-grid {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+        margin-bottom: 30px;
+    }
+    .print-box {
+        border: 2px solid #000;
+        padding: 12px;
+        border-radius: 6px;
+        font-size: 11pt;
+    }
+
+    /* Seções e Linhas para escrever à mão */
+    .print-section { margin-bottom: 30px; }
+    .print-section h3 {
+        border-bottom: 1px solid #000;
+        padding-bottom: 5px;
+        margin-bottom: 15px;
+        font-size: 13pt;
+        text-transform: uppercase;
+    }
+    .print-lines {
+        border-bottom: 1px dashed #666;
+        height: 35px;
+        width: 100%;
+    }
+
+    /* Checklist com as caixinhas para dar 'Visto' (Caneta) */
+    .print-check-item {
+        display: flex !important;
+        align-items: center;
+        gap: 12px;
+        font-size: 12pt;
+        margin-bottom: 15px;
+    }
+    .print-check-item .box {
+        width: 20px; height: 20px;
+        border: 2px solid #000;
+        border-radius: 4px;
+        display: inline-block;
+    }
+
+    /* Área de Assinatura no final da folha */
+    .print-signatures {
+        display: flex !important;
+        justify-content: space-around;
+        margin-top: 60px;
+    }
+    .sig-line {
+        text-align: center;
+        width: 40%;
+    }
+    .sig-line hr { border-top: 1px solid #000; border-bottom: none; margin-bottom: 8px; }
+    .sig-line span { font-size: 10pt; font-weight: bold; }
+}
