@@ -3,7 +3,7 @@
     background-color: white;
     border-radius: 8px;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    overflow: hidden; /* Para os cantos arredondados */
+    overflow: hidden; 
     border: 1px solid #e2e8f0;
 }
 
@@ -11,7 +11,18 @@ table {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.9rem;
+    table-layout: fixed; /* OBRIGATÓRIO: Força a tabela a respeitar larguras e abreviar textos */
 }
+
+/* LARGURAS DAS COLUNAS */
+th:nth-child(1) { width: 22%; } /* NOME */
+th:nth-child(2) { width: 16%; } /* FUNÇÃO */
+th:nth-child(3) { width: 12%; } /* SETOR */
+th:nth-child(4) { width: 12%; } /* SALÁRIO */
+th:nth-child(5) { width: 12%; } /* CUSTO */
+th:nth-child(6) { width: 8%; }  /* STATUS */
+th:nth-child(7) { width: 10%; } /* ADMISSÃO */
+th:nth-child(8) { width: 120px;} /* AÇÕES */
 
 /* --- CABEÇALHO --- */
 thead {
@@ -49,46 +60,47 @@ tbody tr:hover {
 /* Estilo para Funcionários INATIVOS */
 .tr-inativo {
     background-color: #f9fafb;
-    opacity: 0.75; /* Deixa um pouco "apagado" */
+    opacity: 0.65; 
 }
 .tr-inativo:hover {
-    background-color: #f3f4f6;
-    opacity: 1;
+    background-color: #f1f5f9;
+    opacity: 0.85;
 }
 
-/* --- COLUNAS ESPECÍFICAS --- */
+/* --- COLUNA NOME (LÓGICA DE ABREVIAÇÃO) --- */
 .col-nome {
-    display: flex;
-    flex-direction: column;
+    max-width: 0; /* Necessário em tabelas com layout fixed para o text-overflow funcionar */
 }
+
 .col-nome strong {
     color: #0f172a;
     font-weight: 600;
     font-size: 0.95rem;
+    display: block;
+    white-space: nowrap;     /* Impede que o texto pule de linha */
+    overflow: hidden;        /* Esconde o que passar do tamanho */
+    text-overflow: ellipsis; /* Coloca os '...' no final */
 }
 
 /* --- BADGES (Etiquetas) --- */
-
-/* Badge de Setor */
 .badge-setor {
     padding: 4px 10px;
     border-radius: 99px;
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-size: 0.72rem;
+    font-weight: 700;
     text-transform: capitalize;
 }
 .badge-setor.producao {
-    background-color: #eff6ff; /* Azul claro */
+    background-color: #eff6ff; 
     color: #1e40af;
     border: 1px solid #dbeafe;
 }
 .badge-setor.administrativo {
-    background-color: #faf5ff; /* Roxo claro */
+    background-color: #faf5ff; 
     color: #6b21a8;
     border: 1px solid #f3e8ff;
 }
 
-/* Badge de Status (Ativo/Inativo) */
 .badge-status {
     padding: 4px 10px;
     border-radius: 6px;
@@ -111,7 +123,7 @@ tbody tr:hover {
 /* --- AÇÕES (Botões) --- */
 .acoes-grupo {
     display: flex;
-    justify-content: flex-end;
+    justify-content: center;
     gap: 8px;
 }
 
@@ -137,7 +149,6 @@ tbody tr:hover {
     background-color: #3b82f6;
     color: white;
     border-color: #2563eb;
-    transform: translateY(-1px);
 }
 
 /* Botão EDITAR (Laranja) */
@@ -150,7 +161,6 @@ tbody tr:hover {
     background-color: #f59e0b;
     color: white;
     border-color: #d97706;
-    transform: translateY(-1px);
 }
 
 /* Botão EXCLUIR (Vermelho) */
@@ -163,7 +173,6 @@ tbody tr:hover {
     background-color: #ef4444;
     color: white;
     border-color: #dc2626;
-    transform: translateY(-1px);
 }
 
 /* --- ESTADOS DE CARREGAMENTO --- */
@@ -175,4 +184,74 @@ tbody tr:hover {
     background-color: white;
     border-radius: 8px;
     border: 1px solid #e2e8f0;
+}
+
+/* --- PAGINAÇÃO --- */
+.paginacao-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 24px;
+    background: #ffffff;
+    border-top: 1px solid #e2e8f0;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    margin-top: 0;
+}
+
+.paginacao-info {
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+.paginacao-info strong {
+    color: #0f172a;
+    font-weight: 700;
+}
+
+.paginacao-botoes {
+    display: flex;
+    gap: 8px;
+}
+
+.paginacao-botoes button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.paginacao-botoes button:hover:not(:disabled):not(.ativo) {
+    background: #e2e8f0;
+    color: #0f172a;
+    border-color: #cbd5e1;
+}
+
+.paginacao-botoes button.ativo {
+    background: #2563eb; 
+    border-color: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2); 
+}
+
+.paginacao-botoes button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: transparent;
+    border-color: transparent;
+    color: #94a3b8;
+}
+
+.tabela-container table {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
 }
