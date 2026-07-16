@@ -32,6 +32,24 @@ export function TabelaFuncionarios({ funcionarios, loading, onEditar, onExcluir,
         return Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     };
 
+    // Algoritmo de Paginação com Elipse
+    const gerarPaginas = () => {
+        const paginas = [];
+        
+        if (totalPaginas <= 5) {
+            for (let i = 1; i <= totalPaginas; i++) paginas.push(i);
+        } else {
+            if (paginaAtual <= 3) {
+                paginas.push(1, 2, 3, 4, '...', totalPaginas);
+            } else if (paginaAtual >= totalPaginas - 2) {
+                paginas.push(1, '...', totalPaginas - 3, totalPaginas - 2, totalPaginas - 1, totalPaginas);
+            } else {
+                paginas.push(1, '...', paginaAtual - 1, paginaAtual, paginaAtual + 1, '...', totalPaginas);
+            }
+        }
+        return paginas;
+    };
+
     return (
         <div className="tabela-wrapper">
             <div className="tabela-container">
@@ -58,7 +76,6 @@ export function TabelaFuncionarios({ funcionarios, loading, onEditar, onExcluir,
                         ) : (
                             itensAtuais.map(f => (
                                 <tr key={f.id} className={String(f.ativo) === 'false' ? 'tr-inativo' : ''}>
-                                    {/* CLASSE COL-NOME APLICADA AQUI */}
                                     <td className="col-nome" title={f.nome}>
                                         <strong>{f.nome}</strong>
                                     </td>
@@ -77,7 +94,6 @@ export function TabelaFuncionarios({ funcionarios, loading, onEditar, onExcluir,
                                     </td>
                                     <td>{new Date(f.data_admissao).toLocaleDateString('pt-BR')}</td>
                                     <td>
-                                        {/* GRUPO DE AÇÕES E CLASSES DOS BOTÕES APLICADOS AQUI */}
                                         <div className="acoes-grupo">
                                             <button className="btn-icon info" onClick={() => onVerDetalhes(f)} title="Ver Detalhes">
                                                 <Eye size={18} />
@@ -111,13 +127,15 @@ export function TabelaFuncionarios({ funcionarios, loading, onEditar, onExcluir,
                             <ChevronLeft size={18} />
                         </button>
                         
-                        {Array.from({ length: totalPaginas }, (_, i) => i + 1).map(num => (
+                        {gerarPaginas().map((item, index) => (
                             <button 
-                                key={num}
-                                className={paginaAtual === num ? 'ativo' : ''}
-                                onClick={() => irParaPagina(num)}
+                                key={index}
+                                className={paginaAtual === item ? 'ativo' : ''}
+                                onClick={() => typeof item === 'number' && irParaPagina(item)}
+                                disabled={item === '...'}
+                                style={item === '...' ? { cursor: 'default', background: 'transparent', borderColor: 'transparent', color: '#94a3b8' } : {}}
                             >
-                                {num}
+                                {item}
                             </button>
                         ))}
 

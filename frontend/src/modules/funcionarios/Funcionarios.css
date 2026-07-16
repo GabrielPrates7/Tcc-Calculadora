@@ -1,5 +1,8 @@
 .funcionarios-container {
-    color: var(--text-primary); width: 100%; box-sizing: border-box;
+    color: var(--text-primary); 
+    width: 100%; 
+    box-sizing: border-box;
+    padding: 24px 32px; /* Afasta o conteúdo do topo e da lateral esquerda */
 }
 
 .header-top {

@@ -1,6 +1,7 @@
 import { FileText, Calendar, Trash2, Edit2, Upload } from 'lucide-react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { RelatorioPDF } from './RelatorioPDF';
+import { formatarBRL } from '../../../utils/formatters'; // <--- Importamos o formatador
 import type { HistoricoItem } from '../types';
 import './HistoricoCenarios.css';
 
@@ -44,8 +45,9 @@ export function HistoricoCenarios({ itens, custoMensalAtual, onExcluir, onRenome
                             </div>
                         </div>
 
+                        {/* AQUI: Usando o formatarBRL */}
                         <div className="item-valor">
-                            <strong className="valor">R$ {Number(item.valor_unitario_final).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</strong>
+                            <strong className="valor">{formatarBRL(item.valor_unitario_final)}</strong>
                         </div>
 
                         <div className="item-acao-group">
@@ -65,8 +67,6 @@ export function HistoricoCenarios({ itens, custoMensalAtual, onExcluir, onRenome
                                         titulo: item.titulo,
                                         data: new Date(item.data_alteracao).toLocaleDateString(),
                                         
-                                        // AQUI ESTÁ A CORREÇÃO PARA O ERRO DO 'ANY':
-                                        // O comentário abaixo diz para o verificador ignorar a regra nesta linha específica
                                         // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                         custoMensal: (item as any).custo_total_folha ? Number((item as any).custo_total_folha) : custoMensalAtual,
                                         

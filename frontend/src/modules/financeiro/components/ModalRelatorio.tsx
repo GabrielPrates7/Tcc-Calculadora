@@ -6,6 +6,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { ItemFinanceiro } from '../types';
 import { analisarIntervalo } from '../utils/dateHelper';
+import { formatarBRL } from '../../../utils/formatters'; // IMPORTAÇÃO DA NOVA FUNÇÃO
 import './ModalFinanceiro.css';
 
 interface Props {
@@ -25,11 +26,8 @@ export function ModalRelatorio({ despesas, investimentos, onClose, somarFaturame
     const [gerando, setGerando] = useState(false);
 
     // --- CORREÇÃO DO BUG DE DATA (-1 DIA) ---
-    // Em vez de usar new Date(), apenas manipulamos a string direta.
-    // Isso ignora totalmente o fuso horário e mostra exatamente o que está escrito.
     const formatarDataSemFuso = (dataString: string) => {
         if (!dataString) return '-';
-        // Pega apenas os 10 primeiros caracteres (YYYY-MM-DD) para ignorar hora se houver
         const limpa = dataString.substring(0, 10);
         const [ano, mes, dia] = limpa.split('-');
         return `${dia}/${mes}/${ano}`;
@@ -84,7 +82,6 @@ export function ModalRelatorio({ despesas, investimentos, onClose, somarFaturame
             
             doc.setFontSize(10);
             doc.setFont("helvetica", "normal");
-            // CORREÇÃO APLICADA AQUI NO SUBTÍTULO
             doc.text(`Período de Análise: ${formatarDataSemFuso(dataInicio)} até ${formatarDataSemFuso(dataFim)}`, 14, 30);
             
             doc.setFontSize(14);
@@ -112,11 +109,10 @@ export function ModalRelatorio({ despesas, investimentos, onClose, somarFaturame
                 doc.text(value, x + 5, startY + 18);
             };
 
-            const BRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-            drawCard(margin, "Faturamento", BRL(faturamentoPeriodo), AZUL_CLARO);
-            drawCard(margin + cardWidth + gap, "Despesas", BRL(totalDespesas), VERMELHO);
-            drawCard(margin + (cardWidth + gap) * 2, "Investimentos", BRL(totalInvestimentos), ROXO);
+            // AQUI ESTÃO AS MUDANÇAS NO DESENHO DOS CARDS DO PDF
+            drawCard(margin, "Faturamento", formatarBRL(faturamentoPeriodo), AZUL_CLARO);
+            drawCard(margin + cardWidth + gap, "Despesas", formatarBRL(totalDespesas), VERMELHO);
+            drawCard(margin + (cardWidth + gap) * 2, "Investimentos", formatarBRL(totalInvestimentos), ROXO);
             drawCard(margin + (cardWidth + gap) * 3, "Taxa Custo Fixo", `${taxaCustoFixo.toFixed(2)}%`, taxaCustoFixo > 30 ? VERMELHO : [34, 197, 94]);
 
             // TABELAS
@@ -129,12 +125,11 @@ export function ModalRelatorio({ despesas, investimentos, onClose, somarFaturame
                 head: [['Vencimento', 'Descrição', 'Beneficiário', 'Status', 'Valor']],
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 body: despesasFiltradas.map((d: any) => [
-                    // CORREÇÃO APLICADA AQUI NA TABELA
                     formatarDataSemFuso(d.dataVencimento),
                     d.nome,
                     d.beneficiario || '-',
                     d.pago ? 'Pago' : 'Pendente',
-                    BRL(Number(d.valor))
+                    formatarBRL(d.valor) // AQUI ESTÁ A MUDANÇA NA TABELA DE DESPESAS DO PDF
                 ]),
                 theme: 'striped',
                 headStyles: { fillColor: [239, 68, 68], textColor: 255, fontStyle: 'bold' },
@@ -153,10 +148,9 @@ export function ModalRelatorio({ despesas, investimentos, onClose, somarFaturame
                 head: [['Vencimento', 'Descrição', 'Valor']],
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 body: investimentosFiltrados.map((i: any) => [
-                    // CORREÇÃO APLICADA AQUI NA TABELA
                     formatarDataSemFuso(i.dataVencimento),
                     i.nome,
-                    BRL(Number(i.valor))
+                    formatarBRL(i.valor) // AQUI ESTÁ A MUDANÇA NA TABELA DE INVESTIMENTOS DO PDF
                 ]),
                 theme: 'striped',
                 headStyles: { fillColor: [139, 92, 246], textColor: 255, fontStyle: 'bold' },
@@ -172,7 +166,6 @@ export function ModalRelatorio({ despesas, investimentos, onClose, somarFaturame
                 doc.setTextColor(150);
                 doc.setDrawColor(200);
                 doc.line(14, doc.internal.pageSize.height - 15, pageWidth - 14, doc.internal.pageSize.height - 15);
-                // Data de geração continua com new Date() pois pega a hora ATUAL do computador (não tem erro de fuso nesse caso)
                 doc.text(`Gerado em ${new Date().toLocaleString('pt-BR')}`, 14, doc.internal.pageSize.height - 8);
                 doc.text(`Página ${i} de ${pageCount}`, pageWidth - 30, doc.internal.pageSize.height - 8);
             }

@@ -1,4 +1,5 @@
 import { Users, Wallet, Briefcase, TrendingUp } from 'lucide-react';
+import { formatarBRL } from '../../../utils/formatters'; // <-- IMPORTAÇÃO NOVA
 import './ResumoFinanceiro.css';
 
 interface Props {
@@ -10,9 +11,6 @@ interface Props {
 
 export function ResumoFinanceiro({ custoFolha, custoProducao, totalAtivos, loading }: Props) {
     
-    // Função auxiliar para formatar moeda
-    const BRL = (valor: number) => valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
     if (loading) {
         return (
             <div className="resumo-grid">
@@ -45,7 +43,8 @@ export function ResumoFinanceiro({ custoFolha, custoProducao, totalAtivos, loadi
                 </div>
                 <div className="metric-info">
                     <span className="metric-label">Custo Folha Mensal</span>
-                    <strong className="metric-value">{BRL(custoFolha)}</strong>
+                    {/* AQUI USAMOS A NOVA FUNÇÃO */}
+                    <strong className="metric-value">{formatarBRL(custoFolha)}</strong>
                     <div className="metric-trend">
                         <TrendingUp size={14} /> <span>Visão Geral</span>
                     </div>
@@ -59,7 +58,8 @@ export function ResumoFinanceiro({ custoFolha, custoProducao, totalAtivos, loadi
                 </div>
                 <div className="metric-info">
                     <span className="metric-label">Custo Produção</span>
-                    <strong className="metric-value">{BRL(custoProducao)}</strong>
+                    {/* AQUI USAMOS A NOVA FUNÇÃO */}
+                    <strong className="metric-value">{formatarBRL(custoProducao)}</strong>
                     <div className="metric-trend">
                         <div className="percent-badge">{(custoProducao / custoFolha * 100).toFixed(0)}%</div>
                         <span>do total</span>

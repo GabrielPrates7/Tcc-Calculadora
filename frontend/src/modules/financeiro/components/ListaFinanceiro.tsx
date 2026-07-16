@@ -1,6 +1,7 @@
 import { Edit2, Trash2, Search, Filter, RotateCcw, ArrowUpAZ, ArrowDownZA, Plus, Power, User, Calendar, CheckCircle, AlertCircle, Copy } from 'lucide-react';
 import { useState } from 'react';
 import type { ItemFinanceiro, ViewMode, SortField, SortDirection, StatusFilter } from '../types';
+import { formatarBRL } from '../../../utils/formatters'; // IMPORTAÇÃO DA NOVA FUNÇÃO
 import './ListaFinanceiro.css';
 
 interface Props {
@@ -28,7 +29,6 @@ export function ListaFinanceiro({
     const [sortDir, setSortDir] = useState<SortDirection>('asc');
 
     const corTema = view === 'despesas' ? '#ef4444' : '#3b82f6';
-    const BRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     
     // CORREÇÃO DATA: Blindada contra erros
     const formatarData = (d?: string) => {
@@ -151,7 +151,8 @@ export function ListaFinanceiro({
                             <div className="col-status">
                                 {item.pago ? <span className="badge badge-pago"><CheckCircle size={12}/> Pago</span> : <span className="badge badge-pendente"><AlertCircle size={12}/> Pendente</span>}
                             </div>
-                            <div className="col-valor" style={{ color: item.ativo ? corTema : '#94a3b8' }}>{BRL(Number(item.valor))}</div>
+                            {/* AQUI ESTÁ A MUDANÇA NA LISTA */}
+                            <div className="col-valor" style={{ color: item.ativo ? corTema : '#94a3b8' }}>{formatarBRL(item.valor)}</div>
                             <div className="col-acoes">
                                 <button className="btn-icon-sm btn-copy" onClick={() => onClonar(item)} title="Duplicar"><Copy size={16} /></button>
                                 <button className="btn-icon-sm btn-edit" onClick={() => onEditar(item)}><Edit2 size={16} /></button>
@@ -164,7 +165,8 @@ export function ListaFinanceiro({
 
             <div className="lista-footer">
                 <span className="footer-label">Total Listado</span>
-                <span className="footer-valor" style={{ color: corTema }}>{BRL(totalExibido)}</span>
+                {/* AQUI ESTÁ A MUDANÇA NO TOTAL DA LISTA */}
+                <span className="footer-valor" style={{ color: corTema }}>{formatarBRL(totalExibido)}</span>
             </div>
         </div>
     );

@@ -2,6 +2,7 @@ import { X, Printer, FileText, CheckCircle, TrendingUp, DollarSign, Hammer, Pack
 import type { Orcamento } from '../types';
 import { useNavigate } from 'react-router-dom';
 import { OrdemServicoService } from '../../ordemServico/services/ordemServico.service';
+import { formatarBRL } from '../../../utils/formatters'; // <-- IMPORTAÇÃO DA SUA FUNÇÃO OFICIAL
 import './ModalDemonstrativo.css';
 
 interface Props {
@@ -13,7 +14,7 @@ export function ModalDemonstrativo({ orcamento, onClose }: Props) {
     const navigate = useNavigate();
 
     // Formatações
-    const BRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    // 👇 Porcentagem padronizada sempre com 2 casas
     const PCT = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
     const DATA = (data?: string) => data ? new Date(data).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR');
 
@@ -109,7 +110,8 @@ export function ModalDemonstrativo({ orcamento, onClose }: Props) {
                         </div>
                         <div className="coluna-valores">
                             <span className="col-peso font-bold">100,00%</span>
-                            <span className="col-rs font-bold destaque-azul">{BRL(PV)}</span>
+                            {/* 👇 Usando a função padronizada aqui 👇 */}
+                            <span className="col-rs font-bold destaque-azul">{formatarBRL(PV)}</span>
                         </div>
                     </div>
 
@@ -120,7 +122,8 @@ export function ModalDemonstrativo({ orcamento, onClose }: Props) {
                         </div>
                         <div className="coluna-valores">
                             <span className="col-peso">{PCT((valorCustoFixo / PV) * 100)}</span>
-                            <span className="col-rs">{BRL(valorCustoFixo)}</span>
+                            {/* 👇 Usando a função padronizada aqui 👇 */}
+                            <span className="col-rs">{formatarBRL(valorCustoFixo)}</span>
                         </div>
                     </div>
 
@@ -131,7 +134,8 @@ export function ModalDemonstrativo({ orcamento, onClose }: Props) {
                         </div>
                         <div className="coluna-valores">
                             <span className="col-peso">{PCT((valorImposto / PV) * 100)}</span>
-                            <span className="col-rs">{BRL(valorImposto)}</span>
+                            {/* 👇 Usando a função padronizada aqui 👇 */}
+                            <span className="col-rs">{formatarBRL(valorImposto)}</span>
                         </div>
                     </div>
 
@@ -142,7 +146,8 @@ export function ModalDemonstrativo({ orcamento, onClose }: Props) {
                         </div>
                         <div className="coluna-valores">
                             <span className="col-peso">{PCT((valorMateriais / PV) * 100)}</span>
-                            <span className="col-rs">{BRL(valorMateriais)}</span>
+                            {/* 👇 Usando a função padronizada aqui 👇 */}
+                            <span className="col-rs">{formatarBRL(valorMateriais)}</span>
                         </div>
                     </div>
 
@@ -153,7 +158,8 @@ export function ModalDemonstrativo({ orcamento, onClose }: Props) {
                         </div>
                         <div className="coluna-valores">
                             <span className="col-peso">{PCT(valorMaoObra > 0 ? (valorMaoObra / PV) * 100 : 0)}</span>
-                            <span className="col-rs">{BRL(valorMaoObra > 0 ? valorMaoObra : 0)}</span>
+                            {/* 👇 Usando a função padronizada aqui 👇 */}
+                            <span className="col-rs">{formatarBRL(valorMaoObra > 0 ? valorMaoObra : 0)}</span>
                         </div>
                     </div>
 
@@ -164,7 +170,8 @@ export function ModalDemonstrativo({ orcamento, onClose }: Props) {
                         </div>
                         <div className="coluna-valores">
                             <span className="col-peso font-bold text-success">{PCT((valorLucro / PV) * 100)}</span>
-                            <span className="col-rs font-bold text-success text-lg">{BRL(valorLucro)}</span>
+                            {/* 👇 Usando a função padronizada aqui 👇 */}
+                            <span className="col-rs font-bold text-success text-lg">{formatarBRL(valorLucro)}</span>
                         </div>
                     </div>
                 </div>

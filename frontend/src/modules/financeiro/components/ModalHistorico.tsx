@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { X, Clock, FileText, Trash2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { formatarBRL } from '../../../utils/formatters'; // IMPORTAÇÃO DA NOVA FUNÇÃO
 import './ModalFinanceiro.css'; 
 
 interface Props {
@@ -73,7 +74,9 @@ export function ModalHistorico({ onClose }: Props) {
             doc.setFillColor(240, 240, 240);
             doc.rect(14, 35, 180, 20, 'F');
             doc.setFontSize(12);
-            doc.text(`Faturamento: R$ ${Number(fullData.faturamento).toLocaleString('pt-BR')}`, 20, 48);
+            
+            // AQUI ESTÁ A MUDANÇA NO PDF: Usando formatarBRL
+            doc.text(`Faturamento: ${formatarBRL(fullData.faturamento)}`, 20, 48);
             doc.text(`Taxa: ${Number(fullData.taxa_custo_fixo).toFixed(2)}%`, 100, 48);
 
             doc.text("Despesas (Versão Arquivada)", 14, 65);
@@ -84,7 +87,7 @@ export function ModalHistorico({ onClose }: Props) {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 body: despesas.map((d: any) => [
                     d.nome,
-                    `R$ ${Number(d.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+                    formatarBRL(d.valor), // AQUI ESTÁ A MUDANÇA NA TABELA DO PDF
                     d.ativo ? 'Ativo' : 'Inativo'
                 ]),
             });

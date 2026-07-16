@@ -7,12 +7,12 @@ export interface Funcionario {
     data_admissao: string;
     
     // Valores Monetários Principais
-    salario_base: number; 
-    epi: number;
-    custo_total_mensal?: number;
+    salario_base: number | string; 
+    epi: number | string;
+    epi_mensal?: number | string; // <-- CORREÇÃO: Propriedade adicionada
+    custo_total_mensal?: number | string;
 
     // --- NOVOS CAMPOS (Detalhamento Financeiro) ---
-    // Adicione estes campos para o ModalDetalhes parar de reclamar
     decimo_terceiro?: number;
     ferias?: number;
     um_terco_ferias?: number;

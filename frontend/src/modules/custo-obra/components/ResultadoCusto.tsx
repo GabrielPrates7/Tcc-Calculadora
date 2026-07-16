@@ -1,5 +1,6 @@
-// ResultadoCusto.tsx
+// src/modules/custo-obra/components/ResultadoCusto.tsx
 import { AlertTriangle } from 'lucide-react';
+import { formatarBRL } from '../../../utils/formatters'; // 1. Importando seu formatador
 import type { CustoResultado, TipoTempo, TipoOrganizacao } from '../types';
 import './ResultadoCusto.css';
 
@@ -33,11 +34,15 @@ export function ResultadoCusto({ resultado, tipoTempo, tipoOrganizacao, tamanhoG
 
             <div className="card-resultado">
                 <div className="resultado-titulo">{getTitulo()}</div>
+                
+                {/* 2. Aplicando o formatador no valor unitário */}
                 <div className="resultado-valor">
-                    R$ {resultado.valorUnitario.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    {formatarBRL(resultado.valorUnitario)}
                 </div>
+
+                {/* 3. Aplicando o formatador no custo mensal total */}
                 <div className="resultado-info">
-                    Baseado no Custo Mensal Total de <strong>R$ {resultado.custoEquipeMensal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                    Baseado no Custo Mensal Total de <strong>{formatarBRL(resultado.custoEquipeMensal)}</strong>
                 </div>
             </div>
         </>

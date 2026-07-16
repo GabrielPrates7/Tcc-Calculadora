@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { X, Calendar, Search, Download } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { formatarBRL } from '../../../utils/formatters'; 
 import type { Funcionario } from '../types';
 import './ModalRelatorioCusto.css'; 
 
@@ -25,8 +26,6 @@ export function ModalRelatorioCusto({ onClose, onBuscar }: Props) {
     const fimRef = useRef<HTMLInputElement>(null);
     const relatorioRef = useRef<HTMLDivElement>(null); 
 
-    // --- FUNÇÃO AUXILIAR PARA FORMATAR DATA (yyyy-mm-dd -> dd/mm/yyyy) ---
-    // Isso evita bugs de fuso horário que o "new Date()" as vezes causa
     const formatarData = (dataIso: string) => {
         if (!dataIso) return '---';
         const [ano, mes, dia] = dataIso.split('-');
@@ -47,7 +46,6 @@ export function ModalRelatorioCusto({ onClose, onBuscar }: Props) {
         }
     };
 
-    // --- EXPORTAR PDF COM CABEÇALHO PERSONALIZADO ---
     const exportarPDF = async () => {
         if (!relatorioRef.current) return;
         setGerandoPdf(true);
@@ -58,9 +56,7 @@ export function ModalRelatorioCusto({ onClose, onBuscar }: Props) {
             const canvas = await html2canvas(element, { 
                 scale: 2, 
                 backgroundColor: '#ffffff',
-                // O SEGREDINHO ESTÁ AQUI:
                 onclone: (documentClone) => {
-                    // Encontra o cabeçalho oculto NO CLONE e torna visível
                     const headerOculto = documentClone.querySelector('.apenas-pdf') as HTMLElement;
                     if (headerOculto) {
                         headerOculto.style.display = 'block';
@@ -95,7 +91,6 @@ export function ModalRelatorioCusto({ onClose, onBuscar }: Props) {
     }) || null;
 
     const custoTotal = dadosFiltrados?.reduce((acc, func) => acc + (Number(func.custo_total_mensal) || 0), 0) || 0;
-    const BRL = (val: number) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
     return (
         <div className="modal-overlay">
@@ -163,10 +158,8 @@ export function ModalRelatorioCusto({ onClose, onBuscar }: Props) {
                     </div>
 
                     {dadosFiltrados && (
-                        <div ref={relatorioRef} style={{ padding: '20px', background: 'white' }}> {/* Aumentei o padding para ficar bonito no PDF */}
+                        <div ref={relatorioRef} style={{ padding: '20px', background: 'white' }}> 
                             
-                            {/* --- CABEÇALHO EXCLUSIVO DO PDF --- */}
-                            {/* Ele tem display: 'none', mas a função onclone vai torná-lo visível na hora da foto */}
                             <div className="apenas-pdf" style={{ display: 'none', marginBottom: '25px', borderBottom: '2px solid #e2e8f0', paddingBottom: '15px' }}>
                                 <h1 style={{ fontSize: '24px', color: '#0f172a', margin: '0 0 5px 0' }}>Relatório de Custos - Folha de Pagamento</h1>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569', fontSize: '14px' }}>
@@ -175,26 +168,25 @@ export function ModalRelatorioCusto({ onClose, onBuscar }: Props) {
                                     <p style={{ margin: 0 }}><strong>Emissão:</strong> {new Date().toLocaleDateString('pt-BR')}</p>
                                 </div>
                             </div>
-                            {/* ---------------------------------- */}
 
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', alignItems: 'center' }}>
                                 <strong style={{ color: '#334155' }}>
                                     Visualizando: {dadosFiltrados.length} registros 
                                 </strong>
                                 <div style={{ background: '#ecfccb', color: '#365314', padding: '5px 12px', borderRadius: '20px', fontSize: '0.9rem', fontWeight: 'bold', border: '1px solid #d9f99d' }}>
-                                    Total: {BRL(custoTotal)}
+                                    Total: {formatarBRL(custoTotal)}
                                 </div>
                             </div>
 
                             <div className="tabela-container" style={{ maxHeight: 'none', overflowY: 'visible', border: 'none' }}> 
-                                <table style={{ border: '1px solid #e2e8f0' }}>
+                                <table style={{ border: '1px solid #e2e8f0', width: '100%', borderCollapse: 'collapse' }}>
                                     <thead>
-                                        <tr>
-                                            <th>Nome</th>
-                                            <th>Setor</th>
-                                            <th>Função</th>
-                                            <th>Admissão</th>
-                                            <th>Custo Mensal</th>
+                                        <tr style={{ background: '#f8fafc', textAlign: 'left' }}>
+                                            <th style={{ padding: '12px', borderBottom: '1px solid #e2e8f0' }}>Nome</th>
+                                            <th style={{ padding: '12px', borderBottom: '1px solid #e2e8f0' }}>Setor</th>
+                                            <th style={{ padding: '12px', borderBottom: '1px solid #e2e8f0' }}>Função</th>
+                                            <th style={{ padding: '12px', borderBottom: '1px solid #e2e8f0' }}>Admissão</th>
+                                            <th style={{ padding: '12px', borderBottom: '1px solid #e2e8f0' }}>Custo Mensal</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -202,12 +194,18 @@ export function ModalRelatorioCusto({ onClose, onBuscar }: Props) {
                                             <tr><td colSpan={5} style={{ textAlign: 'center', padding: '20px' }}>Nenhum registro encontrado.</td></tr>
                                         ) : (
                                             dadosFiltrados.map(func => (
-                                                <tr key={func.id}>
-                                                    <td><strong>{func.nome}</strong></td>
-                                                    <td><span className={`badge-setor ${func.setor}`}>{func.setor === 'producao' ? 'Produção' : 'Admin'}</span></td>
-                                                    <td>{func.funcao}</td>
-                                                    <td>{new Date(func.data_admissao).toLocaleDateString('pt-BR')}</td>
-                                                    <td style={{ fontWeight: 'bold', color: '#0f172a' }}>{BRL(Number(func.custo_total_mensal))}</td>
+                                                <tr key={func.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                                                    <td style={{ padding: '12px' }}><strong>{func.nome}</strong></td>
+                                                    <td style={{ padding: '12px' }}>
+                                                        <span className={`badge-setor ${func.setor}`}>
+                                                            {func.setor === 'producao' ? 'Produção' : 'Admin'}
+                                                        </span>
+                                                    </td>
+                                                    <td style={{ padding: '12px' }}>{func.funcao}</td>
+                                                    <td style={{ padding: '12px' }}>{new Date(func.data_admissao).toLocaleDateString('pt-BR')}</td>
+                                                    <td style={{ padding: '12px', fontWeight: 'bold', color: '#0f172a' }}>
+                                                        {formatarBRL(func.custo_total_mensal || 0)}
+                                                    </td>
                                                 </tr>
                                             ))
                                         )}

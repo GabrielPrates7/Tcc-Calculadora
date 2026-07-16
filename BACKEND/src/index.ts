@@ -1,33 +1,20 @@
-// ATENÇÃO NA LINHA ABAIXO: Adicionamos o "/services"
-import { FuncionarioService } from './services/funcionario.service';
+import express from 'express';
+import cors from 'cors';
 
-async function teste() {
-  const servico = new FuncionarioService();
+import { funcaoRoutes } from './routes/funcao.routes';
+import { funcionarioRoutes } from './routes/funcionario.routes';
+import { financeiroRoutes } from './routes/financeiro.routes';
 
-  console.log("⏳ Calculando e salvando funcionários...");
+const app = express();
+const PORT = 3000;
 
-  try {
-    // Simulando o cadastro do "Marlon"
-    await servico.criarFuncionario({
-      nome: "Marlon Teste Node",
-      salarioBase: 4000.00,
-      epi: 40.00
-    });
+app.use(cors());
+app.use(express.json());
 
-    // Simulando o "João Paulo"
-    await servico.criarFuncionario({
-      nome: "João Paulo Teste",
-      salarioBase: 2600.00,
-      epi: 40.00
-    });
+app.use('/api/funcoes', funcaoRoutes);
+app.use('/api/funcionarios', funcionarioRoutes);
+app.use('/api/financeiro', financeiroRoutes);
 
-    console.log("🏁 Tudo pronto! Funcionários cadastrados.");
-  } catch (erro) {
-    console.error("Algo deu errado no teste:", erro);
-  } finally {
-    // Encerra o processo para o terminal não ficar travado
-    process.exit();
-  }
-}
-
-teste();
+app.listen(PORT, () => {
+    console.log(`🚀 Servidor backend rodando na porta ${PORT}`);
+});

@@ -1,4 +1,5 @@
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { formatarBRL } from '../../../utils/formatters'; // <--- Importamos o formatador
 
 // Estilos
 const styles = StyleSheet.create({
@@ -69,8 +70,9 @@ export const RelatorioPDF = ({ dados }: Props) => {
           </View>
           <View style={styles.section}>
             <Text style={styles.label}>Custo Mensal (Folha)</Text>
+            {/* AQUI: Aplicando o formatarBRL */}
             <Text style={styles.value}>
-              R$ {dados.custoMensal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}
+              {formatarBRL(dados.custoMensal)}
             </Text>
           </View>
         </View>
@@ -80,7 +82,7 @@ export const RelatorioPDF = ({ dados }: Props) => {
           <Text style={styles.mathTitle}>Memória de Cálculo (Passo a Passo)</Text>
           
           <Text style={styles.mathStep}>
-            1. O sistema identificou um Custo Operacional Total de <Text style={{fontWeight:'bold'}}>R$ {dados.custoMensal.toLocaleString('pt-BR')}</Text>.
+            1. O sistema identificou um Custo Operacional Total de <Text style={{fontWeight:'bold'}}>{formatarBRL(dados.custoMensal)}</Text>.
           </Text>
           
           <Text style={styles.mathStep}>
@@ -93,7 +95,7 @@ export const RelatorioPDF = ({ dados }: Props) => {
 
           {/* A FÓRMULA VISUAL */}
           <Text style={styles.mathEquation}>
-            R$ {dados.custoMensal.toLocaleString('pt-BR')} ÷ ({dados.tempoInput} x {dados.qtdUnidades})
+            {formatarBRL(dados.custoMensal)} ÷ ({dados.tempoInput} x {dados.qtdUnidades})
           </Text>
           
           <Text style={{textAlign:'center', fontSize: 10, color:'#64748b'}}>
@@ -101,7 +103,7 @@ export const RelatorioPDF = ({ dados }: Props) => {
           </Text>
 
            <Text style={styles.mathEquation}>
-            = R$ {dados.custoMensal.toLocaleString('pt-BR')} ÷ {capacidadeTotal} {termoCapacidade} Totais
+            = {formatarBRL(dados.custoMensal)} ÷ {capacidadeTotal} {termoCapacidade} Totais
           </Text>
 
           <View style={{marginTop: 10, paddingTop: 10, borderTop: '1px dashed #cbd5e1'}}>
@@ -116,7 +118,7 @@ export const RelatorioPDF = ({ dados }: Props) => {
         <View style={styles.totalBox}>
           <Text style={styles.totalLabel}>CUSTO DA UNIDADE DE TRABALHO</Text>
           <Text style={styles.totalValue}>
-            R$ {dados.valorFinal.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+            {formatarBRL(dados.valorFinal)}
           </Text>
           <Text style={{fontSize: 10, color: '#60a5fa', marginTop: 5}}>
             Por {dados.tipoTempo === 'dias' ? 'Dia' : 'Hora'} de {dados.tipoOrganizacao === 'grupo' ? 'Equipe' : 'Trabalho'}

@@ -1,158 +1,198 @@
-/* --- OVERLAY E CONTAINER --- */
-.modal-overlay {
-    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    background-color: rgba(15, 23, 42, 0.6);
-    backdrop-filter: blur(5px);
-    display: flex; justify-content: center; align-items: center;
-    z-index: 9999;
-    animation: fadeIn 0.2s ease-out;
-}
-
+/* CONTAINER PRINCIPAL */
 .modal-content {
     background: #ffffff;
-    width: 650px;
-    max-width: 95vw;
-    /* MUDANÇA 1: Define altura máxima e flexbox vertical */
-    max-height: 90vh; 
-    display: flex; 
-    flex-direction: column; 
-    
     border-radius: 12px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    overflow: hidden; /* Importante para bordas arredondadas */
-    animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* --- HEADER (Fixo) --- */
-.modal-header {
-    background-color: #f8fafc;
-    padding: 20px 30px;
-    border-bottom: 1px solid #e2e8f0;
-    display: flex; justify-content: space-between; align-items: flex-start;
-    flex-shrink: 0; /* Impede que o header encolha */
-}
-.header-text h2 { margin: 0; font-size: 1.25rem; color: #0f172a; font-weight: 700; }
-.header-text p { margin: 4px 0 0 0; font-size: 0.875rem; color: #64748b; }
-
-.btn-close {
-    background: transparent; border: none; color: #94a3b8;
-    cursor: pointer; padding: 4px; border-radius: 4px; transition: all 0.2s;
-}
-.btn-close:hover { background-color: #fee2e2; color: #ef4444; }
-
-/* --- BODY (Rolável) --- */
-.modal-body { 
-    padding: 30px; 
-    display: flex; 
-    flex-direction: column; 
-    gap: 20px;
+    border: none;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    font-family: 'Inter', sans-serif;
     
-    /* MUDANÇA 2: Habilita o scroll apenas aqui */
-    overflow-y: auto; 
-    flex: 1; /* Ocupa todo o espaço disponível entre header e footer */
+    /* Contenção para evitar estiramento em telas grandes */
+    width: 100%;
+    max-width: 800px;
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    animation: modalFadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* --- ESTILO DA BARRA DE ROLAGEM (Scrollbar Bonita) --- */
-.modal-body::-webkit-scrollbar {
-    width: 8px;
-}
-.modal-body::-webkit-scrollbar-track {
-    background: #f1f5f9; 
-}
-.modal-body::-webkit-scrollbar-thumb {
-    background-color: #cbd5e1; 
-    border-radius: 4px;
-    border: 2px solid #f1f5f9;
-}
-.modal-body::-webkit-scrollbar-thumb:hover {
-    background-color: #94a3b8; 
+/* CABEÇALHO AZUL */
+.modal-header {
+    padding: 24px 32px;
+    background: #f0f7ff;
+    border-bottom: 2px solid #e0eefe;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
 }
 
-/* --- RESTANTE DOS ESTILOS (Inputs, Grids, etc) --- */
+.modal-header h2 {
+    color: #1e3a8a;
+    font-size: 1.6rem;
+    font-weight: 800;
+    margin: 0;
+}
+
+.modal-header p {
+    color: #3b82f6;
+    font-weight: 500;
+    margin: 4px 0 0 0;
+}
+
+/* SEÇÕES (LABELS DE GRUPO) */
 .section-label {
-    font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
-    color: #94a3b8; letter-spacing: 0.05em; margin-bottom: 4px;
+    color: #1e40af;
+    font-size: 0.85rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin: 24px 0 16px 0;
+    border-bottom: 2px solid #dbeafe;
+    padding-bottom: 8px;
 }
-.section-label.destaque { color: #f97316; }
 
-.form-grid { display: grid; gap: 16px; }
-.span-2 { grid-column: span 2; }
-.three-cols { grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
-.two-cols { grid-template-columns: 1fr 1fr; gap: 16px; }
+/* SISTEMA DE GRID E ORGANIZAÇÃO DOS CAMPOS */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+.form-grid.three-cols {
+    grid-template-columns: repeat(3, 1fr);
+}
+.span-2 {
+    grid-column: span 2;
+}
 
+/* LABELS ACIMA DOS INPUTS */
 .input-group label {
-    display: block; font-size: 0.9rem; font-weight: 600; color: #334155; margin-bottom: 6px;
+    display: block;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
 }
 
-.input-wrapper { 
-    position: relative; display: flex; align-items: center; width: 100%;
+/* DESIGN DOS INPUTS, WRAPPERS E SELECTS */
+.input-wrapper, 
+.input-group select {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: 48px;
+    background: #f8fafc;
+    border: 2px solid #cbd5e1;
+    border-radius: 10px;
+    color: #0f172a;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: all 0.2s ease-in-out;
+    box-sizing: border-box;
 }
 
-.input-wrapper svg, .input-wrapper .currency {
-    position: absolute; left: 12px; color: #94a3b8; pointer-events: none;
-    z-index: 10; height: 100%; display: flex; align-items: center; top: 0;
-}
-.currency { font-weight: 600; font-size: 0.9rem; gap: 6px; color: #64748b; }
-
-.input-wrapper input, .input-wrapper select {
-    width: 100%; 
-    padding: 10px 12px 10px 50px !important; 
-    border: 1px solid #cbd5e1; border-radius: 8px;
-    font-size: 0.95rem; color: #1e293b; transition: all 0.2s;
-    background-color: #fff; box-sizing: border-box; height: 45px;
+.input-wrapper {
+    padding: 0 12px;
+    gap: 8px;
 }
 
-select { padding-left: 12px !important; cursor: pointer; }
-
-.financeiro-box { background-color: #fff7ed; padding: 15px; border-radius: 8px; border: 1px solid #ffedd5; }
-
-.input-wrapper.money input {
-    padding-left: 75px !important; 
-    font-weight: 700; color: #0f172a; background-color: #ffffff;
+.input-group select {
+    padding: 0 16px;
+    appearance: none; /* Remove seta padrão em alguns navegadores */
 }
 
-.input-wrapper input:focus, select:focus {
-    border-color: #f97316; outline: none; box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
+/* Remove a borda do input interno para aproveitar o wrapper */
+.input-wrapper input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    outline: none;
+    color: #0f172a;
+    font-weight: 500;
+    height: 100%;
+    width: 100%;
 }
 
-.inativo-box {
-    background-color: #fef2f2; border: 1px solid #fecaca; border-radius: 8px;
-    padding: 16px; animation: fadeIn 0.3s ease;
-}
-.inativo-header {
-    display: flex; align-items: center; gap: 8px;
-    color: #b91c1c; font-weight: 700; font-size: 0.9rem; margin-bottom: 12px;
-}
-
-/* --- FOOTER (Fixo) --- */
-.info-message {
-    display: flex; gap: 8px; align-items: center;
-    background-color: #f1f5f9; padding: 12px; border-radius: 6px;
-    font-size: 0.8rem; color: #475569; margin-top: 10px;
+/* ESTADO DE FOCO */
+.input-wrapper:focus-within, 
+.input-group select:focus {
+    outline: none;
+    border-color: #2563eb;
+    background: #ffffff;
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
 }
 
-.divider { height: 1px; background-color: #e2e8f0; margin: 4px 0; }
+/* AJUSTE CAMPO FUNÇÃO (Botão de Engrenagem) */
+.input-group button[title="Gerenciar Departamentos"] {
+    height: 48px;
+    background: #eff6ff;
+    border: 2px solid #cbd5e1;
+    border-left: none;
+    border-radius: 0 10px 10px 0;
+    color: #2563eb;
+    padding: 0 15px;
+    transition: background 0.2s;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
 
+.input-group button[title="Gerenciar Departamentos"]:hover {
+    background: #dbeafe;
+}
+
+/* RODAPÉ (Alinhado à direita) */
 .modal-footer {
-    padding: 16px 30px; background-color: #f8fafc; border-top: 1px solid #e2e8f0;
-    display: flex; justify-content: flex-end; gap: 12px;
-    flex-shrink: 0; /* Impede que o footer encolha */
+    padding: 20px 32px;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+    margin-top: 24px;
 }
 
+/* BOTÕES DE AÇÃO */
 .btn-cancel {
-    background: white; border: 1px solid #cbd5e1; color: #475569;
-    padding: 10px 20px; border-radius: 6px; font-weight: 600; cursor: pointer;
-    display: flex; align-items: center; gap: 8px; transition: 0.2s;
+    background: #ffffff;
+    border: 2px solid #e2e8f0;
+    color: #64748b;
+    font-weight: 700;
+    padding: 10px 24px;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
 }
-.btn-cancel:hover { background: #f1f5f9; border-color: #94a3b8; }
-.btn-save {
-    background: #f97316; border: none; color: white;
-    padding: 10px 24px; border-radius: 6px; font-weight: 600; cursor: pointer;
-    display: flex; align-items: center; gap: 8px; transition: 0.2s;
-    box-shadow: 0 2px 4px rgba(249, 115, 22, 0.2);
-}
-.btn-save:hover { background: #ea580c; transform: translateY(-1px); }
-.btn-save:disabled { background: #fdba74; cursor: not-allowed; transform: none; }
 
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes scaleUp { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.btn-cancel:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.btn-save {
+    background: #2563eb;
+    color: #ffffff;
+    font-weight: 700;
+    padding: 10px 30px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.btn-save:hover {
+    background: #1d4ed8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+
+/* ANIMAÇÃO */
+@keyframes modalFadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}

@@ -10,7 +10,6 @@ interface Props {
     itemEdicao: ItemFinanceiro | null;
     valorFaturamentoAtual?: number;
     onClose: () => void;
-    // We updated the signature to receive a complete object
     onSalvar: (dados: {
         nome: string; 
         valor: number;
@@ -22,17 +21,21 @@ interface Props {
 }
 
 export function ModalFinanceiro({ tipo, itemEdicao, valorFaturamentoAtual, onClose, onSalvar }: Props) {
-    // State for fields
+    // ESTADOS
     const [nome, setNome] = useState(itemEdicao?.nome || '');
-    const [valor, setValor] = useState(
-        tipo === 'faturamento' ? String(valorFaturamentoAtual || 0) : String(itemEdicao?.valor || '')
-    );
     
-    // New States
+    // CORREÇÃO: Garante que se houver valor, ele carregue com exatamente 2 casas decimais no input
+    const [valor, setValor] = useState(() => {
+        if (tipo === 'faturamento') {
+            return valorFaturamentoAtual ? Number(valorFaturamentoAtual).toFixed(2) : '';
+        }
+        return itemEdicao?.valor ? Number(itemEdicao?.valor).toFixed(2) : '';
+    });
+    
     const [beneficiario, setBeneficiario] = useState(itemEdicao?.beneficiario || '');
     const [dataVencimento, setDataVencimento] = useState(itemEdicao?.dataVencimento || '');
-    const [ativo, setAtivo] = useState(itemEdicao?.ativo ?? true); // Default: True
-    const [pago, setPago] = useState(itemEdicao?.pago ?? false);   // Default: False
+    const [ativo, setAtivo] = useState(itemEdicao?.ativo ?? true);
+    const [pago, setPago] = useState(itemEdicao?.pago ?? false);
 
     const [salvando, setSalvando] = useState(false);
 
@@ -56,7 +59,7 @@ export function ModalFinanceiro({ tipo, itemEdicao, valorFaturamentoAtual, onClo
     };
 
     const getTitulo = () => {
-        if (tipo === 'faturamento') return 'Definir Faturamento'; // Simplified title
+        if (tipo === 'faturamento') return 'Definir Faturamento';
         if (itemEdicao) return 'Editar Item';
         return tipo === 'despesa' ? 'Nova Despesa' : 'Novo Investimento';
     };
@@ -80,7 +83,7 @@ export function ModalFinanceiro({ tipo, itemEdicao, valorFaturamentoAtual, onClo
                 </div>
 
                 <div className="modal-body">
-                    {/* --- COMPLETE FORM (Expenses/Investments) --- */}
+                    {/* --- FORMULÁRIO DE DESPESAS/INVESTIMENTOS --- */}
                     {tipo !== 'faturamento' && (
                         <>
                             <div className="form-group">
@@ -104,12 +107,12 @@ export function ModalFinanceiro({ tipo, itemEdicao, valorFaturamentoAtual, onClo
                                 />
                             </div>
 
-                            {/* Grid 2 Columns */}
                             <div className="form-row">
                                 <div className="form-group" style={{ flex: 1 }}>
                                     <label>Valor (R$)</label>
                                     <input 
                                         type="number" 
+                                        step="0.01" /* CORREÇÃO: Permite digitar centavos corretamente */
                                         placeholder="0.00" 
                                         value={valor} 
                                         onChange={e => setValor(e.target.value)}
@@ -125,7 +128,6 @@ export function ModalFinanceiro({ tipo, itemEdicao, valorFaturamentoAtual, onClo
                                 </div>
                             </div>
 
-                            {/* Switch Area (Active / Paid) */}
                             <div className="switches-container">
                                 <div 
                                     className={`switch-card ${ativo ? 'active' : ''}`} 
@@ -158,12 +160,13 @@ export function ModalFinanceiro({ tipo, itemEdicao, valorFaturamentoAtual, onClo
                         </>
                     )}
 
-                    {/* --- SIMPLE FORM (Revenue) --- */}
+                    {/* --- FORMULÁRIO DE FATURAMENTO --- */}
                     {tipo === 'faturamento' && (
                         <div className="form-group">
                             <label>Valor do Faturamento (R$)</label>
                             <input 
                                 type="number" 
+                                step="0.01" /* CORREÇÃO: Permite digitar centavos */
                                 value={valor} 
                                 onChange={e => setValor(e.target.value)}
                                 autoFocus
@@ -187,6 +190,4 @@ export function ModalFinanceiro({ tipo, itemEdicao, valorFaturamentoAtual, onClo
             </div>
         </div>
     );
-
-    
 }

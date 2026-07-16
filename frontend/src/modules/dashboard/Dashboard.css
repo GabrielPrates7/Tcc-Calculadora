@@ -1,0 +1,298 @@
+/* ===========================
+   DASHBOARD - Sistema Denarius
+   =========================== */
+
+.dashboard-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 32px;
+    min-height: 100vh;
+    background: #0f172a;
+    color: #e2e8f0;
+}
+
+/* Loading */
+.dashboard-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 60vh;
+    gap: 16px;
+    color: #94a3b8;
+}
+
+.loading-spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid #1e293b;
+    border-top-color: #f97316;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Header */
+.dashboard-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+}
+
+.dashboard-header h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin: 0;
+}
+
+.dashboard-sub {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin: 4px 0 0;
+}
+
+.dashboard-badge {
+    background: #1e293b;
+    color: #f97316;
+    border: 1px solid #f9731630;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+}
+
+/* ===========================
+   CARDS INDICADORES
+   =========================== */
+.indicadores-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+}
+
+.ind-card {
+    background: #1e293b;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.ind-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+}
+
+.ind-card-topo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.ind-titulo {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.ind-icone {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ind-valor {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.ind-sub {
+    font-size: 0.75rem;
+    color: #475569;
+}
+
+/* ===========================
+   LINHA INFERIOR
+   =========================== */
+.dashboard-linha {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 16px;
+}
+
+/* Card genérico */
+.grafico-card,
+.funil-card {
+    background: #1e293b;
+    border-radius: 12px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.card-header h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #f1f5f9;
+    margin: 0;
+}
+
+.card-badge {
+    background: #0f172a;
+    color: #64748b;
+    border: 1px solid #334155;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.72rem;
+    font-weight: 500;
+}
+
+/* Tooltip gráfico */
+.tooltip-custom {
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.82rem;
+    color: #e2e8f0;
+}
+
+.tooltip-label {
+    color: #64748b;
+    margin: 0 0 6px;
+    font-weight: 600;
+}
+
+/* ===========================
+   KANBAN / FUNIL
+   =========================== */
+.kanban-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.kanban-card {
+    background: #0f172a;
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: transform 0.15s;
+}
+
+.kanban-card:hover {
+    transform: translateX(4px);
+}
+
+.kanban-icone {
+    display: flex;
+    align-items: center;
+}
+
+.kanban-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex: 1;
+}
+
+.kanban-titulo {
+    font-size: 0.875rem;
+    color: #94a3b8;
+}
+
+.kanban-qtd {
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+
+/* Barra de progresso */
+.funil-barra-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.funil-barra {
+    height: 8px;
+    background: #0f172a;
+    border-radius: 99px;
+    overflow: hidden;
+    display: flex;
+}
+
+.funil-seg {
+    height: 100%;
+    transition: width 0.6s ease;
+}
+
+.funil-legenda {
+    display: flex;
+    gap: 16px;
+    font-size: 0.72rem;
+    color: #64748b;
+}
+
+/* Botão */
+.btn-ver-todas {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: transparent;
+    border: 1px solid #334155;
+    color: #94a3b8;
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: auto;
+}
+
+.btn-ver-todas:hover {
+    border-color: #f97316;
+    color: #f97316;
+    background: #f9731610;
+}
+
+/* Responsivo */
+@media (max-width: 1024px) {
+    .dashboard-linha {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .dashboard-container {
+        padding: 16px;
+    }
+    .indicadores-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}

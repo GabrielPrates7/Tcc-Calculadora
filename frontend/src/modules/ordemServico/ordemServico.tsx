@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Clock, PenTool, AlertCircle, CheckCircle, Package, DollarSign, Calendar, Search, Filter, X, User, Tag, Printer } from 'lucide-react';
-import { OrdemServicoService } from './services/ordemServico.service';
+import React, { useState } from 'react';
+import { Clock, PenTool, AlertCircle, CheckCircle, Package, DollarSign, Calendar, Search, Filter } from 'lucide-react';
 import type { OrdemServico } from './types';
+import { formatarBRL } from '../../utils/formatters';
+import { ModalDetalhesOS } from './components/ModalDetalhesOS';
+import { useKanban } from './hooks/useKanban'; // <-- IMPORTANDO A NOSSA INTELIGÊNCIA!
 import './ordemServico.css';
 
 const COLUNAS = [
@@ -13,32 +15,15 @@ const COLUNAS = [
 ];
 
 export function OrdemServicoKanban() {
-    const [ordens, setOrdens] = useState<OrdemServico[]>([]);
-    const [loading, setLoading] = useState(true);
+    // 1. Usando a inteligência isolada no Hook
+    const { ordens, loading, moverOrdem, atualizarPagamento } = useKanban();
 
-    // Filtros
+    // 2. Estados Visuais (Filtros e Modal)
     const [busca, setBusca] = useState('');
     const [filtroFinanceiro, setFiltroFinanceiro] = useState('todos');
     const [mostrarAtrasados, setMostrarAtrasados] = useState(false);
     const [filtroStatus, setFiltroStatus] = useState('todos');
-
-    // --- NOVO: Estado para o Modal de Detalhes ---
     const [osSelecionada, setOsSelecionada] = useState<OrdemServico | null>(null);
-
-    useEffect(() => {
-        carregarOrdens();
-    }, []);
-
-    const carregarOrdens = async () => {
-        try {
-            const data = await OrdemServicoService.listarTodas();
-            setOrdens(data);
-        } catch (error) {
-            console.error("Erro ao carregar O.S.", error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
     // --- DRAG AND DROP ---
     const handleDragStart = (e: React.DragEvent, osId: number) => {
@@ -47,44 +32,21 @@ export function OrdemServicoKanban() {
 
     const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); };
 
-    const handleDrop = async (e: React.DragEvent, novaColuna: string) => {
+    const handleDrop = (e: React.DragEvent, novaColuna: string) => {
         e.preventDefault();
         const osId = parseInt(e.dataTransfer.getData('osId'));
+        moverOrdem(osId, novaColuna); // Chama o cérebro para mover
+    };
 
-        setOrdens(prev => prev.map(os => 
-            os.os_id === osId ? { ...os, status_producao: novaColuna as OrdemServico['status_producao'] } : os
-        ));
-
-        try {
-            await OrdemServicoService.atualizarStatus(osId, novaColuna);
-        } catch (error) {
-            console.error("Falha ao mover a O.S:", error);
-            alert('Erro ao mover o cartão. Recarregando quadro...');
-            carregarOrdens();
+    // --- ATUALIZAR FINANCEIRO PELO MODAL ---
+    const handleAtualizarFinanceiro = (novoStatus: OrdemServico['status_financeiro']) => {
+        if (osSelecionada) {
+            atualizarPagamento(osSelecionada.os_id, novoStatus); // Atualiza no banco/lista
+            setOsSelecionada({ ...osSelecionada, status_financeiro: novoStatus }); // Atualiza no modal ativo
         }
     };
 
-    // --- NOVO: FUNÇÃO PARA ATUALIZAR STATUS FINANCEIRO ---
-    const atualizarFinanceiro = async (novoStatus: OrdemServico['status_financeiro']) => {
-        if (!osSelecionada) return;
-
-        // Atualiza a interface instantaneamente
-        setOrdens(prev => prev.map(os => 
-            os.os_id === osSelecionada.os_id ? { ...os, status_financeiro: novoStatus } : os
-        ));
-        setOsSelecionada({ ...osSelecionada, status_financeiro: novoStatus }); // Atualiza o modal também
-
-        // Salva no banco de dados
-        try {
-            await OrdemServicoService.atualizarStatus(osSelecionada.os_id, undefined, novoStatus);
-        } catch (error) {
-            console.error("Falha ao atualizar financeiro:", error);
-            alert('Erro ao atualizar pagamento. Recarregando...');
-            carregarOrdens();
-        }
-    };
-
-    // --- FILTRAGEM ---
+    // --- FILTRAGEM VISUAL ---
     const ordensFiltradas = ordens.filter(os => {
         const termo = busca.toLowerCase();
         const matchBusca = (os.cliente || '').toLowerCase().includes(termo) || 
@@ -102,8 +64,6 @@ export function OrdemServicoKanban() {
         return matchBusca && matchFin && matchAtraso;
     });
 
-    // --- FORMATAÇÕES ---
-    const formatarMoeda = (valor: string | number) => Number(valor).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     const formatarData = (data?: string) => data ? new Date(data).toLocaleDateString('pt-BR') : 'Sem prazo';
 
     const getBadgeFinanceiro = (status: string) => {
@@ -206,7 +166,7 @@ export function OrdemServicoKanban() {
                                                 <p className="produto-nome">{os.nome_produto}</p>
                                                 
                                                 <div className="card-footer">
-                                                    <span className="valor-os">{formatarMoeda(os.preco_venda)}</span>
+                                                    <span className="valor-os">{formatarBRL(os.preco_venda)}</span>
                                                     <span className={`prazo-os ${new Date(os.data_entrega || '') < new Date() && os.status_producao !== 'entregue' ? 'atrasado' : ''}`}>
                                                         <Calendar size={12}/> {formatarData(os.data_entrega)}
                                                     </span>
@@ -220,138 +180,15 @@ export function OrdemServicoKanban() {
                 })}
             </div>
 
-            {/* --- MODAL DE DETALHES DA ORDEM DE SERVIÇO --- */}
+            {/* --- MODAL DE DETALHES COMPONENTIZADO --- */}
             {osSelecionada && (
-                <div className="modal-overlay">
-                    <div className="modal-os">
-                        <div className="modal-os-header">
-                            <div>
-                                <h2>Detalhes da Ordem #{osSelecionada.os_id}</h2>
-                                <span className="modal-coluna-atual no-print">
-                                    Encontra-se em: <strong>{COLUNAS.find(c => c.id === osSelecionada.status_producao)?.titulo}</strong>
-                                </span>
-                            </div>
-                            <button className="btn-close no-print" onClick={() => setOsSelecionada(null)}><X size={24} /></button>
-                        </div>
-
-                        <div className="modal-os-body">
-                            <div className="os-info-grid">
-                                <div className="os-info-box">
-                                    <User size={18} color="#64748b"/>
-                                    <div>
-                                        <label>Cliente</label>
-                                        <p>{osSelecionada.cliente || 'Consumidor Final'}</p>
-                                    </div>
-                                </div>
-                                <div className="os-info-box">
-                                    <Tag size={18} color="#64748b"/>
-                                    <div>
-                                        <label>Produto / Serviço</label>
-                                        <p>{osSelecionada.nome_produto}</p>
-                                    </div>
-                                </div>
-                                <div className="os-info-box">
-                                    <DollarSign size={18} color="#64748b"/>
-                                    <div>
-                                        <label>Valor Fechado</label>
-                                        <p className="valor-destaque">{formatarMoeda(osSelecionada.preco_venda)}</p>
-                                    </div>
-                                </div>
-                                <div className="os-info-box">
-                                    <Calendar size={18} color="#64748b"/>
-                                    <div>
-                                        <label>Prazo de Entrega</label>
-                                        <p>{formatarData(osSelecionada.data_entrega)}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="os-financeiro-panel">
-                                <h3 className="no-print">Status de Pagamento</h3>
-                                <p className="no-print">Atualize a situação financeira desta ordem de serviço:</p>
-                                <div className="botoes-financeiro no-print">
-                                    <button 
-                                        className={`btn-fin btn-pendente ${osSelecionada.status_financeiro === 'pendente' ? 'ativo' : ''}`}
-                                        onClick={() => atualizarFinanceiro('pendente')}
-                                    >
-                                        🔴 Pendente
-                                    </button>
-                                    <button 
-                                        className={`btn-fin btn-sinal ${osSelecionada.status_financeiro === 'sinal_pago' ? 'ativo' : ''}`}
-                                        onClick={() => atualizarFinanceiro('sinal_pago')}
-                                    >
-                                        🟡 Sinal Pago (50%)
-                                    </button>
-                                    <button 
-                                        className={`btn-fin btn-pago ${osSelecionada.status_financeiro === 'pago' ? 'ativo' : ''}`}
-                                        onClick={() => atualizarFinanceiro('pago')}
-                                    >
-                                        🟢 Totalmente Pago
-                                    </button>
-                                </div>
-
-                                {/* 👇 BOTÃO DE IMPRESSÃO ADICIONADO AQUI 👇 */}
-                                <div className="os-acoes-finais no-print" style={{marginTop: '20px', borderTop: '1px solid #e2e8f0', paddingTop: '15px'}}>
-                                    <button className="btn-print-os" onClick={() => window.print()}>
-                                        <Printer size={18} /> Imprimir Ficha de Produção
-                                    </button>
-                                </div>
-                            </div>
-                            
-                            {/* 👇 AQUI COMEÇA O TEMPLATE EXCLUSIVO PARA O PAPEL 👇 */}
-                            <div className="print-layout">
-                                <div className="print-header">
-                                    <h1>FICHA DE PRODUÇÃO</h1>
-                                    <h2>Ordem de Serviço #{osSelecionada.os_id}</h2>
-                                </div>
-
-                                <div className="print-info-grid">
-                                    <div className="print-box">
-                                        <strong>Cliente:</strong><br/>
-                                        {osSelecionada.cliente || 'Consumidor Final'}
-                                    </div>
-                                    <div className="print-box">
-                                        <strong>Produto / Serviço:</strong><br/>
-                                        {osSelecionada.nome_produto}
-                                    </div>
-                                    <div className="print-box" style={{ gridColumn: 'span 2' }}>
-                                        <strong>Prazo de Entrega Acordado:</strong> {formatarData(osSelecionada.data_entrega)}
-                                    </div>
-                                </div>
-
-                                <div className="print-section">
-                                    <h3>Observações / Medidas Específicas</h3>
-                                    <div className="print-lines"></div>
-                                    <div className="print-lines"></div>
-                                    <div className="print-lines"></div>
-                                </div>
-
-                                <div className="print-section">
-                                    <h3>Checklist de Produção</h3>
-                                    <div className="print-check-item"><span className="box"></span> Separação de Materiais</div>
-                                    <div className="print-check-item"><span className="box"></span> Execução / Montagem</div>
-                                    <div className="print-check-item"><span className="box"></span> Acabamento / Revisão Final</div>
-                                    <div className="print-check-item"><span className="box"></span> Embalagem / Pronto para Entrega</div>
-                                </div>
-
-                                <div className="print-signatures">
-                                    <div className="sig-line">
-                                        <hr/>
-                                        <span>Responsável pela Produção</span>
-                                    </div>
-                                    <div className="sig-line">
-                                        <hr/>
-                                        <span>Controle de Qualidade</span>
-                                    </div>
-                                </div>
-                            </div>
-                            {/* 👆 FIM DO TEMPLATE DO PAPEL 👆 */}
-                            
-                        </div>
-                    </div>
-                </div>
+                <ModalDetalhesOS 
+                    osSelecionada={osSelecionada}
+                    tituloColunaAtual={COLUNAS.find(c => c.id === osSelecionada.status_producao)?.titulo || 'Desconhecido'}
+                    onClose={() => setOsSelecionada(null)}
+                    onAtualizarFinanceiro={handleAtualizarFinanceiro}
+                />
             )}
-
         </div>
     );
 }

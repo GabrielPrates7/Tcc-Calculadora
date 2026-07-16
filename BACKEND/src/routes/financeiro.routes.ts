@@ -7,17 +7,13 @@ const router = Router();
 // --- 1. DASHBOARD ---
 router.get('/dashboard', async (req: Request, res: Response) => {
     try {
-        // 1. Pega o ÚLTIMO faturamento (Ex: Março de 2026 = 200.000)
         const fatRes = await pool.query('SELECT mes, ano, valor FROM faturamentos_mensais ORDER BY ano DESC, mes DESC LIMIT 1');
         const faturamentoData = fatRes.rows[0];
-        
         const faturamento = Number(faturamentoData?.valor) || 0;
         
-        // 2. Descobre qual foi o mês/ano desse faturamento
         const mesFiltro = faturamentoData?.mes || new Date().getMonth() + 1;
         const anoFiltro = faturamentoData?.ano || new Date().getFullYear();
 
-        // 3. Busca as despesas APENAS daquele mês específico! (Resolve o bug dos 31%)
         const despesasRes = await pool.query(`
             SELECT SUM(valor) as total 
             FROM despesas_fixas 
@@ -27,7 +23,6 @@ router.get('/dashboard', async (req: Request, res: Response) => {
         `, [mesFiltro, anoFiltro]);
         const totalDespesas = Number(despesasRes.rows[0]?.total) || 0;
 
-        // 4. Busca os investimentos do mês
         const investRes = await pool.query(`
             SELECT SUM(valor) as total 
             FROM investimentos 
@@ -37,7 +32,6 @@ router.get('/dashboard', async (req: Request, res: Response) => {
         `, [mesFiltro, anoFiltro]);
         const totalInvestimentos = Number(investRes.rows[0]?.total) || 0;
 
-        // 5. Calcula a Taxa de Custo Fixo Perfeita
         let taxaCustoFixo = 0;
         if (faturamento > 0) {
             taxaCustoFixo = (totalDespesas / faturamento) * 100;
@@ -50,14 +44,11 @@ router.get('/dashboard', async (req: Request, res: Response) => {
     }
 });
 
-// --- 2. FATURAMENTO (Lógica Nova) ---
-
-// POST: Busca a SOMA de um período (NOVO)
-// Recebe: { meses: [1, 2, 3], ano: 2026 }
+// --- 2. FATURAMENTO ---
 router.post('/faturamento/soma', async (req: Request, res: Response) => {
     try {
         const { meses, ano } = req.body;
-        if (!meses || !ano) return res.json({ valor: 0 }); // Retorna 0 se faltar dados
+        if (!meses || !ano) return res.json({ valor: 0 }); 
 
         const total = await FaturamentoService.somarPorMeses(meses, Number(ano));
         res.json({ valor: total });
@@ -67,7 +58,6 @@ router.post('/faturamento/soma', async (req: Request, res: Response) => {
     }
 });
 
-// GET: Busca mês único
 router.get('/faturamento/:mes/:ano', async (req: Request, res: Response) => {
     try {
         const { mes, ano } = req.params;
@@ -78,7 +68,6 @@ router.get('/faturamento/:mes/:ano', async (req: Request, res: Response) => {
     }
 });
 
-// POST: Salva mês único
 router.post('/faturamento', async (req: Request, res: Response) => {
     try {
         const { mes, ano, valor } = req.body;
@@ -89,9 +78,7 @@ router.post('/faturamento', async (req: Request, res: Response) => {
     }
 });
 
-// ... (Mantenha as rotas de DESPESAS e INVESTIMENTOS iguais) ...
-// (Só copiei a parte do faturamento para economizar espaço, o resto não muda)
-// MANTENHA AS ROTAS CRUD DESPESAS/INVESTIMENTOS AQUI EMBAIXO IGUAL ANTES
+// --- CRUD DESPESAS/INVESTIMENTOS ---
 router.get('/despesas', async (req, res) => { const result = await pool.query('SELECT * FROM despesas_fixas ORDER BY data_vencimento ASC, id DESC'); res.json(result.rows); });
 router.post('/despesas', async (req, res) => { const { nome, valor, ativo, pago, beneficiario, data_vencimento } = req.body; await pool.query(`INSERT INTO despesas_fixas (nome, valor, ativo, pago, beneficiario, data_vencimento) VALUES ($1, $2, $3, $4, $5, $6)`, [nome, valor, ativo ?? true, pago ?? false, beneficiario, data_vencimento]); res.json({ message: 'Salvo' }); });
 router.put('/despesas/:id', async (req, res) => { const { id } = req.params; const { nome, valor, ativo, pago, beneficiario, data_vencimento } = req.body; await pool.query(`UPDATE despesas_fixas SET nome=$1, valor=$2, ativo=$3, pago=$4, beneficiario=$5, data_vencimento=$6 WHERE id=$7`, [nome, valor, ativo, pago, beneficiario, data_vencimento, id]); res.json({ message: 'Atualizado' }); });
@@ -101,29 +88,13 @@ router.post('/investimentos', async (req, res) => { const { nome, valor, ativo, 
 router.put('/investimentos/:id', async (req, res) => { const { id } = req.params; const { nome, valor, ativo, pago, beneficiario, data_vencimento } = req.body; await pool.query(`UPDATE investimentos SET nome=$1, valor=$2, ativo=$3, pago=$4, beneficiario=$5, data_vencimento=$6 WHERE id=$7`, [nome, valor, ativo, pago, beneficiario, data_vencimento, id]); res.json({ message: 'Atualizado' }); });
 router.delete('/investimentos/:id', async (req, res) => { await pool.query('DELETE FROM investimentos WHERE id = $1', [req.params.id]); res.json({ message: 'Deletado' }); });
 
+// --- SNAPSHOTS ---
 router.post('/snapshots', async (req: Request, res: Response) => {
-    const { 
-        descricao, 
-        faturamento, 
-        totalDespesas, 
-        totalInvestimentos, 
-        taxaCustoFixo, 
-        dadosBackup // Recebe o objeto { despesas: [], investimentos: [] }
-    } = req.body;
-
+    const { descricao, faturamento, totalDespesas, totalInvestimentos, taxaCustoFixo, dadosBackup } = req.body;
     try {
         await pool.query(
-            `INSERT INTO snapshots_financeiros 
-            (descricao, faturamento, total_despesas, total_investimentos, taxa_custo_fixo, dados_backup) 
-            VALUES ($1, $2, $3, $4, $5, $6)`,
-            [
-                descricao || 'Checkpoint Manual',
-                faturamento,
-                totalDespesas,
-                totalInvestimentos,
-                taxaCustoFixo,
-                JSON.stringify(dadosBackup) // Salva o JSON no banco
-            ]
+            `INSERT INTO snapshots_financeiros (descricao, faturamento, total_despesas, total_investimentos, taxa_custo_fixo, dados_backup) VALUES ($1, $2, $3, $4, $5, $6)`,
+            [descricao || 'Checkpoint Manual', faturamento, totalDespesas, totalInvestimentos, taxaCustoFixo, JSON.stringify(dadosBackup)]
         );
         res.json({ message: 'Snapshot salvo com sucesso!' });
     } catch (err) {
@@ -132,15 +103,9 @@ router.post('/snapshots', async (req: Request, res: Response) => {
     }
 });
 
-// LISTAR CHECKPOINTS
 router.get('/snapshots', async (req: Request, res: Response) => {
     try {
-        // Busca apenas o resumo (sem o JSON pesado) para a lista
-        const result = await pool.query(
-            `SELECT id, criado_em, descricao, faturamento, total_despesas, taxa_custo_fixo 
-             FROM snapshots_financeiros 
-             ORDER BY criado_em DESC`
-        );
+        const result = await pool.query(`SELECT id, criado_em, descricao, faturamento, total_despesas, taxa_custo_fixo FROM snapshots_financeiros ORDER BY criado_em DESC`);
         res.json(result.rows);
     } catch (err) {
         console.error(err);
@@ -148,7 +113,6 @@ router.get('/snapshots', async (req: Request, res: Response) => {
     }
 });
 
-// RECUPERAR UM CHECKPOINT COMPLETO (Para gerar PDF)
 router.get('/snapshots/:id', async (req: Request, res: Response) => {
     try {
         const result = await pool.query('SELECT * FROM snapshots_financeiros WHERE id = $1', [req.params.id]);
@@ -162,6 +126,7 @@ router.get('/snapshots/:id', async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Erro ao carregar detalhes' });
     }
 });
+
 router.delete('/snapshots/:id', async (req, res) => {
     try {
         await pool.query('DELETE FROM snapshots_financeiros WHERE id = $1', [req.params.id]);
@@ -172,4 +137,5 @@ router.delete('/snapshots/:id', async (req, res) => {
     }
 });
 
-export default router;
+// ALTERAÇÃO APLICADA AQUI: Tipagem exata esperada pelo index.ts
+export const financeiroRoutes = router;

@@ -1,5 +1,5 @@
-// FormularioCusto.tsx
 import { Calculator, Clock, Calendar, Users, Briefcase, HardHat } from 'lucide-react';
+import { formatarBRL } from '../../../utils/formatters'; // <--- Importando o formatador
 import type { TipoTempo, TipoOrganizacao, CustoResultado } from '../types';
 import './FormularioCusto.css';
 
@@ -110,14 +110,17 @@ export function FormularioCusto(props: Props) {
                 <div className="formula-box">
                     <p>O custo é calculado dividindo o total de despesas da equipe pela capacidade de produção.</p>
                     <ul style={{ paddingLeft: '20px', lineHeight: '1.8' }}>
-                        <li>Custo Total Equipe: <strong>R$ {resultado.custoEquipeMensal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></li>
+                        {/* AQUI: Aplicando formatarBRL no Custo Total */}
+                        <li>Custo Total Equipe: <strong>{formatarBRL(resultado.custoEquipeMensal)}</strong></li>
                         <li>Capacidade Total: <strong>{tempoInput * qtdUnidades} {tipoTempo}</strong></li>
                     </ul>
 
                     <div className="formula-total">
-                        {resultado.custoEquipeMensal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ÷ ({tempoInput} x {qtdUnidades})
+                        {/* AQUI: Deixei apenas toLocaleString para exibir o número cru no meio da conta sem o 'R$' */}
+                        {resultado.custoEquipeMensal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ÷ ({tempoInput} x {qtdUnidades})
                         <br />
-                        = <strong>R$ {resultado.valorUnitario.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
+                        {/* AQUI: O valor final formatado corretamente com a função */}
+                        = <strong>{formatarBRL(resultado.valorUnitario)}</strong>
                     </div>
                 </div>
             </div>

@@ -2,6 +2,7 @@
 
 import { TrendingDown, TrendingUp, PieChart, Edit2 } from 'lucide-react';
 import type { DashboardData, ViewMode } from '../types';
+import { formatarBRL } from '../../../utils/formatters'; // IMPORTAÇÃO DA NOVA FUNÇÃO
 import './ResumoFinanceiro.css';
 
 interface Props {
@@ -23,8 +24,6 @@ export function ResumoFinanceiro({
     labelMes,
     isMesUnico = false // Valor padrão para evitar erro
 }: Props) {
-    
-    const BRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     
     const getCorTaxa = () => {
         if (dados.taxaCustoFixo > 30) return '#ef4444';
@@ -48,7 +47,8 @@ export function ResumoFinanceiro({
                         {labelMes && <span style={{fontSize: '0.7em', marginLeft: '6px', opacity: 0.8}}>({labelMes})</span>}
                     </h3>
                     
-                    <p style={{ color: '#1e293b' }}>{BRL(dados.faturamento)}</p>
+                    {/* AQUI ESTÁ A MUDANÇA (Usa a sua função importada) */}
+                    <p style={{ color: '#1e293b' }}>{formatarBRL(dados.faturamento)}</p>
                     
                     {/* Texto condicional para explicar a situação */}
                     <small>
@@ -73,7 +73,8 @@ export function ResumoFinanceiro({
             >
                 <div className="card-info">
                     <h3>Despesas Fixas</h3>
-                    <p style={{ color: '#ef4444' }}>{BRL(dados.totalDespesas)}</p>
+                    {/* AQUI ESTÁ A MUDANÇA */}
+                    <p style={{ color: '#ef4444' }}>{formatarBRL(dados.totalDespesas)}</p>
                 </div>
                 <TrendingDown size={28} color="#ef4444" />
             </div>
@@ -85,7 +86,8 @@ export function ResumoFinanceiro({
             >
                 <div className="card-info">
                     <h3>Investimentos</h3>
-                    <p style={{ color: '#8b5cf6' }}>{BRL(dados.totalInvestimentos)}</p>
+                    {/* AQUI ESTÁ A MUDANÇA */}
+                    <p style={{ color: '#8b5cf6' }}>{formatarBRL(dados.totalInvestimentos)}</p>
                 </div>
                 <PieChart size={28} color="#8b5cf6" />
             </div>
@@ -97,6 +99,7 @@ export function ResumoFinanceiro({
                         <h3>Taxa Custo Fixo</h3>
                         <TrendingUp size={20} color={getCorTaxa()} />
                     </div>
+                    {/* Taxa já estava fixa com 2 casas decimais no código original (.toFixed(2)), mantive assim pois é porcentagem, não R$ */}
                     <p style={{ color: getCorTaxa() }}>{dados.taxaCustoFixo.toFixed(2)}%</p>
                     <div className="progress-container">
                         <div className="progress-bar" style={{ width: `${Math.min(dados.taxaCustoFixo, 100)}%`, backgroundColor: getCorTaxa() }} />

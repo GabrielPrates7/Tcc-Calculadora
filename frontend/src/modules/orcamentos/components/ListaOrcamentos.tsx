@@ -1,5 +1,6 @@
 import { Eye, Edit2, Trash2 } from 'lucide-react';
 import type { Orcamento } from '../types';
+import { formatarBRL } from '../../../utils/formatters'; // <-- IMPORTAÇÃO DA SUA FUNÇÃO OFICIAL
 import './ListaOrcamentos.css';
 
 interface Props {
@@ -11,7 +12,7 @@ interface Props {
 }
 
 export function ListaOrcamentos({ lista, idEditando, onEditar, onExcluir, onVerDemonstrativo }: Props) {
-    const BRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    // A função provisória BRL foi removida daqui!
 
     return (
         <div className="card-lista">
@@ -35,9 +36,20 @@ export function ListaOrcamentos({ lista, idEditando, onEditar, onExcluir, onVerD
                                     <div style={{ fontWeight: 'bold', color: '#334155' }}>{orc.cliente || 'Sem cliente'}</div>
                                     <div style={{ fontSize: '0.9rem', color: '#64748b' }}>{orc.nome_produto}</div>
                                 </td>
-                                <td>{BRL(Number(orc.custo_materiais))}</td>
-                                <td><span className="badge-lucro">{orc.lucro_desejado}%</span></td>
-                                <td style={{ fontWeight: 'bold', color: '#0f172a' }}>{BRL(Number(orc.preco_venda))}</td>
+                                
+                                {/* 👇 Usando a função padronizada 👇 */}
+                                <td>{formatarBRL(orc.custo_materiais)}</td>
+                                
+                                <td>
+                                    {/* 👇 Lucro padronizado com 2 casas decimais 👇 */}
+                                    <span className="badge-lucro">
+                                        {Number(orc.lucro_desejado).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+                                    </span>
+                                </td>
+                                
+                                {/* 👇 Usando a função padronizada 👇 */}
+                                <td style={{ fontWeight: 'bold', color: '#0f172a' }}>{formatarBRL(orc.preco_venda)}</td>
+                                
                                 <td>
                                     <div className="acoes-td">
                                         <button className="btn-icon btn-ver" title="Ver Demonstrativo" onClick={() => onVerDemonstrativo(orc)}>

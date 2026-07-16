@@ -1,10 +1,10 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { 
     Plus, Search, RotateCcw, Download, 
-    ArrowUpAZ, ArrowDownZA, Calendar, Filter, FileBarChart2
+    ArrowUpAZ, ArrowDownZA, Calendar, Filter, FileBarChart2, Briefcase
 } from 'lucide-react';
-import html2canvas from 'html2canvas'; // <--- Importado
-import jsPDF from 'jspdf';             // <--- Importado
+import html2canvas from 'html2canvas'; 
+import jsPDF from 'jspdf';             
 
 import { useFuncionarios } from './hooks/useFuncionarios';
 import { TabelaFuncionarios } from './components/TabelaFuncionarios';
@@ -12,6 +12,8 @@ import { ModalFuncionario } from './components/ModalFuncionario';
 import { ModalDetalhes } from './components/ModalDetalhes';
 import { ResumoFinanceiro } from './components/ResumoFinanceiro'; 
 import { ModalRelatorioCusto } from './components/ModalRelatorioCusto'; 
+
+import { ConfirmModal } from '../../components/ConfirmModal/ConfirmModal';
 
 import type { Funcionario } from './types';
 import './Funcionarios.css'; 
@@ -31,7 +33,6 @@ export function Funcionarios() {
         recarregarLista 
     } = useFuncionarios();
 
-    // Filtros e Estados
     const [termoBusca, setTermoBusca] = useState('');
     const [filtroSetor, setFiltroSetor] = useState<FiltroSetor>('todos');
     const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>('ativos'); 
@@ -39,40 +40,54 @@ export function Funcionarios() {
     const [ordenarPor, setOrdenarPor] = useState<OpcaoOrdenacao>('nome');
     const [direcaoOrdem, setDirecaoOrdem] = useState<DirecaoOrdenacao>('asc');
     
-    // Estados de UI
+    const [listaFuncoes, setListaFuncoes] = useState<{id: number, nome: string}[]>([]);
+    const [filtroFuncao, setFiltroFuncao] = useState<string>('todas');
+    
+    // GATILHO DE RECARREGAMENTO: Altera esse número para forçar o useEffect a rodar
+    const [atualizarFiltro, setAtualizarFiltro] = useState(0);
+    
     const [modalAberto, setModalAberto] = useState(false);
     const [modalRelatorioAberto, setModalRelatorioAberto] = useState(false);
     const [funcionarioEdicao, setFuncionarioEdicao] = useState<Funcionario | null>(null);
     const [funcionarioDetalhes, setFuncionarioDetalhes] = useState<Funcionario | null>(null);
-    
-    // Estado do PDF
-    const [gerandoPdf, setGerandoPdf] = useState(false);
-    const containerRef = useRef<HTMLDivElement>(null); // <--- REF PARA CAPTURAR A TELA
+    const [modalExclusao, setModalExclusao] = useState<{isOpen: boolean, id: number, nome: string}>({
+        isOpen: false, id: 0, nome: ''
+    });
 
-    // --- FUNÇÃO EXPORTAR PDF DA TELA PRINCIPAL ---
+    const [gerandoPdf, setGerandoPdf] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null); 
+
+    // USE EFFECT ISOLADO E SEGURO (Sem depender de funções externas)
+    useEffect(() => {
+        const fetchFuncoes = async () => {
+            try {
+                const res = await fetch('http://localhost:3000/api/funcoes');
+                const data = await res.json();
+                setListaFuncoes(data);
+            } catch (error) {
+                console.error("Erro ao carregar lista de funções para o filtro", error);
+            }
+        };
+        
+        void fetchFuncoes();
+    }, [atualizarFiltro]); // Roda na montagem (0) e toda vez que o modal fechar (+1)
+
     const exportarPDF = async () => {
         if (!containerRef.current) return;
         setGerandoPdf(true);
 
         try {
             const element = containerRef.current;
-            
-            // Captura a tela com configurações para Tema Escuro
             const canvas = await html2canvas(element, { 
                 scale: 2, 
-                backgroundColor: '#0f172a', // Mantém o fundo escuro do dashboard (Slate-900)
+                backgroundColor: '#0f172a', 
                 onclone: (documentClone) => {
-                    // --- A MÁGICA ACONTECE AQUI: LIMPEZA PARA IMPRESSÃO ---
-                    
-                    // 1. Esconde a barra de ferramentas inteira (Busca, Filtros, Botões)
                     const toolbar = documentClone.querySelector('.toolbar-container') as HTMLElement;
                     if (toolbar) toolbar.style.display = 'none';
 
-                    // 2. Esconde o botão "Relatório Histórico" lá em cima
                     const btnRelatorio = documentClone.querySelector('.btn-relatorio-topo') as HTMLElement;
                     if (btnRelatorio) btnRelatorio.style.display = 'none';
 
-                    // 3. Adiciona um subtítulo com a data
                     const header = documentClone.querySelector('.header-top div') as HTMLElement;
                     if (header) {
                         const dataImpressao = document.createElement('p');
@@ -113,12 +128,16 @@ export function Funcionarios() {
             const nome = (func.nome || '').toLowerCase();
             const funcao = (func.funcao || '').toLowerCase();
             const matchNome = nome.includes(termo) || funcao.includes(termo);
+            
             const matchSetor = filtroSetor === 'todos' || func.setor === filtroSetor;
+            const matchFuncao = filtroFuncao === 'todas' || func.funcao === filtroFuncao;
+            
             const isAtivo = String(func.ativo) === 'true' || func.ativo === true;
             const matchStatus = filtroStatus === 'todos' ? true : (filtroStatus === 'ativos' ? isAtivo : !isAtivo);
             const dataStr = func.data_admissao ? String(func.data_admissao) : '';
             const matchData = !filtroDataAdmissao || dataStr.includes(filtroDataAdmissao);
-            return matchNome && matchSetor && matchStatus && matchData;
+            
+            return matchNome && matchSetor && matchFuncao && matchStatus && matchData;
         });
 
         return lista.sort((a, b) => {
@@ -141,12 +160,34 @@ export function Funcionarios() {
     
     const limparFiltros = () => {
         setTermoBusca(''); setFiltroSetor('todos'); setFiltroStatus('ativos');
+        setFiltroFuncao('todas'); 
         setFiltroDataAdmissao(''); setOrdenarPor('nome'); setDirecaoOrdem('asc');
         recarregarLista(); 
     };
 
+    const abrirModalExclusao = (id: number) => {
+        const funcionarioSelecionado = funcionarios.find(f => f.id === id);
+        if (funcionarioSelecionado) {
+            setModalExclusao({ 
+                isOpen: true, 
+                id: id, 
+                nome: funcionarioSelecionado.nome 
+            });
+        }
+    };
+
+    const confirmarExclusao = async () => {
+        try {
+            await excluir(modalExclusao.id);
+            recarregarLista(); 
+        } catch (error) {
+            console.error("Erro ao excluir", error);
+        } finally {
+            setModalExclusao({ isOpen: false, id: 0, nome: '' });
+        }
+    };
+
     return (
-        // ADICIONEI A REF AQUI PARA CAPTURAR TUDO
         <div className="funcionarios-container" ref={containerRef}>
             
             <div className="header-top">
@@ -159,7 +200,6 @@ export function Funcionarios() {
                     </p>
                 </div>
                 
-                {/* Adicionei a classe 'btn-relatorio-topo' para poder esconder no PDF */}
                 <button 
                     className="btn-relatorio-topo"
                     onClick={() => setModalRelatorioAberto(true)}
@@ -183,7 +223,6 @@ export function Funcionarios() {
                 loading={loading}
             />
 
-            {/* A Toolbar será escondida automaticamente no PDF */}
             <div className="toolbar-container">
                 <div className="toolbar-row principal">
                     <div className="search-group">
@@ -208,6 +247,19 @@ export function Funcionarios() {
                             <option value="administrativo">Admin</option>
                         </select>
                     </div>
+
+                    <div className="filtro-grupo">
+                        <label><Briefcase size={14}/> Função</label>
+                        <select value={filtroFuncao} onChange={e => setFiltroFuncao(e.target.value)}>
+                            <option value="todas">Todas</option>
+                            {listaFuncoes.map(f => (
+                                <option key={f.id} value={f.nome}>
+                                    {f.nome}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
                     <div className="filtro-grupo">
                         <label>Status</label>
                         <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value as FiltroStatus)}>
@@ -252,7 +304,6 @@ export function Funcionarios() {
                             <RotateCcw size={18} />
                         </button>
                         
-                        {/* BOTÃO DE DOWNLOAD PDF ATUALIZADO */}
                         <button 
                             className="btn-icon btn-csv" 
                             onClick={exportarPDF} 
@@ -269,7 +320,7 @@ export function Funcionarios() {
                 funcionarios={dadosExibicao} 
                 loading={loading} 
                 onEditar={handleEditar} 
-                onExcluir={excluir}
+                onExcluir={abrirModalExclusao} 
                 onVerDetalhes={setFuncionarioDetalhes}
             />
 
@@ -277,8 +328,12 @@ export function Funcionarios() {
                 <ModalFuncionario 
                     key={funcionarioEdicao ? funcionarioEdicao.id : 'novo'}
                     funcionarioEdicao={funcionarioEdicao} 
-                    onClose={() => setModalAberto(false)} 
-                    onSalvar={salvar} 
+                    onClose={() => {
+                        setModalAberto(false);
+                        // INCREMENTA O GATILHO PARA RECARREGAR AS FUNÇÕES NA TELA
+                        setAtualizarFiltro(prev => prev + 1); 
+                    }} 
+                    onSalvar={async (dados) => await salvar(dados as unknown as Funcionario)} 
                 />
             )}
 
@@ -295,6 +350,15 @@ export function Funcionarios() {
                     onBuscar={buscarRelatorio}
                 />
             )}
+
+            <ConfirmModal 
+                isOpen={modalExclusao.isOpen}
+                title="Excluir Colaborador"
+                message={`Tem certeza que deseja excluir o registro de "${modalExclusao.nome}"? Se ele possuir vínculos com orçamentos ou obras, o sistema abortará a exclusão para manter a integridade dos dados.`}
+                textoConfirmar="Excluir Colaborador"
+                onConfirm={confirmarExclusao}
+                onCancel={() => setModalExclusao({ isOpen: false, id: 0, nome: '' })}
+            />
         </div>
     );
 }
