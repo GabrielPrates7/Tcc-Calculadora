@@ -1,132 +1,114 @@
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
-import { formatarBRL } from '../../../utils/formatters'; // <--- Importamos o formatador
+import { formatarBRL } from '../../../utils/formatters';
 
-// Estilos
+// Estilos corporativos refinados para o PDF do TCC
 const styles = StyleSheet.create({
-  page: { padding: 40, fontFamily: 'Helvetica', backgroundColor: '#ffffff' },
-  header: { fontSize: 22, marginBottom: 10, textAlign: 'center', color: '#1e293b', fontWeight: 'bold' },
-  subHeader: { textAlign: 'center', fontSize: 10, color: '#64748b', marginBottom: 30 },
+  page: { padding: 40, fontFamily: 'Helvetica', backgroundColor: '#ffffff', color: '#0f172a' },
+  header: { fontSize: 20, marginBottom: 4, textAlign: 'center', fontWeight: 'bold', color: '#1e293b' },
+  subHeader: { textAlign: 'center', fontSize: 10, color: '#64748b', marginBottom: 25 },
   
-  // Caixas de Informação
-  row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 15 },
-  section: { width: '48%', padding: 10, border: '1px solid #e2e8f0', borderRadius: 5 },
-  label: { fontSize: 10, color: '#64748b', marginBottom: 4, textTransform: 'uppercase' },
-  value: { fontSize: 14, color: '#0f172a', fontWeight: 'bold' },
+  // Informações da Obra (Grid superior)
+  row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
+  section: { width: '48%', padding: 12, backgroundColor: '#f8fafc', borderRadius: 6, border: '1px solid #e2e8f0' },
+  label: { fontSize: 9, color: '#64748b', marginBottom: 4, textTransform: 'uppercase', fontWeight: 'bold' },
+  value: { fontSize: 13, color: '#0f172a', fontWeight: 'bold' },
 
-  // Área da Matemática
-  mathContainer: { marginTop: 20, padding: 20, backgroundColor: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' },
-  mathTitle: { fontSize: 12, fontWeight: 'bold', color: '#334155', marginBottom: 10, borderBottom: '1px solid #cbd5e1', paddingBottom: 5 },
-  mathStep: { fontSize: 10, color: '#475569', marginBottom: 8, lineHeight: 1.5 },
-  mathEquation: { fontSize: 14, textAlign: 'center', marginVertical: 15, fontFamily: 'Helvetica-Bold', color: '#0f172a' },
-  mathNote: { fontSize: 9, color: '#94a3b8', fontStyle: 'italic', marginTop: 5 },
+  // Tabela de Recursos (Equipe Alocada)
+  tableContainer: { marginTop: 10 },
+  tableTitle: { fontSize: 12, fontWeight: 'bold', color: '#334155', marginBottom: 8, borderBottom: '1px solid #cbd5e1', paddingBottom: 4 },
+  tableHeader: { flexDirection: 'row', backgroundColor: '#e2e8f0', padding: 6, borderTopLeftRadius: 4, borderTopRightRadius: 4 },
+  tableRow: { flexDirection: 'row', borderBottom: '1px solid #f1f5f9', padding: 8, alignItems: 'center' },
+  
+  colCargo: { width: '35%', fontSize: 9, fontWeight: 'bold', color: '#1e293b' },
+  colQtd: { width: '15%', fontSize: 9, textAlign: 'center', color: '#475569' },
+  colTempo: { width: '25%', fontSize: 9, textAlign: 'center', color: '#475569' },
+  colSubtotal: { width: '25%', fontSize: 9, textAlign: 'right', fontWeight: 'bold', color: '#0f172a' },
 
-  // Resultado Final
-  totalBox: { marginTop: 30, padding: 20, backgroundColor: '#eff6ff', borderRadius: 8, textAlign: 'center', border: '2px solid #3b82f6' },
-  totalLabel: { fontSize: 12, color: '#1e40af', fontWeight: 'bold', marginBottom: 5 },
-  totalValue: { fontSize: 32, color: '#1d4ed8', fontWeight: 'bold' },
+  // Resultado Final em Destaque
+  totalBox: { marginTop: 25, padding: 15, backgroundColor: '#0284c7', borderRadius: 8, textAlign: 'center' },
+  totalLabel: { fontSize: 10, color: '#e0f2fe', fontWeight: 'bold', marginBottom: 4, textTransform: 'uppercase' },
+  totalValue: { fontSize: 26, color: '#ffffff', fontWeight: 'bold' },
 
-  footer: { position: 'absolute', bottom: 30, left: 40, right: 40, fontSize: 8, textAlign: 'center', color: '#cbd5e1', borderTop: '1px solid #e2e8f0', paddingTop: 10 }
+  footer: { position: 'absolute', bottom: 30, left: 40, right: 40, fontSize: 8, textAlign: 'center', color: '#94a3b8', borderTop: '1px solid #e2e8f0', paddingTop: 10 }
 });
 
-// Interface atualizada para receber os números brutos
-interface Props {
-  dados: {
-    titulo: string;
-    data: string;
-    custoMensal: number;
-    // Dados para a fórmula
-    tipoTempo: string;      // 'dias' ou 'horas'
-    tempoInput: number;     // ex: 20
-    qtdUnidades: number;    // ex: 5 (equipes)
-    tipoOrganizacao: string; // 'individual' ou 'grupo'
-    tamanhoGrupo?: number;   // ex: 2
-    valorFinal: number;
-  }
+// Contrato atualizado para receber os dados reais da obra e seus recursos alocados
+export interface RecursoPdfDTO {
+  funcao_nome: string;
+  qtd_profissionais: number;
+  horas_estimadas: number;
+  custo_hora_aplicado: number;
 }
 
-export const RelatorioPDF = ({ dados }: Props) => {
-  // Cálculos auxiliares para exibição
-  const capacidadeTotal = dados.tempoInput * dados.qtdUnidades;
-  const termoUnidade = dados.tipoOrganizacao === 'grupo' 
-    ? `${dados.qtdUnidades} Equipes` 
-    : `${dados.qtdUnidades} Profissionais`;
-  
-  const termoCapacidade = dados.tipoTempo === 'dias' ? 'Dias' : 'Horas';
+interface RelatorioPDFProps {
+  dados: {
+    titulo: string;
+    cliente: string;
+    dataCriacao: string;
+    recursos: RecursoPdfDTO[];
+    custoTotalMaoDeObra: number;
+  };
+}
 
+export const RelatorioPDF = ({ dados }: RelatorioPDFProps) => {
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         
         {/* Cabeçalho */}
-        <Text style={styles.header}>Relatório de Custo Operacional</Text>
-        <Text style={styles.subHeader}>Sistema Denarius - Inteligência de Precificação</Text>
+        <Text style={styles.header}>Orçamento de Custo Direto (Mão de Obra)</Text>
+        <Text style={styles.subHeader}>Sistema Denarius • Custeio ABC Industrial</Text>
 
-        {/* Informações Básicas */}
+        {/* Informações Cadastrais */}
         <View style={styles.row}>
           <View style={styles.section}>
-            <Text style={styles.label}>Cenário</Text>
+            <Text style={styles.label}>Projeto / Obra</Text>
             <Text style={styles.value}>{dados.titulo}</Text>
-            <Text style={{fontSize: 9, color: '#94a3b8', marginTop: 2}}>{dados.data}</Text>
           </View>
           <View style={styles.section}>
-            <Text style={styles.label}>Custo Mensal (Folha)</Text>
-            {/* AQUI: Aplicando o formatarBRL */}
-            <Text style={styles.value}>
-              {formatarBRL(dados.custoMensal)}
-            </Text>
+            <Text style={styles.label}>Cliente</Text>
+            <Text style={styles.value}>{dados.cliente}</Text>
+            <Text style={{fontSize: 8, color: '#94a3b8', marginTop: 2}}>Emitido em: {dados.dataCriacao}</Text>
           </View>
         </View>
 
-        {/* --- AQUI ESTÁ A MÁGICA: MEMÓRIA DE CÁLCULO --- */}
-        <View style={styles.mathContainer}>
-          <Text style={styles.mathTitle}>Memória de Cálculo (Passo a Passo)</Text>
+        {/* Tabela de Equipe Alocada */}
+        <View style={styles.tableContainer}>
+          <Text style={styles.tableTitle}>Detalhamento de Homem-Hora por Função</Text>
           
-          <Text style={styles.mathStep}>
-            1. O sistema identificou um Custo Operacional Total de <Text style={{fontWeight:'bold'}}>{formatarBRL(dados.custoMensal)}</Text>.
-          </Text>
-          
-          <Text style={styles.mathStep}>
-            2. A capacidade produtiva foi definida com base em <Text style={{fontWeight:'bold'}}>{termoUnidade}</Text> trabalhando <Text style={{fontWeight:'bold'}}>{dados.tempoInput} {termoCapacidade}</Text> no mês.
-          </Text>
-
-          <Text style={styles.mathStep}>
-            3. A fórmula aplicada divide o custo total pela capacidade total de produção:
-          </Text>
-
-          {/* A FÓRMULA VISUAL */}
-          <Text style={styles.mathEquation}>
-            {formatarBRL(dados.custoMensal)} ÷ ({dados.tempoInput} x {dados.qtdUnidades})
-          </Text>
-          
-          <Text style={{textAlign:'center', fontSize: 10, color:'#64748b'}}>
-            (Custo Total) ÷ (Tempo x Quantidade de Equipes/Pessoas)
-          </Text>
-
-           <Text style={styles.mathEquation}>
-            = {formatarBRL(dados.custoMensal)} ÷ {capacidadeTotal} {termoCapacidade} Totais
-          </Text>
-
-          <View style={{marginTop: 10, paddingTop: 10, borderTop: '1px dashed #cbd5e1'}}>
-            <Text style={styles.mathNote}>
-              * Nota: Este valor representa o custo mínimo de 1 {termoCapacidade} de trabalho de 
-              {dados.tipoOrganizacao === 'grupo' ? ` uma Equipe de ${dados.tamanhoGrupo} pessoas` : ' um Profissional'}.
-            </Text>
+          {/* Cabeçalho da Tabela */}
+          <View style={styles.tableHeader}>
+            <Text style={styles.colCargo}>Função / Cargo</Text>
+            <Text style={styles.colQtd}>Profissionais</Text>
+            <Text style={styles.colTempo}>Tempo Total (h)</Text>
+            <Text style={styles.colSubtotal}>Subtotal (R$)</Text>
           </View>
+
+          {/* Linhas da Tabela */}
+          {dados.recursos.map((rec, index) => {
+            const subtotal = rec.horas_estimadas * rec.custo_hora_aplicado;
+            return (
+              <View key={index} style={styles.tableRow}>
+                <Text style={styles.colCargo}>{rec.funcao_nome}</Text>
+                <Text style={styles.colQtd}>{rec.qtd_profissionais}x</Text>
+                <Text style={styles.colTempo}>{rec.horas_estimadas}h ({formatarBRL(rec.custo_hora_aplicado)}/h)</Text>
+                <Text style={styles.colSubtotal}>{formatarBRL(subtotal)}</Text>
+              </View>
+            );
+          })}
         </View>
 
         {/* Resultado Final em Destaque */}
         <View style={styles.totalBox}>
-          <Text style={styles.totalLabel}>CUSTO DA UNIDADE DE TRABALHO</Text>
+          <Text style={styles.totalLabel}>Custo Total Estimado (Mão de Obra)</Text>
           <Text style={styles.totalValue}>
-            {formatarBRL(dados.valorFinal)}
-          </Text>
-          <Text style={{fontSize: 10, color: '#60a5fa', marginTop: 5}}>
-            Por {dados.tipoTempo === 'dias' ? 'Dia' : 'Hora'} de {dados.tipoOrganizacao === 'grupo' ? 'Equipe' : 'Trabalho'}
+            {formatarBRL(dados.custoTotalMaoDeObra)}
           </Text>
         </View>
 
+        {/* Rodapé */}
         <Text style={styles.footer}>
-          Documento gerado automaticamente em {new Date().toLocaleString()} • Denarius System v1.0
+          Documento gerado eletronicamente pelo Denarius System • Metodologia de Custeio Baseado em Atividades (ABC)
         </Text>
       </Page>
     </Document>

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Edit2, Trash2, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Funcionario } from '../types';
 import './TabelaFuncionarios.css'; 
@@ -6,36 +5,38 @@ import './TabelaFuncionarios.css';
 interface Props {
     funcionarios: Funcionario[];
     loading: boolean;
+    paginaAtual: number;
+    totalPaginas: number;
+    totalRegistros: number; // NOVO: Necessário para o cálculo textual
+    onMudarPagina: (pagina: number) => void;
     onEditar: (f: Funcionario) => void;
     onExcluir: (id: number) => void;
     onVerDetalhes: (f: Funcionario) => void;
 }
 
-export function TabelaFuncionarios({ funcionarios, loading, onEditar, onExcluir, onVerDetalhes }: Props) {
-    const [paginaSelecionada, setPaginaSelecionada] = useState(1);
-    const itensPorPagina = 8;
-
-    const totalPaginas = Math.ceil(funcionarios.length / itensPorPagina);
-    const paginaAtual = Math.max(1, Math.min(paginaSelecionada, totalPaginas));
-
-    if (loading) return <div className="loading-state">Carregando dados...</div>;
-
-    const indiceUltimoItem = paginaAtual * itensPorPagina;
-    const indicePrimeiroItem = indiceUltimoItem - itensPorPagina;
-    const itensAtuais = funcionarios.slice(indicePrimeiroItem, indiceUltimoItem);
-
-    const irParaPagina = (pagina: number) => {
-        if (pagina >= 1 && pagina <= totalPaginas) setPaginaSelecionada(pagina);
-    };
+export function TabelaFuncionarios({ 
+    funcionarios, 
+    loading, 
+    paginaAtual, 
+    totalPaginas,
+    totalRegistros, 
+    onMudarPagina, 
+    onEditar, 
+    onExcluir, 
+    onVerDetalhes 
+}: Props) {
 
     const formatarMoeda = (valor: number | string) => {
         return Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     };
 
-    // Algoritmo de Paginação com Elipse
+    const limite = 8;
+    // Lógica para o texto exato "Mostrando X a Y de Z"
+    const inicio = totalRegistros === 0 ? 0 : ((paginaAtual - 1) * limite) + 1;
+    const fim = Math.min(paginaAtual * limite, totalRegistros);
+
     const gerarPaginas = () => {
         const paginas = [];
-        
         if (totalPaginas <= 5) {
             for (let i = 1; i <= totalPaginas; i++) paginas.push(i);
         } else {
@@ -66,15 +67,15 @@ export function TabelaFuncionarios({ funcionarios, loading, onEditar, onExcluir,
                             <th style={{ textAlign: 'center' }}>AÇÕES</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        {itensAtuais.length === 0 ? (
+                    <tbody style={{ opacity: loading ? 0.4 : 1, transition: 'opacity 0.2s', pointerEvents: loading ? 'none' : 'auto' }}>
+                        {!funcionarios || funcionarios.length === 0 ? (
                             <tr>
-                                <td colSpan={8} style={{ textAlign: 'center', padding: '30px', color: '#64748b' }}>
-                                    Nenhum colaborador encontrado na filtragem atual.
+                                <td colSpan={8} style={{ textAlign: 'center', padding: '50px', color: '#64748b' }}>
+                                    {loading ? 'Buscando dados...' : 'Nenhum colaborador encontrado na filtragem atual.'}
                                 </td>
                             </tr>
                         ) : (
-                            itensAtuais.map(f => (
+                            funcionarios.map(f => (
                                 <tr key={f.id} className={String(f.ativo) === 'false' ? 'tr-inativo' : ''}>
                                     <td className="col-nome" title={f.nome}>
                                         <strong>{f.nome}</strong>
@@ -92,7 +93,7 @@ export function TabelaFuncionarios({ funcionarios, loading, onEditar, onExcluir,
                                             {String(f.ativo) === 'true' ? 'Ativo' : 'Inativo'}
                                         </span>
                                     </td>
-                                    <td>{new Date(f.data_admissao).toLocaleDateString('pt-BR')}</td>
+                                    <td>{f.data_admissao ? new Date(f.data_admissao).toLocaleDateString('pt-BR') : '-'}</td>
                                     <td>
                                         <div className="acoes-grupo">
                                             <button className="btn-icon info" onClick={() => onVerDetalhes(f)} title="Ver Detalhes">
@@ -113,41 +114,49 @@ export function TabelaFuncionarios({ funcionarios, loading, onEditar, onExcluir,
                 </table>
             </div>
 
-            {totalPaginas > 0 && (
-                <div className="paginacao-container">
-                    <span className="paginacao-info">
-                        Mostrando <strong>{funcionarios.length === 0 ? 0 : indicePrimeiroItem + 1}</strong> a <strong>{Math.min(indiceUltimoItem, funcionarios.length)}</strong> de <strong>{funcionarios.length}</strong> registros
-                    </span>
+            {/* Rodapé redesenhado conforme a imagem */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', backgroundColor: '#fff', borderTop: '1px solid #e2e8f0', borderBottomLeftRadius: '8px', borderBottomRightRadius: '8px' }}>
+                <span style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                    Mostrando <strong>{inicio}</strong> a <strong>{fim}</strong> de <strong>{totalRegistros}</strong> registros
+                </span>
+                
+                <div style={{ display: 'flex', gap: '6px' }}>
+                    <button 
+                        onClick={() => onMudarPagina(paginaAtual - 1)} 
+                        disabled={paginaAtual === 1 || loading}
+                        style={{ minWidth: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '6px', border: '1px solid #e2e8f0', backgroundColor: '#fff', cursor: (paginaAtual === 1 || loading) ? 'default' : 'pointer', color: '#64748b' }}
+                    >
+                        <ChevronLeft size={16} />
+                    </button>
                     
-                    <div className="paginacao-botoes">
+                    {gerarPaginas().map((item, index) => (
                         <button 
-                            onClick={() => irParaPagina(paginaAtual - 1)} 
-                            disabled={paginaAtual === 1}
+                            key={index}
+                            onClick={() => typeof item === 'number' && onMudarPagina(item)}
+                            disabled={item === '...' || loading}
+                            style={{
+                                minWidth: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                borderRadius: '6px', border: item === '...' ? 'none' : '1px solid #e2e8f0',
+                                backgroundColor: paginaAtual === item ? '#3b82f6' : (item === '...' ? 'transparent' : '#fff'),
+                                color: paginaAtual === item ? '#fff' : '#64748b',
+                                cursor: item === '...' || loading ? 'default' : 'pointer',
+                                fontWeight: paginaAtual === item ? '600' : '400',
+                                transition: 'all 0.2s'
+                            }}
                         >
-                            <ChevronLeft size={18} />
+                            {item}
                         </button>
-                        
-                        {gerarPaginas().map((item, index) => (
-                            <button 
-                                key={index}
-                                className={paginaAtual === item ? 'ativo' : ''}
-                                onClick={() => typeof item === 'number' && irParaPagina(item)}
-                                disabled={item === '...'}
-                                style={item === '...' ? { cursor: 'default', background: 'transparent', borderColor: 'transparent', color: '#94a3b8' } : {}}
-                            >
-                                {item}
-                            </button>
-                        ))}
+                    ))}
 
-                        <button 
-                            onClick={() => irParaPagina(paginaAtual + 1)} 
-                            disabled={paginaAtual === totalPaginas}
-                        >
-                            <ChevronRight size={18} />
-                        </button>
-                    </div>
+                    <button 
+                        onClick={() => onMudarPagina(paginaAtual + 1)} 
+                        disabled={paginaAtual === totalPaginas || loading || totalPaginas === 0}
+                        style={{ minWidth: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '6px', border: '1px solid #e2e8f0', backgroundColor: '#fff', cursor: (paginaAtual === totalPaginas || loading || totalPaginas === 0) ? 'default' : 'pointer', color: '#64748b' }}
+                    >
+                        <ChevronRight size={16} />
+                    </button>
                 </div>
-            )}
+            </div>
         </div>
     );
 }

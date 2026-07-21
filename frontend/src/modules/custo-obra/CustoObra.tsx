@@ -1,151 +1,176 @@
-import { PDFDownloadLink } from '@react-pdf/renderer'; 
-import { FileText, Save, Info, XCircle } from 'lucide-react';
+import { FileDown, Trash2, Search } from 'lucide-react';
+import { formatarBRL } from '../../utils/formatters';
 import { useCustoObra } from './hooks/useCustoObra';
-import { ResultadoCusto } from './components/ResultadoCusto';
-import { FormularioCusto } from './components/FormularioCusto';
+import { FormularioObra } from './components/FormularioObra';
 import { RelatorioPDF } from './components/RelatorioPDF';
-import { HistoricoCenarios } from './components/HistoricoCenarios';
-import './CustoObra.css';
+import { PDFDownloadLink } from '@react-pdf/renderer';
 
 export function CustoObra() {
-    const { 
-        loading, form, resultado, historico, cenarioEmEdicao,
-        titulo, setTitulo, 
-        atualizarCalculo,
-        setTipoTempo, setTipoOrganizacao, setTempoInput, setQtdUnidades, setTamanhoGrupo,
-        excluirItem, renomearItem, restaurarCenario, cancelarEdicao 
-    } = useCustoObra();
-
-    if (loading) return <div style={{padding: 40, color:'white'}}>Carregando calculadora...</div>;
-
-    // --- AÇÃO 1: SALVAR (Botão Superior) ---
-    // Este é o ÚNICO lugar que grava no histórico agora.
-    const handleSalvarComTitulo = () => {
-        if(!titulo) {
-            alert("Dê um nome para este cenário antes de salvar.");
-            return;
-        }
-        // true = Salva no banco de histórico
-        atualizarCalculo(titulo, true); 
-    };
-
-    // --- AÇÃO 2: APENAS RECALCULAR (Botão Inferior) ---
-    // Serve apenas para ver o resultado na tela ("O que acontece se eu colocar 3 funcionários?").
-    // Não suja o histórico.
-    const handleRecalcularRapido = () => {
-        // false = Não salva no histórico, apenas atualiza a configuração global e a tela
-        atualizarCalculo(undefined, false); 
-    };
+    const { historico, isLoadingHistorico, carregarHistorico, excluirObra, pagination } = useCustoObra();
 
     return (
-        <div className="custo-obra-container">
-            {/* --- TOPO --- */}
-            <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
-                <div>
-                    <h1>Custo Operacional 🏗️</h1>
-                    <p style={{color: '#94a3b8'}}>Defina sua régua de cobrança.</p>
-                </div>
+        <main style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+            <header style={{ marginBottom: '30px' }}>
+                <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#f8fafc', margin: 0 }}>
+                    Custo de Obra <span style={{ color: '#f97316' }}>ABC</span>
+                </h1>
+                <p style={{ color: '#94a3b8', marginTop: '5px' }}>
+                    Dimensionamento de mão de obra por função e centro de custo.
+                </p>
+            </header>
+
+            <FormularioObra onSalvarSucesso={carregarHistorico} />
+
+            <section style={{ marginTop: '40px', backgroundColor: '#1e293b', borderRadius: '12px', border: '1px solid #334155', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
                 
-                <PDFDownloadLink 
-                    document={
-                        <RelatorioPDF dados={{
-                            titulo: titulo || (cenarioEmEdicao ? cenarioEmEdicao : 'Custo Atual'),
-                            data: new Date().toLocaleDateString(),
-                            custoMensal: resultado.custoEquipeMensal,
-                            tipoTempo: form.tipoTempo,
-                            tempoInput: form.tempoInput,
-                            qtdUnidades: form.qtdUnidades,
-                            tipoOrganizacao: form.tipoOrganizacao,
-                            tamanhoGrupo: form.tamanhoGrupo,
-                            valorFinal: resultado.valorUnitario
-                        }} />
-                    } 
-                    fileName={`Relatorio_Denarius_${new Date().getTime()}.pdf`}
-                    style={{textDecoration: 'none'}}
-                >
-                    {({ loading }) => (
-                        <button className="btn-pdf" disabled={loading} style={{
-                            background: '#ef4444', color: 'white', border: 'none', padding: '10px 20px', 
-                            borderRadius: '8px', cursor: 'pointer', display: 'flex', gap: '8px', alignItems:'center'
-                        }}>
-                            <FileText size={18} /> {loading ? 'Gerando...' : 'Baixar PDF'}
-                        </button>
-                    )}
-                </PDFDownloadLink>
-            </div>
-
-            {/* --- RESULTADO EM DESTAQUE --- */}
-            <ResultadoCusto 
-                resultado={resultado}
-                tipoTempo={form.tipoTempo}
-                tipoOrganizacao={form.tipoOrganizacao}
-                tamanhoGrupo={form.tamanhoGrupo}
-            />
-
-            {/* --- BARRA DE SALVAMENTO (Único lugar onde se define nome e salva) --- */}
-            <div className="card-input-titulo" style={{
-                background: cenarioEmEdicao ? '#334155' : '#1e293b', 
-                padding: 20, borderRadius: 8, marginBottom: 20,
-                border: cenarioEmEdicao ? '1px solid #f97316' : 'none',
-                transition: '0.3s'
-            }}>
-                {/* Aviso de Edição */}
-                {cenarioEmEdicao && (
-                    <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: 15, color: '#fb923c'}}>
-                        <div style={{display:'flex', alignItems:'center', gap: 8}}>
-                            <Info size={18} />
-                            <span>
-                                <strong>Modo de Edição:</strong> Você está alterando o cenário "{cenarioEmEdicao}".
-                            </span>
-                        </div>
-                        <button onClick={cancelarEdicao} style={{background:'none', border:'none', color:'#94a3b8', cursor:'pointer', display:'flex', alignItems:'center', gap:4}}>
-                            <XCircle size={16}/> Cancelar Edição
-                        </button>
+                <div style={{ padding: '20px', backgroundColor: '#0f172a', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
+                    <h2 style={{ fontSize: '1.25rem', color: '#f8fafc', margin: 0, fontWeight: 'bold' }}>
+                        Histórico de Bases de Cálculos
+                    </h2>
+                    
+                    <div style={{ position: 'relative', width: '100%', maxWidth: '350px' }}>
+                        <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                        <input
+                            type="text"
+                            placeholder="Buscar por Obra ou Cliente..."
+                            value={pagination.searchTerm}
+                            onChange={(e) => pagination.setSearchTerm(e.target.value)}
+                            style={{ 
+                                width: '100%', 
+                                padding: '10px 10px 10px 38px', 
+                                borderRadius: '6px', 
+                                backgroundColor: '#1e293b', 
+                                border: '1px solid #475569', 
+                                color: '#f8fafc', 
+                                outline: 'none',
+                                fontSize: '0.9rem',
+                                transition: 'border-color 0.2s'
+                            }}
+                            onFocus={(e) => e.target.style.borderColor = '#f97316'}
+                            onBlur={(e) => e.target.style.borderColor = '#475569'}
+                        />
                     </div>
-                )}
-
-                <label style={{color: 'white', display:'block', marginBottom: 10}}>
-                    {cenarioEmEdicao ? 'Nome do Cenário (Salvar atualizará este item):' : 'Nome deste Novo Cenário (Para Histórico):'}
-                </label>
-                
-                <div style={{display:'flex', gap: 10}}>
-                    <input 
-                        type="text" 
-                        placeholder="Ex: Tabela de Preços 2026 - Verão"
-                        value={titulo} 
-                        onChange={e => setTitulo(e.target.value)}
-                        style={{flex: 1, padding: 10, borderRadius: 5, border: '1px solid #475569', background: '#0f172a', color: 'white'}}
-                    />
-                    <button 
-                        onClick={handleSalvarComTitulo}
-                        style={{background: '#f97316', color: 'white', border: 'none', padding: '0 20px', borderRadius: 5, cursor: 'pointer', fontWeight: 'bold', display:'flex', alignItems:'center'}}
-                    >
-                        <Save size={18} style={{marginRight:5}}/> 
-                        {cenarioEmEdicao ? 'Atualizar Histórico' : 'Salvar no Histórico'}
-                    </button>
                 </div>
-            </div>
 
-            {/* --- FORMULÁRIO --- */}
-            <FormularioCusto 
-                {...form}
-                resultado={resultado}
-                setTipoTempo={setTipoTempo}
-                setTipoOrganizacao={setTipoOrganizacao}
-                setTempoInput={setTempoInput}
-                setQtdUnidades={setQtdUnidades}
-                setTamanhoGrupo={setTamanhoGrupo}
-                onSalvar={handleRecalcularRapido} // Botão de baixo chama a função "Sem Salvar"
-            />
+                <div>
+                    {isLoadingHistorico ? (
+                        <div style={{ color: '#94a3b8', textAlign: 'center', padding: '40px' }}>Carregando histórico...</div>
+                    ) : pagination.totalItems === 0 && pagination.searchTerm === '' ? (
+                        <div style={{ color: '#94a3b8', textAlign: 'center', padding: '40px', margin: '20px', border: '1px dashed #475569', borderRadius: '8px', backgroundColor: '#0f172a' }}>
+                            Nenhuma base de cálculo foi salva no sistema ainda.
+                        </div>
+                    ) : pagination.totalItems === 0 && pagination.searchTerm !== '' ? (
+                        <div style={{ color: '#94a3b8', textAlign: 'center', padding: '40px', margin: '20px', border: '1px dashed #475569', borderRadius: '8px', backgroundColor: '#0f172a' }}>
+                            Nenhum registro encontrado para "{pagination.searchTerm}".
+                        </div>
+                    ) : (
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                                <thead>
+                                    <tr>
+                                        <th style={{ padding: '15px 20px', borderBottom: '1px solid #334155', backgroundColor: '#0f172a', color: '#cbd5e1', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 'bold' }}>
+                                            Obra / Projeto
+                                        </th>
+                                        <th style={{ padding: '15px 20px', borderBottom: '1px solid #334155', backgroundColor: '#0f172a', color: '#cbd5e1', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 'bold' }}>
+                                            Cliente
+                                        </th>
+                                        <th style={{ padding: '15px 20px', borderBottom: '1px solid #334155', backgroundColor: '#0f172a', color: '#cbd5e1', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 'bold' }}>
+                                            Data de Criação
+                                        </th>
+                                        <th style={{ padding: '15px 20px', borderBottom: '1px solid #334155', backgroundColor: '#0f172a', color: '#cbd5e1', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 'bold' }}>
+                                            Custo Mão de Obra
+                                        </th>
+                                        <th style={{ padding: '15px 20px', borderBottom: '1px solid #334155', textAlign: 'center', backgroundColor: '#0f172a', color: '#cbd5e1', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 'bold' }}>
+                                            Ações
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {historico.map((item) => (
+                                        <tr key={item.id} style={{ borderBottom: '1px solid #334155', backgroundColor: '#1e293b' }}>
+                                            <td style={{ padding: '15px 20px', color: '#f8fafc', fontWeight: '500' }}>{item.titulo}</td>
+                                            <td style={{ padding: '15px 20px', color: '#94a3b8' }}>{item.cliente}</td>
+                                            <td style={{ padding: '15px 20px', color: '#94a3b8' }}>{new Date(item.criado_em).toLocaleDateString('pt-BR')}</td>
+                                            <td style={{ padding: '15px 20px', color: '#f97316', fontWeight: 'bold' }}>
+                                                {formatarBRL(Number(item.custo_total_estimado))}
+                                            </td>
+                                            <td style={{ padding: '15px 20px', display: 'flex', justifyContent: 'center', gap: '12px' }}>
+                                                <PDFDownloadLink
+                                                    document={
+                                                        <RelatorioPDF dados={{
+                                                            titulo: item.titulo,
+                                                            cliente: item.cliente,
+                                                            dataCriacao: new Date(item.criado_em).toLocaleDateString('pt-BR'),
+                                                            recursos: item.recursos, 
+                                                            custoTotalMaoDeObra: Number(item.custo_total_estimado)
+                                                        }} />
+                                                    }
+                                                    fileName={`Base-Calculo-${item.titulo}.pdf`}
+                                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f172a', color: '#38bdf8', border: '1px solid #0369a1', padding: '8px', borderRadius: '6px', textDecoration: 'none' }}
+                                                    title="Baixar Relatório em PDF"
+                                                >
+                                                    {({ loading }) => (loading ? <span style={{ fontSize: '0.7rem', padding: '0 5px' }}>...</span> : <FileDown size={18} />)}
+                                                </PDFDownloadLink>
 
-            {/* --- LISTA DE HISTÓRICO --- */}
-            <HistoricoCenarios 
-                itens={historico} 
-                custoMensalAtual={resultado.custoEquipeMensal} 
-                onExcluir={excluirItem}
-                onRenomear={renomearItem}
-                onRestaurar={restaurarCenario}
-            />
-        </div>
+                                                <button
+                                                    onClick={() => excluirObra(item.id)}
+                                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f172a', color: '#ef4444', border: '1px solid #7f1d1d', padding: '8px', borderRadius: '6px', cursor: 'pointer' }}
+                                                    title="Excluir Base de Cálculo"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 20px', borderTop: '1px solid #334155', backgroundColor: '#0f172a', borderBottomLeftRadius: '12px', borderBottomRightRadius: '12px' }}>
+                                <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>
+                                    Mostrando <strong style={{ color: '#f8fafc' }}>{pagination.indexOfFirstItem + 1}</strong> a <strong style={{ color: '#f8fafc' }}>{Math.min(pagination.indexOfLastItem, pagination.totalItems)}</strong> de <strong style={{ color: '#f8fafc' }}>{pagination.totalItems}</strong> registros
+                                </span>
+                                
+                                <div style={{ display: 'flex', gap: '5px' }}>
+                                    <button 
+                                        onClick={() => pagination.setCurrentPage(prev => Math.max(prev - 1, 1))}
+                                        disabled={pagination.currentPage === 1}
+                                        style={{ padding: '6px 12px', backgroundColor: '#1e293b', border: '1px solid #334155', color: pagination.currentPage === 1 ? '#475569' : '#cbd5e1', borderRadius: '6px', cursor: pagination.currentPage === 1 ? 'not-allowed' : 'pointer' }}
+                                    >
+                                        &lt;
+                                    </button>
+                                    
+                                    {pagination.getVisiblePages().map(page => (
+                                        <button 
+                                            key={page}
+                                            onClick={() => pagination.setCurrentPage(page)}
+                                            style={{ 
+                                                padding: '6px 12px', 
+                                                backgroundColor: pagination.currentPage === page ? '#f97316' : '#1e293b', 
+                                                border: '1px solid',
+                                                borderColor: pagination.currentPage === page ? '#f97316' : '#334155',
+                                                color: pagination.currentPage === page ? '#ffffff' : '#cbd5e1', 
+                                                borderRadius: '6px', 
+                                                cursor: 'pointer', 
+                                                fontWeight: pagination.currentPage === page ? 'bold' : 'normal'
+                                            }}
+                                        >
+                                            {page}
+                                        </button>
+                                    ))}
+                                    
+                                    <button 
+                                        onClick={() => pagination.setCurrentPage(prev => Math.min(prev + 1, pagination.totalPages))}
+                                        disabled={pagination.currentPage === pagination.totalPages || pagination.totalPages === 0}
+                                        style={{ padding: '6px 12px', backgroundColor: '#1e293b', border: '1px solid #334155', color: (pagination.currentPage === pagination.totalPages || pagination.totalPages === 0) ? '#475569' : '#cbd5e1', borderRadius: '6px', cursor: (pagination.currentPage === pagination.totalPages || pagination.totalPages === 0) ? 'not-allowed' : 'pointer' }}
+                                    >
+                                        &gt;
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </section>
+        </main>
     );
 }

@@ -1,59 +1,81 @@
-import type { CustoConfig, CustoObraResponse, HistoricoItem } from '../types';
+// ============================================================================
+// CONTRATOS (Interfaces)
+// ============================================================================
 
-const API_URL = 'http://localhost:3000/calculo-obra';
+export interface TaxaFuncao {
+    funcao_id: number;
+    funcao_nome: string;
+    total_funcionarios_ativos: number;
+    custo_mensal_setor: number;
+    custo_hora_calculado: number;
+}
 
+export interface RecursoObraInput {
+    funcao_id: number;
+    horas_estimadas: number;
+    custo_hora_aplicado: number;
+}
+
+export interface NovaObraBody {
+    titulo: string;
+    cliente: string;
+    data_entrega?: string | null;
+    recursos: RecursoObraInput[];
+}
+
+export interface ObraHistorico {
+    id: number;
+    titulo: string;
+    cliente: string;
+    data_inicio: string;
+    data_entrega: string;
+    status: string;
+    custo_total_estimado: string; 
+    criado_em: string;
+    // ADICIONADO: Contrato para receber a equipe diretamente do JSON do Postgres
+    recursos: {
+        funcao_nome: string;
+        qtd_profissionais: number;
+        horas_estimadas: number;
+        custo_hora_aplicado: number;
+    }[];
+}
+
+const API_URL = 'http://localhost:3000/api/obras'; 
+
+// ============================================================================
+// SERVIÇO (Data Fetching)
+// ============================================================================
 export const CustoObraService = {
-    // Busca os dados iniciais da tela (Configuração atual + Cálculo atual)
-    async buscar(): Promise<CustoObraResponse> {
-        const res = await fetch(API_URL);
-        if (!res.ok) throw new Error('Falha ao buscar dados iniciais');
+    
+    async obterTaxas(): Promise<TaxaFuncao[]> {
+        const res = await fetch(`${API_URL}/taxas`);
+        if (!res.ok) throw new Error('Falha ao buscar as taxas de produção por função.');
         return res.json();
     },
 
-    // Busca a lista do histórico (Tabela de baixo)
-    async listarHistorico(): Promise<HistoricoItem[]> {
-        const res = await fetch(`${API_URL}/historico`);
-        if (!res.ok) throw new Error('Falha ao carregar histórico');
-        return res.json();
-    },
-
-    // Salva ou Recalcula (Botões laranja)
-    async atualizar(dados: CustoConfig): Promise<void> {
+    async salvarOrcamento(dados: NovaObraBody): Promise<{ message: string; obra_id: number; custo_total: number }> {
         const res = await fetch(API_URL, {
-            method: 'PUT',
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(dados)
         });
 
-        // Importante: Verifica se o salvamento funcionou
-        if (!res.ok) {
-            throw new Error('Falha ao salvar/atualizar cálculo');
-        }
+        if (!res.ok) throw new Error('Falha ao salvar o orçamento da obra.');
+        return res.json();
     },
 
-    // Exclui um item do histórico (Lixeira)
-    async excluirHistorico(id: number): Promise<void> {
-        const res = await fetch(`${API_URL}/historico/${id}`, {
+    async listarHistorico(): Promise<ObraHistorico[]> {
+        const res = await fetch(API_URL);
+        if (!res.ok) throw new Error('Falha ao carregar o histórico de obras.');
+        return res.json();
+    },
+
+    async excluirObra(id: number): Promise<void> {
+        const res = await fetch(`${API_URL}/${id}`, {
             method: 'DELETE'
         });
 
-        // CORREÇÃO CRÍTICA: Se o servidor não responder 200 OK, lança erro
-        // Isso impede que o item suma da tela se não sumiu do banco
-        if (!res.ok) {
-            throw new Error('Falha ao excluir no servidor');
-        }
-    },
-
-    // Renomeia um item (Lápis)
-    async renomearHistorico(id: number, novoTitulo: string): Promise<void> {
-        const res = await fetch(`${API_URL}/historico/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ novoTitulo })
-        });
-
-        if (!res.ok) {
-            throw new Error('Falha ao renomear');
-        }
+        if (!res.ok) throw new Error('Falha ao excluir a obra no servidor.');
     }
 };

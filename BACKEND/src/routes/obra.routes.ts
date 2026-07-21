@@ -3,193 +3,194 @@ import { pool } from '../services/db';
 
 const router = Router();
 
-// --- ROTA: LISTAR HISTÓRICO ---
-router.get('/historico', async (req: Request, res: Response) => {
+// ============================================================================
+// INTERFACES (Tipagem Estrita)
+// ============================================================================
+
+interface TaxaFuncaoRow {
+    funcao_id: number;
+    funcao_nome: string;
+    total_funcionarios_ativos: string; 
+    custo_mensal_setor: string;        
+    horas_totais_setor: string;
+    custo_hora_calculado: string;      
+}
+
+interface RecursoObraInput {
+    funcao_id: number;
+    horas_estimadas: number;
+    custo_hora_aplicado: number;
+}
+
+interface NovaObraBody {
+    titulo: string;
+    cliente: string;
+    data_entrega?: string;
+    recursos: RecursoObraInput[];
+}
+
+// ============================================================================
+// ROTA 1: MOTOR DE CÁLCULO DINÂMICO (GET /taxas)
+// ============================================================================
+router.get('/taxas', async (req: Request, res: Response) => {
     try {
-        // ADICIONADO: 'custo_total_folha' no select para o PDF funcionar com dados antigos
-        const result = await pool.query(`
-            SELECT id, titulo, data_alteracao, valor_unitario_final, configuracao_usada, custo_total_folha 
-            FROM historico_custo_obra 
-            ORDER BY data_alteracao DESC
-        `);
-        res.json(result.rows);
+        const query = `
+            SELECT 
+                func.id AS funcao_id,
+                func.nome AS funcao_nome,
+                COUNT(f.id) AS total_funcionarios_ativos,
+                COALESCE(SUM(f.custo_total_mensal), 0) AS custo_mensal_setor,
+                (COUNT(f.id) * func.base_horas_mensais) AS horas_totais_setor,
+                CASE 
+                    WHEN COUNT(f.id) > 0 AND func.base_horas_mensais > 0 THEN 
+                        -- Precisão de 6 casas decimais para evitar furo financeiro
+                        ROUND((SUM(f.custo_total_mensal) / (COUNT(f.id) * func.base_horas_mensais))::numeric, 6)
+                    ELSE 
+                        COALESCE(func.custo_hora_mercado, 0)::numeric
+                END AS custo_hora_calculado
+            FROM 
+                public.funcoes func
+            LEFT JOIN 
+                public.funcionarios f ON f.funcao_id = func.id AND f.ativo = true
+            GROUP BY 
+                func.id, func.nome, func.base_horas_mensais, func.custo_hora_mercado
+            ORDER BY 
+                func.nome;
+        `;
+
+        const result = await pool.query<TaxaFuncaoRow>(query);
+
+        const taxasLimpas = result.rows.map(row => ({
+            funcao_id: row.funcao_id,
+            funcao_nome: row.funcao_nome,
+            total_funcionarios_ativos: Number(row.total_funcionarios_ativos),
+            custo_mensal_setor: Number(row.custo_mensal_setor),
+            custo_hora_calculado: Number(row.custo_hora_calculado)
+        }));
+
+        res.json(taxasLimpas);
     } catch (err) {
-        console.error("Erro ao buscar histórico:", err);
-        res.status(500).send('Erro ao buscar histórico');
+        console.error("Erro ao calcular taxas das funções:", err);
+        res.status(500).json({ error: 'Erro interno ao processar as taxas de produção.' });
     }
 });
 
-// --- ROTA DE LEITURA (GET - DADOS ATUAIS) ---
-router.get('/', async (req: Request, res: Response) => {
-    try {
-        let configRes = await pool.query('SELECT * FROM configuracao_producao LIMIT 1');
-        
-        if (configRes.rows.length === 0) {
-            configRes = await pool.query(`
-                INSERT INTO configuracao_producao 
-                (dias_trabalhados_mes, horas_trabalhadas_dia, qtd_unidades, tipo_tempo, tipo_organizacao, tamanho_grupo)
-                VALUES (22, 176, 1, 'horas', 'individual', 1) 
-                RETURNING *
-            `);
-        }
-        const config = configRes.rows[0];
+// ============================================================================
+// ROTA 2: SALVAR ORÇAMENTO DE OBRA (POST /)
+// ============================================================================
+router.post('/', async (req: Request<{}, {}, NovaObraBody>, res: Response): Promise<void> => {
+    const { titulo, cliente, data_entrega, recursos } = req.body;
 
-        const funcRes = await pool.query(`
-            SELECT SUM(custo_total_mensal) as total 
-            FROM funcionarios 
-            WHERE ativo = true AND setor = 'producao'
-        `);
-        
-        const custoEquipeProducao = Number(funcRes.rows[0].total) || 0;
-
-        const tipoTempo = config.tipo_tempo; 
-        const qtdUnidades = Number(config.qtd_unidades) > 0 ? Number(config.qtd_unidades) : 1;
-
-        let tempoTotal = 0;
-        if (tipoTempo === 'dias') {
-            tempoTotal = Number(config.dias_trabalhados_mes);
-        } else {
-            tempoTotal = Number(config.horas_trabalhadas_dia);
-        }
-
-        const divisor = tempoTotal * qtdUnidades;
-        const valorUnitario = (divisor > 0 && custoEquipeProducao > 0) ? (custoEquipeProducao / divisor) : 0;
-
-        res.json({
-            config: config,
-            calculo: {
-                custoEquipeMensal: custoEquipeProducao,
-                valorUnitario: valorUnitario,
-                tempoConsiderado: tempoTotal
-            }
-        });
-
-    } catch (err) {
-        console.error(err);
-        res.status(500).send('Erro ao calcular custo obra');
+    if (!titulo || !cliente || !recursos || recursos.length === 0) {
+        res.status(400).json({ error: 'Título, cliente e ao menos um recurso são obrigatórios.' });
+        return;
     }
-});
-
-// --- ROTA DE ATUALIZAÇÃO (PUT - CÁLCULO E SALVAMENTO) ---
-router.put('/', async (req: Request, res: Response) => {
-    const { 
-        tempoInput, qtdUnidades, 
-        tipoTempo, tipoOrganizacao, tamanhoGrupo,
-        tituloCenario,
-        idHistoricoParaEditar,
-        salvarHistorico = true 
-    } = req.body;
 
     const client = await pool.connect();
 
     try {
         await client.query('BEGIN');
 
-        const diasSalvar = tipoTempo === 'dias' ? tempoInput : 0;
-        const horasSalvar = tipoTempo === 'horas' ? tempoInput : 0;
-        const qtdSalvar = Number(qtdUnidades) > 0 ? Number(qtdUnidades) : 1;
+        const custoTotalEstimado = recursos.reduce((acc, recurso) => {
+            return acc + (recurso.horas_estimadas * recurso.custo_hora_aplicado);
+        }, 0);
 
-        // 1. Atualiza a Configuração Global
-        const check = await client.query('SELECT * FROM configuracao_producao LIMIT 1');
+        const insertObraQuery = `
+            INSERT INTO public.obras (titulo, cliente, data_entrega, custo_total_estimado)
+            VALUES ($1, $2, $3, $4)
+            RETURNING id;
+        `;
+        const obraResult = await client.query(insertObraQuery, [
+            titulo, 
+            cliente, 
+            data_entrega || null, 
+            custoTotalEstimado
+        ]);
+        const obraId = obraResult.rows[0].id;
+
+        const insertRecursoQuery = `
+            INSERT INTO public.obra_recursos_humanos (obra_id, funcao_id, horas_estimadas, custo_hora_aplicado)
+            VALUES ($1, $2, $3, $4);
+        `;
         
-        if (check.rows.length === 0) {
-            await client.query(
-                `INSERT INTO configuracao_producao 
-                (dias_trabalhados_mes, horas_trabalhadas_dia, qtd_unidades, tipo_tempo, tipo_organizacao, tamanho_grupo) 
-                VALUES ($1, $2, $3, $4, $5, $6)`,
-                [diasSalvar, horasSalvar, qtdSalvar, tipoTempo, tipoOrganizacao, tamanhoGrupo]
-            );
-        } else {
-            const id = check.rows[0].id;
-            await client.query(
-                `UPDATE configuracao_producao SET 
-                dias_trabalhados_mes=$1, horas_trabalhadas_dia=$2, qtd_unidades=$3, 
-                tipo_tempo=$4, tipo_organizacao=$5, tamanho_grupo=$6 
-                WHERE id=$7`,
-                [diasSalvar, horasSalvar, qtdSalvar, tipoTempo, tipoOrganizacao, tamanhoGrupo, id]
-            );
-        }
-
-        // 2. Calcula o valor
-        const funcRes = await client.query(`
-            SELECT SUM(custo_total_mensal) as total 
-            FROM funcionarios 
-            WHERE ativo = true AND setor = 'producao'
-        `);
-        const custoEquipeProducao = Number(funcRes.rows[0].total) || 0;
-        
-        const tempoTotal = tipoTempo === 'dias' ? diasSalvar : horasSalvar;
-        const divisor = tempoTotal * qtdSalvar;
-        const valorUnitario = (divisor > 0) ? (custoEquipeProducao / divisor) : 0;
-
-        // 3. Lógica de Histórico
-        if (salvarHistorico) {
-            const tituloFinal = tituloCenario || `Cálculo Automático - ${new Date().toLocaleDateString('pt-BR')}`;
-            const configJson = JSON.stringify({ 
-                tipo: tipoTempo, 
-                tempo: tempoTotal, 
-                equipes: qtdSalvar, 
-                organizacao: tipoOrganizacao,
-                tamanhoGrupo: tamanhoGrupo 
-            });
-
-            if (idHistoricoParaEditar) {
-                // UPDATE
-                await client.query(
-                    `UPDATE historico_custo_obra 
-                     SET custo_total_folha=$1, configuracao_usada=$2, valor_unitario_final=$3, titulo=$4, data_alteracao=CURRENT_TIMESTAMP
-                     WHERE id=$5`,
-                    [custoEquipeProducao, configJson, valorUnitario, tituloFinal, idHistoricoParaEditar]
-                );
-            } else {
-                // INSERT
-                await client.query(
-                    `INSERT INTO historico_custo_obra 
-                    (custo_total_folha, configuracao_usada, valor_unitario_final, titulo) 
-                    VALUES ($1, $2, $3, $4)`,
-                    [custoEquipeProducao, configJson, valorUnitario, tituloFinal]
-                );
-            }
+        for (const recurso of recursos) {
+            await client.query(insertRecursoQuery, [
+                obraId,
+                recurso.funcao_id,
+                recurso.horas_estimadas,
+                recurso.custo_hora_aplicado
+            ]);
         }
 
         await client.query('COMMIT');
-        
-        res.json({ 
-            message: salvarHistorico ? 'Histórico atualizado!' : 'Cálculo realizado (sem salvar)', 
-            valorCalculado: valorUnitario 
+
+        res.status(201).json({ 
+            message: 'Obra e orçamento criados com sucesso!', 
+            obra_id: obraId,
+            custo_total: custoTotalEstimado 
         });
 
     } catch (err) {
         await client.query('ROLLBACK');
-        console.error("Erro na transação:", err);
-        res.status(500).send('Erro ao processar');
+        console.error("Erro na transação de salvar obra:", err);
+        res.status(500).json({ error: 'Erro ao salvar o orçamento da obra.' });
     } finally {
         client.release();
     }
 });
 
-// --- ROTA: RENOMEAR ITEM DO HISTÓRICO ---
-router.put('/historico/:id', async (req: Request, res: Response) => {
-    const { id } = req.params;
-    const { novoTitulo } = req.body;
+// ============================================================================
+// ROTA 3: LISTAR HISTÓRICO DE OBRAS (GET /)
+// ============================================================================
+router.get('/', async (req: Request, res: Response) => {
     try {
-        await pool.query('UPDATE historico_custo_obra SET titulo = $1 WHERE id = $2', [novoTitulo, id]);
-        res.json({ message: 'Título atualizado' });
+        // DIDÁTICA: O json_agg agrupa os recursos filhos dentro da própria linha da Obra.
+        // O COALESCE evita valores nulos caso a obra não tenha recursos cadastrados.
+        const query = `
+            SELECT 
+                o.id, 
+                o.titulo, 
+                o.cliente, 
+                o.data_inicio, 
+                o.data_entrega, 
+                o.status, 
+                o.custo_total_estimado, 
+                o.criado_em,
+                COALESCE(
+                    json_agg(
+                        json_build_object(
+                            'funcao_nome', f.nome,
+                            'qtd_profissionais', 1,
+                            'horas_estimadas', orh.horas_estimadas,
+                            'custo_hora_aplicado', orh.custo_hora_aplicado
+                        )
+                    ) FILTER (WHERE orh.id IS NOT NULL), '[]'
+                ) AS recursos
+            FROM public.obras o
+            LEFT JOIN public.obra_recursos_humanos orh ON o.id = orh.obra_id
+            LEFT JOIN public.funcoes f ON orh.funcao_id = f.id
+            GROUP BY o.id
+            ORDER BY o.criado_em ASC;
+        `;
+        const result = await pool.query(query);
+        res.json(result.rows);
     } catch (err) {
-        console.error(err);
-        res.status(500).send('Erro ao renomear');
+        console.error("Erro ao listar obras:", err);
+        res.status(500).json({ error: 'Erro ao buscar o histórico de obras.' });
     }
 });
 
-// --- ROTA: EXCLUIR ITEM DO HISTÓRICO ---
-router.delete('/historico/:id', async (req: Request, res: Response) => {
+// ============================================================================
+// ROTA 4: EXCLUIR OBRA (DELETE /:id)
+// ============================================================================
+router.delete('/:id', async (req: Request, res: Response) => {
     const { id } = req.params;
     try {
-        await pool.query('DELETE FROM historico_custo_obra WHERE id = $1', [id]);
-        res.json({ message: 'Item excluído' });
+        await pool.query('DELETE FROM public.obras WHERE id = $1', [id]);
+        res.json({ message: 'Obra excluída com sucesso.' });
     } catch (err) {
-        console.error(err);
-        res.status(500).send('Erro ao excluir');
+        console.error("Erro ao excluir obra:", err);
+        res.status(500).json({ error: 'Erro ao excluir a obra.' });
     }
 });
 

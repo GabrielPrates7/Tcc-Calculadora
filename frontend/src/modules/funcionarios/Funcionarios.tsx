@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { 
     Plus, Search, RotateCcw, Download, 
     ArrowUpAZ, ArrowDownZA, Calendar, Filter, FileBarChart2, Briefcase
@@ -26,13 +27,19 @@ type FiltroStatus = 'todos' | 'ativos' | 'inativos';
 export function Funcionarios() {
     const { 
         funcionarios, 
+        totalPaginas,
+        totalRegistros, /* <-- INJETE A VARIÁVEL AQUI */
+        resumo,
         loading, 
         salvar, 
         excluir, 
         buscarRelatorio, 
-        recarregarLista 
+        carregarLista,
+        carregarResumo
     } = useFuncionarios();
 
+    // Estados de Filtro e Paginação
+    const [paginaAtual, setPaginaAtual] = useState(1);
     const [termoBusca, setTermoBusca] = useState('');
     const [filtroSetor, setFiltroSetor] = useState<FiltroSetor>('todos');
     const [filtroStatus, setFiltroStatus] = useState<FiltroStatus>('ativos'); 
@@ -43,9 +50,10 @@ export function Funcionarios() {
     const [listaFuncoes, setListaFuncoes] = useState<{id: number, nome: string}[]>([]);
     const [filtroFuncao, setFiltroFuncao] = useState<string>('todas');
     
-    // GATILHO DE RECARREGAMENTO: Altera esse número para forçar o useEffect a rodar
+    // Gatilho para forçar recarregamento após CRUD
     const [atualizarFiltro, setAtualizarFiltro] = useState(0);
     
+    // Estados Visuais (Modais)
     const [modalAberto, setModalAberto] = useState(false);
     const [modalRelatorioAberto, setModalRelatorioAberto] = useState(false);
     const [funcionarioEdicao, setFuncionarioEdicao] = useState<Funcionario | null>(null);
@@ -57,20 +65,56 @@ export function Funcionarios() {
     const [gerandoPdf, setGerandoPdf] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null); 
 
-    // USE EFFECT ISOLADO E SEGURO (Sem depender de funções externas)
+    // Carrega Departamentos (Funções) com proteção contra falhas da API (Runtime Crash)
     useEffect(() => {
         const fetchFuncoes = async () => {
             try {
+                // Em produção, substituir localhost pela env
                 const res = await fetch('http://localhost:3000/api/funcoes');
                 const data = await res.json();
-                setListaFuncoes(data);
+                
+                // PROTEÇÃO: Garante que o React não exploda se a API retornar um objeto de erro
+                if (Array.isArray(data)) {
+                    setListaFuncoes(data);
+                } else {
+                    console.error("A API não retornou uma lista válida de funções:", data);
+                    setListaFuncoes([]); 
+                }
             } catch (error) {
-                console.error("Erro ao carregar lista de funções para o filtro", error);
+                console.error("Erro de rede ao carregar funções:", error);
+                setListaFuncoes([]); // Mantém em branco em caso de falha grave
             }
         };
-        
         void fetchFuncoes();
-    }, [atualizarFiltro]); // Roda na montagem (0) e toda vez que o modal fechar (+1)
+    }, [atualizarFiltro]);
+
+    // Motor de Busca Assíncrona: Reage a qualquer alteração de estado dos filtros
+    useEffect(() => {
+        carregarLista({
+            pagina: paginaAtual,
+            limite: 8,
+            busca: termoBusca,
+            setor: filtroSetor,
+            status: filtroStatus,
+            funcao: filtroFuncao,
+            ordenarPor: ordenarPor,
+            direcaoOrdem: direcaoOrdem
+        });
+        carregarResumo();
+    }, [paginaAtual, termoBusca, filtroSetor, filtroStatus, filtroFuncao, ordenarPor, direcaoOrdem, atualizarFiltro, carregarLista, carregarResumo]);
+
+    // Uso de Generics (<T>) para inferência automática e estrita do TypeScript
+    const handleFiltroChange = <T,>(setter: Dispatch<SetStateAction<T>>, value: T) => {
+        setter(value);
+        setPaginaAtual(1); 
+    };
+
+    const limparFiltros = () => {
+        setTermoBusca(''); setFiltroSetor('todos'); setFiltroStatus('ativos');
+        setFiltroFuncao('todas'); setFiltroDataAdmissao(''); 
+        setOrdenarPor('nome'); setDirecaoOrdem('asc');
+        setPaginaAtual(1);
+    };
 
     const exportarPDF = async () => {
         if (!containerRef.current) return;
@@ -122,69 +166,32 @@ export function Funcionarios() {
         }
     };
 
-    const getDadosProcessados = () => {
-        const lista = funcionarios.filter(func => {
-            const termo = termoBusca.toLowerCase();
-            const nome = (func.nome || '').toLowerCase();
-            const funcao = (func.funcao || '').toLowerCase();
-            const matchNome = nome.includes(termo) || funcao.includes(termo);
-            
-            const matchSetor = filtroSetor === 'todos' || func.setor === filtroSetor;
-            const matchFuncao = filtroFuncao === 'todas' || func.funcao === filtroFuncao;
-            
-            const isAtivo = String(func.ativo) === 'true' || func.ativo === true;
-            const matchStatus = filtroStatus === 'todos' ? true : (filtroStatus === 'ativos' ? isAtivo : !isAtivo);
-            const dataStr = func.data_admissao ? String(func.data_admissao) : '';
-            const matchData = !filtroDataAdmissao || dataStr.includes(filtroDataAdmissao);
-            
-            return matchNome && matchSetor && matchFuncao && matchStatus && matchData;
-        });
-
-        return lista.sort((a, b) => {
-            let comparacao = 0;
-            if (ordenarPor === 'nome') comparacao = a.nome.localeCompare(b.nome);
-            else if (ordenarPor === 'salario') comparacao = (Number(a.custo_total_mensal)||0) - (Number(b.custo_total_mensal)||0);
-            else if (ordenarPor === 'admissao') comparacao = new Date(a.data_admissao).getTime() - new Date(b.data_admissao).getTime();
-            return direcaoOrdem === 'asc' ? comparacao : comparacao * -1;
-        });
-    };
-
-    const dadosExibicao = getDadosProcessados();
-    
-    const totalAtivos = funcionarios.filter(f => String(f.ativo) === 'true' || f.ativo === true).length;
-    const custoFolha = funcionarios.filter(f => String(f.ativo) === 'true' || f.ativo === true).reduce((acc, f) => acc + (Number(f.custo_total_mensal) || 0), 0);
-    const custoProducao = funcionarios.filter(f => (String(f.ativo) === 'true' || f.ativo === true) && f.setor === 'producao').reduce((acc, f) => acc + (Number(f.custo_total_mensal) || 0), 0);
-
     const handleNovo = () => { setFuncionarioEdicao(null); setModalAberto(true); };
     const handleEditar = (f: Funcionario) => { setFuncionarioEdicao(f); setModalAberto(true); };
     
-    const limparFiltros = () => {
-        setTermoBusca(''); setFiltroSetor('todos'); setFiltroStatus('ativos');
-        setFiltroFuncao('todas'); 
-        setFiltroDataAdmissao(''); setOrdenarPor('nome'); setDirecaoOrdem('asc');
-        recarregarLista(); 
-    };
-
     const abrirModalExclusao = (id: number) => {
         const funcionarioSelecionado = funcionarios.find(f => f.id === id);
         if (funcionarioSelecionado) {
-            setModalExclusao({ 
-                isOpen: true, 
-                id: id, 
-                nome: funcionarioSelecionado.nome 
-            });
+            setModalExclusao({ isOpen: true, id: id, nome: funcionarioSelecionado.nome });
         }
     };
 
     const confirmarExclusao = async () => {
         try {
             await excluir(modalExclusao.id);
-            recarregarLista(); 
+            setAtualizarFiltro(prev => prev + 1); 
         } catch (error) {
             console.error("Erro ao excluir", error);
         } finally {
             setModalExclusao({ isOpen: false, id: 0, nome: '' });
         }
+    };
+
+    // Puxa dinamicamente a tipagem exata exigida pelo hook useFuncionarios
+    // Uso do 'unknown' respeita as regras do linter, e o 'as Funcionario' acalma o TypeScript
+    const onSalvarModal = async (dados: unknown) => {
+        await salvar(dados as Funcionario);
+        setAtualizarFiltro(prev => prev + 1);
     };
 
     return (
@@ -217,9 +224,9 @@ export function Funcionarios() {
             </div>
 
             <ResumoFinanceiro 
-                custoFolha={custoFolha}
-                custoProducao={custoProducao}
-                totalAtivos={totalAtivos}
+                custoFolha={resumo.custoFolha}
+                custoProducao={resumo.custoProducao}
+                totalAtivos={resumo.totalAtivos}
                 loading={loading}
             />
 
@@ -230,7 +237,7 @@ export function Funcionarios() {
                         <input 
                             placeholder="Buscar nome ou função..." 
                             value={termoBusca} 
-                            onChange={e => setTermoBusca(e.target.value)} 
+                            onChange={e => handleFiltroChange(setTermoBusca, e.target.value)} 
                         />
                     </div>
                     <button className="btn-novo" onClick={handleNovo}>
@@ -241,7 +248,7 @@ export function Funcionarios() {
                 <div className="toolbar-row filtros">
                     <div className="filtro-grupo">
                         <label><Filter size={14}/> Setor</label>
-                        <select value={filtroSetor} onChange={e => setFiltroSetor(e.target.value as FiltroSetor)}>
+                        <select value={filtroSetor} onChange={e => handleFiltroChange(setFiltroSetor, e.target.value as FiltroSetor)}>
                             <option value="todos">Todos</option>
                             <option value="producao">Produção</option>
                             <option value="administrativo">Admin</option>
@@ -250,30 +257,30 @@ export function Funcionarios() {
 
                     <div className="filtro-grupo">
                         <label><Briefcase size={14}/> Função</label>
-                        <select value={filtroFuncao} onChange={e => setFiltroFuncao(e.target.value)}>
+                        <select value={filtroFuncao} onChange={e => handleFiltroChange(setFiltroFuncao, e.target.value)}>
                             <option value="todas">Todas</option>
-                            {listaFuncoes.map(f => (
-                                <option key={f.id} value={f.nome}>
-                                    {f.nome}
-                                </option>
+                            {/* PROTEÇÃO: O uso de '?.' impede o crash caso listaFuncoes seja undefined ou nulo */}
+                            {listaFuncoes?.map(f => (
+                                <option key={f.id} value={f.nome}>{f.nome}</option>
                             ))}
                         </select>
                     </div>
 
                     <div className="filtro-grupo">
                         <label>Status</label>
-                        <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value as FiltroStatus)}>
+                        <select value={filtroStatus} onChange={e => handleFiltroChange(setFiltroStatus, e.target.value as FiltroStatus)}>
                             <option value="todos">Todos</option>
                             <option value="ativos">Ativos</option>
                             <option value="inativos">Inativos</option>
                         </select>
                     </div>
+
                     <div className="filtro-grupo">
                         <label><Calendar size={14}/> Admissão</label>
                         <input 
                             type="date" 
                             value={filtroDataAdmissao} 
-                            onChange={e => setFiltroDataAdmissao(e.target.value)} 
+                            onChange={e => handleFiltroChange(setFiltroDataAdmissao, e.target.value)} 
                             className="input-data-dark"
                         />
                     </div>
@@ -283,17 +290,17 @@ export function Funcionarios() {
                         <div className="ordenacao-controles">
                             <select 
                                 value={ordenarPor} 
-                                onChange={e => setOrdenarPor(e.target.value as OpcaoOrdenacao)} 
+                                onChange={e => handleFiltroChange(setOrdenarPor, e.target.value as OpcaoOrdenacao)} 
                                 style={{borderTopRightRadius:0, borderBottomRightRadius:0}}
                             >
                                 <option value="nome">Nome</option>
                                 <option value="salario">Salário</option>
                                 <option value="admissao">Admissão</option>
                             </select>
-                            <button className="btn-direcao" onClick={() => setDirecaoOrdem(direcaoOrdem==='asc'?'desc':'asc')}>
-                                {ordenarPor==='nome' 
-                                    ? (direcaoOrdem==='asc' ? <ArrowUpAZ size={16}/> : <ArrowDownZA size={16}/>) 
-                                    : (direcaoOrdem==='asc' ? 'Min→Max' : 'Max→Min')
+                            <button className="btn-direcao" onClick={() => handleFiltroChange(setDirecaoOrdem, direcaoOrdem === 'asc' ? 'desc' : 'asc')}>
+                                {ordenarPor === 'nome' 
+                                    ? (direcaoOrdem === 'asc' ? <ArrowUpAZ size={16}/> : <ArrowDownZA size={16}/>) 
+                                    : (direcaoOrdem === 'asc' ? 'Min→Max' : 'Max→Min')
                                 }
                             </button>
                         </div>
@@ -316,24 +323,24 @@ export function Funcionarios() {
                 </div>
             </div>
 
-            <TabelaFuncionarios 
-                funcionarios={dadosExibicao} 
-                loading={loading} 
-                onEditar={handleEditar} 
-                onExcluir={abrirModalExclusao} 
-                onVerDetalhes={setFuncionarioDetalhes}
-            />
+<TabelaFuncionarios 
+    funcionarios={funcionarios} 
+    loading={loading} 
+    paginaAtual={paginaAtual}
+    totalPaginas={totalPaginas}
+    totalRegistros={totalRegistros}
+    onMudarPagina={setPaginaAtual}
+    onEditar={handleEditar} 
+    onExcluir={abrirModalExclusao} 
+    onVerDetalhes={setFuncionarioDetalhes}
+/>
 
             {modalAberto && (
                 <ModalFuncionario 
                     key={funcionarioEdicao ? funcionarioEdicao.id : 'novo'}
                     funcionarioEdicao={funcionarioEdicao} 
-                    onClose={() => {
-                        setModalAberto(false);
-                        // INCREMENTA O GATILHO PARA RECARREGAR AS FUNÇÕES NA TELA
-                        setAtualizarFiltro(prev => prev + 1); 
-                    }} 
-                    onSalvar={async (dados) => await salvar(dados as unknown as Funcionario)} 
+                    onClose={() => setModalAberto(false)} 
+                    onSalvar={onSalvarModal} 
                 />
             )}
 

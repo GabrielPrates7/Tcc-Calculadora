@@ -70,7 +70,6 @@ export function ModalFuncionario({ funcionarioEdicao, onClose, onSalvar }: Props
 
     const [salvando, setSalvando] = useState(false);
     
-    // Tipagem explícita para resolver o erro 'any' no find()
     type FuncaoItem = { id: number; nome: string };
     const [listaFuncoes, setListaFuncoes] = useState<FuncaoItem[]>([]);
     const [showGerenciador, setShowGerenciador] = useState(false);
@@ -78,15 +77,22 @@ export function ModalFuncionario({ funcionarioEdicao, onClose, onSalvar }: Props
     const carregarFuncoes = useCallback(async () => {
         try {
             const res = await fetch('http://localhost:3000/api/funcoes');
-            const data: FuncaoItem[] = await res.json();
-            setListaFuncoes(data);
+            const data = await res.json();
             
-            if (funcEdicao?.funcao_id) {
-                const funcaoEncontrada = data.find((f: FuncaoItem) => f.id === funcEdicao.funcao_id);
-                if (funcaoEncontrada) setBuscaFuncao(funcaoEncontrada.nome);
+            // BLINDAGEM CONTRA FALHA DA API: Verifica se é array antes de rodar os métodos
+            if (Array.isArray(data)) {
+                setListaFuncoes(data);
+                if (funcEdicao?.funcao_id) {
+                    const funcaoEncontrada = data.find((f: FuncaoItem) => f.id === funcEdicao.funcao_id);
+                    if (funcaoEncontrada) setBuscaFuncao(funcaoEncontrada.nome);
+                }
+            } else {
+                console.error("A API não retornou uma lista válida de funções:", data);
+                setListaFuncoes([]);
             }
         } catch (error) {
             console.error("Erro ao carregar funções", error);
+            setListaFuncoes([]);
         }
     }, [funcEdicao]);
 
@@ -97,11 +103,11 @@ export function ModalFuncionario({ funcionarioEdicao, onClose, onSalvar }: Props
         void inicializar();
     }, [carregarFuncoes]);
 
-    const funcoesFiltradas = listaFuncoes.filter(f => 
+    // BLINDAGEM SECUNDÁRIA: Garante que o filter só atue se a lista existir de fato
+    const funcoesFiltradas = (Array.isArray(listaFuncoes) ? listaFuncoes : []).filter(f => 
         f.nome.toLowerCase().includes(buscaFuncao.toLowerCase())
     );
 
-    // LÓGICA ALTERADA: Máscara com digitação natural da esquerda para a direita
     const aplicarMascaraMoeda = (valor: string): string => {
         let v = valor.replace(/[^\d,]/g, ''); 
 
@@ -132,7 +138,6 @@ export function ModalFuncionario({ funcionarioEdicao, onClose, onSalvar }: Props
         return Number(stringLimpa);
     };
 
-    // LÓGICA ADICIONADA: Autocompleta casas decimais ao tirar o foco do input
     const completarDecimais = (valor: string, setValor: React.Dispatch<React.SetStateAction<string>>) => {
         if (!valor) return;
         let v = valor;
