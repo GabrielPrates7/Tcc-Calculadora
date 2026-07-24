@@ -1,17 +1,20 @@
 // ARQUIVO: src/modules/financeiro/Financeiro.tsx
 
 import { useState, useMemo, useEffect } from 'react';
-import { FileText, History, Save } from 'lucide-react'; // NOVOS ÍCONES
+import { FileText, History, Save } from 'lucide-react'; 
 import { useFinanceiro } from './hooks/useFinanceiro';
 import { ResumoFinanceiro } from './components/ResumoFinanceiro';
 import { ListaFinanceiro } from './components/ListaFinanceiro';
 import { ModalFinanceiro } from './components/ModalFinanceiro';
 import { FiltroFinanceiro } from './components/FiltroFinanceiro'; 
 import { ModalRelatorio } from './components/ModalRelatorio';
-import { ModalHistorico } from './components/ModalHistorico'; // NOVO COMPONENTE
+import { ModalHistorico } from './components/ModalHistorico'; 
+import { ModalConfirmacao } from './components/ModalConfirmacao'; // NOVO: Importando o modal customizado
 import type { ViewMode, TipoModal, ItemFinanceiro, StatusFilter } from './types'; 
 import { analisarIntervalo } from './utils/dateHelper';
 import './Financeiro.css'; 
+
+const API_BASE = 'http://localhost:3000/api/financeiro';
 
 export function Financeiro() {
     const { 
@@ -19,6 +22,7 @@ export function Financeiro() {
         dashboard: dashboardOriginal, 
         despesas, 
         investimentos, 
+        
         salvarItem, 
         excluirItem, 
         buscarFaturamentoMensal, 
@@ -26,27 +30,27 @@ export function Financeiro() {
         somarFaturamentoPeriodo
     } = useFinanceiro();
 
-    // --- DATAS PADRÃO (MÊS ATUAL) ---
     const getInicioMes = () => {
         const hoje = new Date();
         return new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString().split('T')[0];
     };
+    
     const getFimMes = () => {
         const hoje = new Date();
         return new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).toISOString().split('T')[0];
     };
 
     const [view, setView] = useState<ViewMode>('despesas');
-    
     const [filtroDataInicio, setFiltroDataInicio] = useState(getInicioMes());
     const [filtroDataFim, setFiltroDataFim] = useState(getFimMes());
     const [filtroStatus, setFiltroStatus] = useState<StatusFilter>('todos');
-
     const [faturamentoExibido, setFaturamentoExibido] = useState<number>(0);
 
-    // ESTADOS DOS MODAIS EXTRAS
     const [modalRelatorioAberto, setModalRelatorioAberto] = useState(false);
-    const [modalHistoricoAberto, setModalHistoricoAberto] = useState(false); // NOVO
+    const [modalHistoricoAberto, setModalHistoricoAberto] = useState(false); 
+
+    // NOVO: Estado para controlar a abertura e o ID alvo do Modal de Confirmação de Exclusão
+    const [modalExclusao, setModalExclusao] = useState<{ aberto: boolean; id: number | null }>({ aberto: false, id: null });
 
     const [modalConfig, setModalConfig] = useState<{
         aberto: boolean;
@@ -55,12 +59,10 @@ export function Financeiro() {
         itemEdicao: ItemFinanceiro | null;
     }>({ aberto: false, tipo: 'despesa', modo: 'criar', itemEdicao: null });
 
-    // 1. ANALISAR AS DATAS
     const infoDatas = useMemo(() => {
         return analisarIntervalo(filtroDataInicio, filtroDataFim);
     }, [filtroDataInicio, filtroDataFim]);
 
-    // 2. BUSCAR FATURAMENTO
     useEffect(() => {
         const carregarFaturamento = async () => {
             if (infoDatas.ano) {
@@ -71,7 +73,7 @@ export function Financeiro() {
                 else if (infoDatas.meses.length > 0) {
                     const mesesBanco = infoDatas.meses.map(m => m + 1);
                     const total = await somarFaturamentoPeriodo(mesesBanco, infoDatas.ano);
-                    setFaturamentoExibido(total);
+                    setFaturamentoExibido(total || 0);
                 } 
                 else {
                     setFaturamentoExibido(0);
@@ -84,8 +86,6 @@ export function Financeiro() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [infoDatas.meses, infoDatas.ano, infoDatas.isMesUnico]); 
 
-
-    // 3. CÁLCULO DINÂMICO
     const dashboardCalculado = useMemo(() => {
         const somarFiltrados = (lista: ItemFinanceiro[]) => {
             return lista.filter(item => {
@@ -117,15 +117,12 @@ export function Financeiro() {
         };
     }, [despesas, investimentos, filtroDataInicio, filtroDataFim, faturamentoExibido, dashboardOriginal]);
 
-
-    // --- NOVA FUNÇÃO: SALVAR CHECKPOINT (MÁQUINA DO TEMPO) ---
     const handleSalvarCheckpoint = async () => {
-        const descricao = prompt("Dê um nome para este ponto de controle (Ex: Fechamento Jan 25):");
+        const descricao = prompt("Dê um nome para este ponto de controle (Ex: Fechamento):");
         if (!descricao) return;
 
         try {
-            // Salva EXATAMENTE o que está sendo visto agora (calculado)
-            await fetch('http://localhost:3000/financeiro/snapshots', {
+            await fetch(`${API_BASE}/snapshots`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -134,17 +131,16 @@ export function Financeiro() {
                     totalDespesas: dashboardCalculado.totalDespesas,
                     totalInvestimentos: dashboardCalculado.totalInvestimentos,
                     taxaCustoFixo: dashboardCalculado.taxaCustoFixo,
-                    dadosBackup: { despesas, investimentos } // Salva o banco de dados atual completo
+                    dadosBackup: { despesas, investimentos }
                 })
             });
             alert("Estado atual salvo na Linha do Tempo!");
         } catch (error) {
-            console.error(error);
-            alert("Erro ao salvar.");
+            console.error("Erro ao salvar checkpoint:", error);
+            alert("Erro de conexão ao salvar.");
         }
     };
 
-    // --- HANDLERS PADRÃO ---
     const handleNovo = () => setModalConfig({ aberto: true, tipo: view === 'despesas' ? 'despesa' : 'investimento', modo: 'criar', itemEdicao: null });
     const handleEditar = (item: ItemFinanceiro) => setModalConfig({ aberto: true, tipo: view === 'despesas' ? 'despesa' : 'investimento', modo: 'editar', itemEdicao: item });
     const handleClonar = (item: ItemFinanceiro) => setModalConfig({ aberto: true, tipo: view === 'despesas' ? 'despesa' : 'investimento', modo: 'criar', itemEdicao: { ...item, pago: false, dataVencimento: '' } });
@@ -182,8 +178,17 @@ export function Financeiro() {
         await salvarItem(rota, { ...item, ativo: !item.ativo });
     };
 
+    // ALTERADO: Apenas abre o modal de confirmação bonito
     const handleExcluir = (id: number) => {
-        excluirItem(view === 'despesas' ? 'despesas' : 'investimentos', id);
+        setModalExclusao({ aberto: true, id });
+    };
+
+    // NOVO: Executa a exclusão de fato após o usuário confirmar no modal
+    const confirmarExclusao = () => {
+        if (modalExclusao.id !== null) {
+            excluirItem(view === 'despesas' ? 'despesas' : 'investimentos', modalExclusao.id);
+        }
+        setModalExclusao({ aberto: false, id: null });
     };
 
     if (loading) {
@@ -196,11 +201,9 @@ export function Financeiro() {
 
     return (
         <div className="financeiro-container">
-            {/* CABEÇALHO COM BOTÕES DE AÇÃO */}
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
                 <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
-                    <h1>Gestão Financeira 💰</h1>
-                    
+                    <h1>Gestão de Custos Fixos 📉</h1>
                     {infoDatas.label && (
                         <span style={{
                             backgroundColor: infoDatas.isMesUnico ? '#3b82f6' : '#f97316', 
@@ -212,7 +215,6 @@ export function Financeiro() {
                     )}
                 </div>
 
-                {/* GRUPO DE BOTÕES: SALVAR | HISTÓRICO | RELATÓRIO */}
                 <div style={{display: 'flex', gap: '10px'}}>
                     <button 
                         onClick={handleSalvarCheckpoint} 
@@ -221,7 +223,6 @@ export function Financeiro() {
                     >
                         <Save size={20} />
                     </button>
-                    
                     <button 
                         onClick={() => setModalHistoricoAberto(true)} 
                         style={{ backgroundColor: '#475569', color: 'white', border:'none', padding:'8px', borderRadius:6, cursor:'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} 
@@ -229,7 +230,6 @@ export function Financeiro() {
                     >
                         <History size={20} />
                     </button>
-
                     <button 
                         onClick={() => setModalRelatorioAberto(true)}
                         style={{
@@ -271,9 +271,6 @@ export function Financeiro() {
                 onAlternarAtivo={handleAlternarAtivo}
             />
             
-            {/* --- ÁREA DE MODAIS --- */}
-
-            {/* 1. Modal de Edição (Padrão) */}
             {modalConfig.aberto && (
                 <ModalFinanceiro 
                     tipo={modalConfig.tipo} itemEdicao={modalConfig.itemEdicao} 
@@ -282,7 +279,6 @@ export function Financeiro() {
                 />
             )}
 
-            {/* 2. Modal de Relatório PDF */}
             {modalRelatorioAberto && (
                 <ModalRelatorio 
                     despesas={despesas}
@@ -292,10 +288,16 @@ export function Financeiro() {
                 />
             )}
 
-            {/* 3. NOVO: Modal de Histórico (Máquina do Tempo) */}
             {modalHistoricoAberto && (
                 <ModalHistorico onClose={() => setModalHistoricoAberto(false)} />
             )}
+
+            {/* NOVO: Renderização do Modal de Confirmação de Exclusão */}
+            <ModalConfirmacao 
+                isOpen={modalExclusao.aberto}
+                onClose={() => setModalExclusao({ aberto: false, id: null })}
+                onConfirm={confirmarExclusao}
+            />
         </div>
     );
 }

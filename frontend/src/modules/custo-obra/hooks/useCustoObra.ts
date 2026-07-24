@@ -9,8 +9,9 @@ export function useCustoObra() {
     const [searchTerm, setSearchTerm] = useState('');
     const itemsPerPage = 8;
 
-    // CORREÇÃO ARQUITETURAL: Interceptador de Estado (State Batching).
-    // Atualiza os dois estados na mesma fila de execução, eliminando o Render em Cascata.
+    // NOVO: Estado para gerenciar o Pop-up/Modal de exclusão
+    const [deleteModalState, setDeleteModalState] = useState<{isOpen: boolean, obraId: number | null}>({ isOpen: false, obraId: null });
+
     const handleSearchChange = (term: string) => {
         setSearchTerm(term);
         setCurrentPage(1); 
@@ -30,17 +31,6 @@ export function useCustoObra() {
         }
     }, []);
 
-    const excluirObra = async (id: number) => {
-        if (!window.confirm('Tem certeza que deseja excluir esta base de cálculo?')) return;
-        try {
-            await CustoObraService.excluirObra(id);
-            setHistoricoTotal(prev => prev.filter(obra => obra.id !== id));
-        } catch (error) {
-            console.error('Erro ao excluir obra:', error);
-            alert('Falha ao excluir a obra do banco de dados.');
-        }
-    };
-
     useEffect(() => {
         let isMounted = true;
         CustoObraService.listarHistorico()
@@ -59,9 +49,6 @@ export function useCustoObra() {
         return () => { isMounted = false; };
     }, []);
 
-    // ============================================================================
-    // MOTOR DE FILTRO (useMemo para alta performance)
-    // ============================================================================
     const historicoFiltrado = useMemo(() => {
         if (!searchTerm) return historicoTotal;
 
@@ -72,9 +59,6 @@ export function useCustoObra() {
         );
     }, [historicoTotal, searchTerm]);
 
-    // ============================================================================
-    // MATEMÁTICA DE PAGINAÇÃO
-    // ============================================================================
     const totalItems = historicoFiltrado.length;
     const totalPages = Math.ceil(totalItems / itemsPerPage);
     
@@ -104,7 +88,6 @@ export function useCustoObra() {
         historico: currentItems, 
         isLoadingHistorico,
         carregarHistorico,
-        excluirObra,
         pagination: {
             currentPage,
             setCurrentPage,
@@ -114,7 +97,39 @@ export function useCustoObra() {
             indexOfFirstItem,
             indexOfLastItem,
             searchTerm,      
-            setSearchTerm: handleSearchChange // A UI continua consumindo a mesma propriedade de forma opaca
+            setSearchTerm: handleSearchChange 
+        },
+        // NOVO: Objeto de controle exportado para a UI (Interface do Usuário)
+        deleteModal: {
+            isOpen: deleteModalState.isOpen,
+            open: (id: number) => setDeleteModalState({ isOpen: true, obraId: id }),
+            close: () => setDeleteModalState({ isOpen: false, obraId: null }),
+            confirm: async () => {
+                const id = deleteModalState.obraId;
+                if (id === null) return;
+                
+                try {
+                    await CustoObraService.excluirObra(id);
+                    
+                    setHistoricoTotal(prev => {
+                        const novaLista = prev.filter(obra => obra.id !== id);
+                        
+                        // Garante que a página não fique vazia se excluir o último item da tela
+                        const totalPagesAfterDelete = Math.ceil(novaLista.length / itemsPerPage);
+                        setCurrentPage(prevPage => {
+                            if (prevPage > totalPagesAfterDelete && totalPagesAfterDelete > 0) return totalPagesAfterDelete;
+                            return prevPage;
+                        });
+                        
+                        return novaLista;
+                    });
+                    
+                    setDeleteModalState({ isOpen: false, obraId: null });
+                } catch (error) {
+                    console.error('Erro ao excluir obra:', error);
+                    alert('Falha ao excluir a obra.');
+                }
+            }
         }
     };
 }

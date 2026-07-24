@@ -12,6 +12,7 @@ export interface TaxaFuncao {
 
 export interface RecursoObraInput {
     funcao_id: number;
+    qtd_profissionais: number; // <-- ADICIONADO: Avisando o TypeScript
     horas_estimadas: number;
     custo_hora_aplicado: number;
 }
@@ -32,7 +33,6 @@ export interface ObraHistorico {
     status: string;
     custo_total_estimado: string; 
     criado_em: string;
-    // ADICIONADO: Contrato para receber a equipe diretamente do JSON do Postgres
     recursos: {
         funcao_nome: string;
         qtd_profissionais: number;

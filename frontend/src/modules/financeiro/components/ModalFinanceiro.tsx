@@ -1,6 +1,6 @@
 // ARQUIVO: src/modules/financeiro/components/ModalFinanceiro.tsx
 
-import { DollarSign, TrendingDown, PieChart, X, Save, Calendar, User, CheckCircle, Power } from 'lucide-react';
+import { DollarSign, TrendingDown, PieChart, X, Save, Calendar, User, CheckCircle, Power, AlertCircle } from 'lucide-react';
 import { useState } from 'react';
 import type { ItemFinanceiro, TipoModal } from '../types';
 import './ModalFinanceiro.css';
@@ -24,7 +24,6 @@ export function ModalFinanceiro({ tipo, itemEdicao, valorFaturamentoAtual, onClo
     // ESTADOS
     const [nome, setNome] = useState(itemEdicao?.nome || '');
     
-    // CORREÇÃO: Garante que se houver valor, ele carregue com exatamente 2 casas decimais no input
     const [valor, setValor] = useState(() => {
         if (tipo === 'faturamento') {
             return valorFaturamentoAtual ? Number(valorFaturamentoAtual).toFixed(2) : '';
@@ -37,11 +36,19 @@ export function ModalFinanceiro({ tipo, itemEdicao, valorFaturamentoAtual, onClo
     const [ativo, setAtivo] = useState(itemEdicao?.ativo ?? true);
     const [pago, setPago] = useState(itemEdicao?.pago ?? false);
 
+    const [erro, setErro] = useState<string | null>(null); // NOVO ESTADO DE ERRO
     const [salvando, setSalvando] = useState(false);
 
     const handleSubmit = async () => {
-        if (!valor) return alert("Digite um valor!");
-        if (tipo !== 'faturamento' && !nome) return alert("Digite um nome!");
+        setErro(null); // Limpa o erro ao tentar de novo
+        
+        if (!valor) return setErro("Digite o valor do registro!");
+        
+        // Validação estrita de campos obrigatórios para Despesas e Investimentos
+        if (tipo !== 'faturamento') {
+            if (!nome) return setErro("A descrição do item é obrigatória!");
+            if (!dataVencimento) return setErro("A data de vencimento é obrigatória!");
+        }
         
         setSalvando(true);
         
@@ -87,7 +94,7 @@ export function ModalFinanceiro({ tipo, itemEdicao, valorFaturamentoAtual, onClo
                     {tipo !== 'faturamento' && (
                         <>
                             <div className="form-group">
-                                <label>Descrição do Item</label>
+                                <label>Descrição do Item <span style={{color: '#ef4444'}}>*</span></label>
                                 <input 
                                     type="text" 
                                     placeholder="Ex: Aluguel, Internet..." 
@@ -109,21 +116,25 @@ export function ModalFinanceiro({ tipo, itemEdicao, valorFaturamentoAtual, onClo
 
                             <div className="form-row">
                                 <div className="form-group" style={{ flex: 1 }}>
-                                    <label>Valor (R$)</label>
+                                    <label>Valor (R$) <span style={{color: '#ef4444'}}>*</span></label>
                                     <input 
                                         type="number" 
-                                        step="0.01" /* CORREÇÃO: Permite digitar centavos corretamente */
+                                        step="0.01" 
                                         placeholder="0.00" 
                                         value={valor} 
                                         onChange={e => setValor(e.target.value)}
                                     />
                                 </div>
                                 <div className="form-group" style={{ flex: 1 }}>
-                                    <label><Calendar size={14} style={{marginRight:4, verticalAlign:'middle'}}/> Vencimento</label>
+                                    <label>
+                                        <Calendar size={14} style={{marginRight:4, verticalAlign:'middle'}}/> 
+                                        Vencimento <span style={{color: '#ef4444'}}>*</span>
+                                    </label>
                                     <input 
                                         type="date" 
                                         value={dataVencimento} 
                                         onChange={e => setDataVencimento(e.target.value)}
+                                        required
                                     />
                                 </div>
                             </div>
@@ -163,10 +174,10 @@ export function ModalFinanceiro({ tipo, itemEdicao, valorFaturamentoAtual, onClo
                     {/* --- FORMULÁRIO DE FATURAMENTO --- */}
                     {tipo === 'faturamento' && (
                         <div className="form-group">
-                            <label>Valor do Faturamento (R$)</label>
+                            <label>Valor do Faturamento (R$) <span style={{color: '#ef4444'}}>*</span></label>
                             <input 
                                 type="number" 
-                                step="0.01" /* CORREÇÃO: Permite digitar centavos */
+                                step="0.01" 
                                 value={valor} 
                                 onChange={e => setValor(e.target.value)}
                                 autoFocus
@@ -175,6 +186,13 @@ export function ModalFinanceiro({ tipo, itemEdicao, valorFaturamentoAtual, onClo
                             <p style={{fontSize: '0.8rem', color: '#64748b', marginTop: '8px'}}>
                                 Este valor será usado para calcular a Taxa de Custo Fixo do período selecionado.
                             </p>
+                        </div>
+                    )}
+
+                    {/* NOVA MENSAGEM DE ERRO BONITA */}
+                    {erro && (
+                        <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', padding: '10px 15px', borderRadius: '6px', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', fontWeight: 500 }}>
+                            <AlertCircle size={18} /> {erro}
                         </div>
                     )}
 

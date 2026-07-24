@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { 
     Plus, Search, RotateCcw, Download, 
-    ArrowUpAZ, ArrowDownZA, Calendar, Filter, FileBarChart2, Briefcase
+    ArrowUpAZ, ArrowDownZA, Calendar, Filter, FileBarChart2, Briefcase, X
 } from 'lucide-react';
 import html2canvas from 'html2canvas'; 
 import jsPDF from 'jspdf';             
@@ -28,7 +28,7 @@ export function Funcionarios() {
     const { 
         funcionarios, 
         totalPaginas,
-        totalRegistros, /* <-- INJETE A VARIÁVEL AQUI */
+        totalRegistros,
         resumo,
         loading, 
         salvar, 
@@ -47,8 +47,11 @@ export function Funcionarios() {
     const [ordenarPor, setOrdenarPor] = useState<OpcaoOrdenacao>('nome');
     const [direcaoOrdem, setDirecaoOrdem] = useState<DirecaoOrdenacao>('asc');
     
+    // Estados do Autocomplete de Funções
     const [listaFuncoes, setListaFuncoes] = useState<{id: number, nome: string}[]>([]);
     const [filtroFuncao, setFiltroFuncao] = useState<string>('todas');
+    const [buscaFiltroFuncao, setBuscaFiltroFuncao] = useState('');
+    const [dropdownFiltroFuncaoOpen, setDropdownFiltroFuncaoOpen] = useState(false);
     
     // Gatilho para forçar recarregamento após CRUD
     const [atualizarFiltro, setAtualizarFiltro] = useState(0);
@@ -65,30 +68,27 @@ export function Funcionarios() {
     const [gerandoPdf, setGerandoPdf] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null); 
 
-    // Carrega Departamentos (Funções) com proteção contra falhas da API (Runtime Crash)
+    // Carrega Departamentos (Funções) com proteção contra falhas da API
     useEffect(() => {
         const fetchFuncoes = async () => {
             try {
-                // Em produção, substituir localhost pela env
                 const res = await fetch('http://localhost:3000/api/funcoes');
                 const data = await res.json();
                 
-                // PROTEÇÃO: Garante que o React não exploda se a API retornar um objeto de erro
                 if (Array.isArray(data)) {
                     setListaFuncoes(data);
                 } else {
-                    console.error("A API não retornou uma lista válida de funções:", data);
                     setListaFuncoes([]); 
                 }
             } catch (error) {
-                console.error("Erro de rede ao carregar funções:", error);
-                setListaFuncoes([]); // Mantém em branco em caso de falha grave
+                console.error("Erro na requisição de funções:", error);
+                setListaFuncoes([]); 
             }
         };
         void fetchFuncoes();
     }, [atualizarFiltro]);
 
-    // Motor de Busca Assíncrona: Reage a qualquer alteração de estado dos filtros
+    // Motor de Busca Assíncrona
     useEffect(() => {
         carregarLista({
             pagina: paginaAtual,
@@ -103,7 +103,11 @@ export function Funcionarios() {
         carregarResumo();
     }, [paginaAtual, termoBusca, filtroSetor, filtroStatus, filtroFuncao, ordenarPor, direcaoOrdem, atualizarFiltro, carregarLista, carregarResumo]);
 
-    // Uso de Generics (<T>) para inferência automática e estrita do TypeScript
+    // Filtro dinâmico para o input dropdown
+    const funcoesFiltroFiltradas = (Array.isArray(listaFuncoes) ? listaFuncoes : []).filter(f => 
+        f?.nome?.toLowerCase().includes(buscaFiltroFuncao.toLowerCase())
+    );
+
     const handleFiltroChange = <T,>(setter: Dispatch<SetStateAction<T>>, value: T) => {
         setter(value);
         setPaginaAtual(1); 
@@ -111,7 +115,7 @@ export function Funcionarios() {
 
     const limparFiltros = () => {
         setTermoBusca(''); setFiltroSetor('todos'); setFiltroStatus('ativos');
-        setFiltroFuncao('todas'); setFiltroDataAdmissao(''); 
+        setFiltroFuncao('todas'); setBuscaFiltroFuncao(''); setFiltroDataAdmissao(''); 
         setOrdenarPor('nome'); setDirecaoOrdem('asc');
         setPaginaAtual(1);
     };
@@ -187,8 +191,6 @@ export function Funcionarios() {
         }
     };
 
-    // Puxa dinamicamente a tipagem exata exigida pelo hook useFuncionarios
-    // Uso do 'unknown' respeita as regras do linter, e o 'as Funcionario' acalma o TypeScript
     const onSalvarModal = async (dados: unknown) => {
         await salvar(dados as Funcionario);
         setAtualizarFiltro(prev => prev + 1);
@@ -235,7 +237,7 @@ export function Funcionarios() {
                     <div className="search-group">
                         <Search size={18} color="#94a3b8" />
                         <input 
-                            placeholder="Buscar nome ou função..." 
+                            placeholder="Buscar nome do colaborador..." 
                             value={termoBusca} 
                             onChange={e => handleFiltroChange(setTermoBusca, e.target.value)} 
                         />
@@ -255,15 +257,87 @@ export function Funcionarios() {
                         </select>
                     </div>
 
-                    <div className="filtro-grupo">
+                    <div className="filtro-grupo" style={{ position: 'relative' }}>
                         <label><Briefcase size={14}/> Função</label>
-                        <select value={filtroFuncao} onChange={e => handleFiltroChange(setFiltroFuncao, e.target.value)}>
-                            <option value="todas">Todas</option>
-                            {/* PROTEÇÃO: O uso de '?.' impede o crash caso listaFuncoes seja undefined ou nulo */}
-                            {listaFuncoes?.map(f => (
-                                <option key={f.id} value={f.nome}>{f.nome}</option>
-                            ))}
-                        </select>
+                        <div style={{
+                            display: 'flex', alignItems: 'center', backgroundColor: '#0f172a',
+                            border: '1px solid #334155', borderRadius: '6px', padding: '0 8px', height: '36px',
+                            minWidth: '220px'
+                        }}>
+                            <Search size={14} color="#64748b" />
+                            <input
+                                type="text"
+                                value={buscaFiltroFuncao}
+                                onChange={e => {
+                                    setBuscaFiltroFuncao(e.target.value);
+                                    setDropdownFiltroFuncaoOpen(true);
+                                    if (e.target.value === '') handleFiltroChange<string>(setFiltroFuncao, 'todas');
+                                }}
+                                onFocus={() => setDropdownFiltroFuncaoOpen(true)}
+                                onBlur={() => setTimeout(() => setDropdownFiltroFuncaoOpen(false), 200)}
+                                placeholder={filtroFuncao !== 'todas' ? filtroFuncao : "Todas"}
+                                style={{
+                                    border: 'none', background: 'transparent', width: '100%',
+                                    outline: 'none', color: '#f8fafc', fontSize: '0.85rem', paddingLeft: '8px'
+                                }}
+                            />
+                            {filtroFuncao !== 'todas' && (
+    <span 
+        title="Limpar função"
+        onClick={() => {
+            setBuscaFiltroFuncao('');
+            handleFiltroChange<string>(setFiltroFuncao, 'todas');
+        }}
+        style={{ cursor: 'pointer', marginLeft: '4px', display: 'flex', alignItems: 'center' }}
+    >
+        <X size={14} color="#64748b" />
+    </span>
+)}
+                        </div>
+
+                        {dropdownFiltroFuncaoOpen && (
+                            <ul style={{
+                                position: 'absolute', top: '100%', left: 0, right: 0, 
+                                maxHeight: '200px', overflowY: 'auto', backgroundColor: '#1e293b', 
+                                border: '1px solid #334155', borderRadius: '6px', 
+                                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)', zIndex: 100,
+                                listStyle: 'none', padding: 0, margin: '4px 0 0 0'
+                            }}>
+                                <li 
+                                    onClick={() => {
+                                        setBuscaFiltroFuncao('');
+                                        handleFiltroChange<string>(setFiltroFuncao, 'todas');
+                                        setDropdownFiltroFuncaoOpen(false);
+                                    }}
+                                    style={{ padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid #334155', color: '#94a3b8', fontSize: '0.85rem' }}
+                                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#334155'}
+                                    onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                                >
+                                    Todas as funções
+                                </li>
+                                {funcoesFiltroFiltradas.length === 0 ? (
+                                    <li style={{ padding: '10px 12px', color: '#64748b', fontSize: '0.85rem', textAlign: 'center' }}>
+                                        Nenhuma encontrada.
+                                    </li>
+                                ) : (
+                                    funcoesFiltroFiltradas.map(f => (
+                                        <li 
+                                            key={f.id} 
+                                            onClick={() => {
+                                                setBuscaFiltroFuncao(''); 
+                                                handleFiltroChange(setFiltroFuncao, f.nome);
+                                                setDropdownFiltroFuncaoOpen(false);
+                                            }}
+                                            style={{ padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid #334155', color: '#f8fafc', fontSize: '0.85rem' }}
+                                            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#334155'}
+                                            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                                        >
+                                            {f.nome}
+                                        </li>
+                                    ))
+                                )}
+                            </ul>
+                        )}
                     </div>
 
                     <div className="filtro-grupo">
@@ -323,17 +397,17 @@ export function Funcionarios() {
                 </div>
             </div>
 
-<TabelaFuncionarios 
-    funcionarios={funcionarios} 
-    loading={loading} 
-    paginaAtual={paginaAtual}
-    totalPaginas={totalPaginas}
-    totalRegistros={totalRegistros}
-    onMudarPagina={setPaginaAtual}
-    onEditar={handleEditar} 
-    onExcluir={abrirModalExclusao} 
-    onVerDetalhes={setFuncionarioDetalhes}
-/>
+            <TabelaFuncionarios 
+                funcionarios={funcionarios} 
+                loading={loading} 
+                paginaAtual={paginaAtual}
+                totalPaginas={totalPaginas}
+                totalRegistros={totalRegistros}
+                onMudarPagina={setPaginaAtual}
+                onEditar={handleEditar} 
+                onExcluir={abrirModalExclusao} 
+                onVerDetalhes={setFuncionarioDetalhes}
+            />
 
             {modalAberto && (
                 <ModalFuncionario 

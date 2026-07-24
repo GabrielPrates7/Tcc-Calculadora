@@ -1,4 +1,4 @@
-import { FileDown, Trash2, Search } from 'lucide-react';
+import { FileDown, Trash2, Search, AlertTriangle } from 'lucide-react';
 import { formatarBRL } from '../../utils/formatters';
 import { useCustoObra } from './hooks/useCustoObra';
 import { FormularioObra } from './components/FormularioObra';
@@ -6,7 +6,8 @@ import { RelatorioPDF } from './components/RelatorioPDF';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 
 export function CustoObra() {
-    const { historico, isLoadingHistorico, carregarHistorico, excluirObra, pagination } = useCustoObra();
+    // Agora consumimos o deleteModal em vez do antigo excluirObra diretamente
+    const { historico, isLoadingHistorico, carregarHistorico, pagination, deleteModal } = useCustoObra();
 
     return (
         <main style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
@@ -68,21 +69,11 @@ export function CustoObra() {
                             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                                 <thead>
                                     <tr>
-                                        <th style={{ padding: '15px 20px', borderBottom: '1px solid #334155', backgroundColor: '#0f172a', color: '#cbd5e1', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 'bold' }}>
-                                            Obra / Projeto
-                                        </th>
-                                        <th style={{ padding: '15px 20px', borderBottom: '1px solid #334155', backgroundColor: '#0f172a', color: '#cbd5e1', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 'bold' }}>
-                                            Cliente
-                                        </th>
-                                        <th style={{ padding: '15px 20px', borderBottom: '1px solid #334155', backgroundColor: '#0f172a', color: '#cbd5e1', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 'bold' }}>
-                                            Data de Criação
-                                        </th>
-                                        <th style={{ padding: '15px 20px', borderBottom: '1px solid #334155', backgroundColor: '#0f172a', color: '#cbd5e1', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 'bold' }}>
-                                            Custo Mão de Obra
-                                        </th>
-                                        <th style={{ padding: '15px 20px', borderBottom: '1px solid #334155', textAlign: 'center', backgroundColor: '#0f172a', color: '#cbd5e1', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 'bold' }}>
-                                            Ações
-                                        </th>
+                                        <th style={{ padding: '15px 20px', borderBottom: '1px solid #334155', backgroundColor: '#0f172a', color: '#cbd5e1', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 'bold' }}>Obra / Projeto</th>
+                                        <th style={{ padding: '15px 20px', borderBottom: '1px solid #334155', backgroundColor: '#0f172a', color: '#cbd5e1', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 'bold' }}>Cliente</th>
+                                        <th style={{ padding: '15px 20px', borderBottom: '1px solid #334155', backgroundColor: '#0f172a', color: '#cbd5e1', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 'bold' }}>Data de Criação</th>
+                                        <th style={{ padding: '15px 20px', borderBottom: '1px solid #334155', backgroundColor: '#0f172a', color: '#cbd5e1', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 'bold' }}>Custo Mão de Obra</th>
+                                        <th style={{ padding: '15px 20px', borderBottom: '1px solid #334155', textAlign: 'center', backgroundColor: '#0f172a', color: '#cbd5e1', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 'bold' }}>Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -113,7 +104,7 @@ export function CustoObra() {
                                                 </PDFDownloadLink>
 
                                                 <button
-                                                    onClick={() => excluirObra(item.id)}
+                                                    onClick={() => deleteModal.open(item.id)} // NOVO: Abre o modal
                                                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f172a', color: '#ef4444', border: '1px solid #7f1d1d', padding: '8px', borderRadius: '6px', cursor: 'pointer' }}
                                                     title="Excluir Base de Cálculo"
                                                 >
@@ -171,6 +162,45 @@ export function CustoObra() {
                     )}
                 </div>
             </section>
+
+            {/* MODAL CUSTOMIZADO DE CONFIRMAÇÃO DE EXCLUSÃO */}
+            {deleteModal.isOpen && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(2, 6, 23, 0.75)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                    <div style={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '25px', maxWidth: '400px', width: '90%', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <div style={{ backgroundColor: '#fef2f2', padding: '8px', borderRadius: '50%', display: 'flex' }}>
+                                <AlertTriangle color="#ef4444" size={24} />
+                            </div>
+                            <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.25rem' }}>Excluir Base de Cálculo?</h3>
+                        </div>
+                        
+                        <p style={{ color: '#94a3b8', fontSize: '0.95rem', margin: 0, lineHeight: '1.5' }}>
+                            Tem certeza que deseja excluir esta base? Todos os recursos alocados serão perdidos. Esta ação <strong style={{color: '#f8fafc'}}>não</strong> poderá ser desfeita.
+                        </p>
+                        
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+                            <button 
+                                onClick={deleteModal.close}
+                                style={{ padding: '10px 16px', backgroundColor: 'transparent', border: '1px solid #475569', color: '#cbd5e1', borderRadius: '6px', cursor: 'pointer', fontWeight: '500', transition: 'background-color 0.2s' }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#334155'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            >
+                                Cancelar
+                            </button>
+                            <button 
+                                onClick={deleteModal.confirm}
+                                style={{ padding: '10px 16px', backgroundColor: '#ef4444', border: 'none', color: '#fff', borderRadius: '6px', cursor: 'pointer', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px', transition: 'background-color 0.2s' }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#dc2626'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ef4444'}
+                            >
+                                <Trash2 size={16} />
+                                Sim, excluir
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </main>
     );
 }

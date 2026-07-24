@@ -1,11 +1,14 @@
 import { Router, Request, Response } from 'express';
 import { pool } from '../services/db';
 import { FaturamentoService } from '../services/faturamentoService';
+import { FinanceiroService, ItemFinanceiroInput } from '../services/financeiro.service';
 
 const router = Router();
 
-// --- 1. DASHBOARD ---
-router.get('/dashboard', async (req: Request, res: Response) => {
+// ==========================================
+// 1. DASHBOARD
+// ==========================================
+router.get('/dashboard', async (req: Request, res: Response): Promise<void> => {
     try {
         const fatRes = await pool.query('SELECT mes, ano, valor FROM faturamentos_mensais ORDER BY ano DESC, mes DESC LIMIT 1');
         const faturamentoData = fatRes.rows[0];
@@ -32,78 +35,157 @@ router.get('/dashboard', async (req: Request, res: Response) => {
         `, [mesFiltro, anoFiltro]);
         const totalInvestimentos = Number(investRes.rows[0]?.total) || 0;
 
-        let taxaCustoFixo = 0;
-        if (faturamento > 0) {
-            taxaCustoFixo = (totalDespesas / faturamento) * 100;
-        }
+        const taxaCustoFixo = faturamento > 0 ? (totalDespesas / faturamento) * 100 : 0;
 
         res.json({ faturamento, totalDespesas, totalInvestimentos, taxaCustoFixo });
     } catch (err) {
         console.error("Erro no dashboard:", err);
-        res.status(500).json({ error: 'Erro no dashboard' });
+        res.status(500).json({ error: 'Erro interno ao processar dashboard' });
     }
 });
 
-// --- 2. FATURAMENTO ---
-router.post('/faturamento/soma', async (req: Request, res: Response) => {
+// ==========================================
+// 2. FATURAMENTO
+// ==========================================
+router.post('/faturamento/soma', async (req: Request, res: Response): Promise<void> => {
     try {
         const { meses, ano } = req.body;
-        if (!meses || !ano) return res.json({ valor: 0 }); 
-
+        if (!meses || !ano) {
+            res.json({ valor: 0 });
+            return;
+        }
         const total = await FaturamentoService.somarPorMeses(meses, Number(ano));
         res.json({ valor: total });
     } catch (error) {
         console.error("Erro soma:", error);
-        res.status(500).json({ error: 'Erro ao somar' });
+        res.status(500).json({ error: 'Erro ao somar faturamentos' });
     }
 });
 
-router.get('/faturamento/:mes/:ano', async (req: Request, res: Response) => {
+router.get('/faturamento/:mes/:ano', async (req: Request, res: Response): Promise<void> => {
     try {
         const { mes, ano } = req.params;
         const valor = await FaturamentoService.obterPorMes(Number(mes), Number(ano));
         res.json({ valor });
     } catch (error) {
-        res.status(500).json({ error: 'Erro ao buscar' });
+        res.status(500).json({ error: 'Erro ao buscar faturamento' });
     }
 });
 
-router.post('/faturamento', async (req: Request, res: Response) => {
+router.post('/faturamento', async (req: Request, res: Response): Promise<void> => {
     try {
         const { mes, ano, valor } = req.body;
         const novoValor = await FaturamentoService.salvar(Number(mes), Number(ano), Number(valor));
-        res.json({ valor: novoValor });
+        res.status(201).json({ valor: novoValor });
     } catch (error) {
-        res.status(500).json({ error: 'Erro ao salvar' });
+        res.status(500).json({ error: 'Erro ao salvar faturamento' });
     }
 });
 
-// --- CRUD DESPESAS/INVESTIMENTOS ---
-router.get('/despesas', async (req, res) => { const result = await pool.query('SELECT * FROM despesas_fixas ORDER BY data_vencimento ASC, id DESC'); res.json(result.rows); });
-router.post('/despesas', async (req, res) => { const { nome, valor, ativo, pago, beneficiario, data_vencimento } = req.body; await pool.query(`INSERT INTO despesas_fixas (nome, valor, ativo, pago, beneficiario, data_vencimento) VALUES ($1, $2, $3, $4, $5, $6)`, [nome, valor, ativo ?? true, pago ?? false, beneficiario, data_vencimento]); res.json({ message: 'Salvo' }); });
-router.put('/despesas/:id', async (req, res) => { const { id } = req.params; const { nome, valor, ativo, pago, beneficiario, data_vencimento } = req.body; await pool.query(`UPDATE despesas_fixas SET nome=$1, valor=$2, ativo=$3, pago=$4, beneficiario=$5, data_vencimento=$6 WHERE id=$7`, [nome, valor, ativo, pago, beneficiario, data_vencimento, id]); res.json({ message: 'Atualizado' }); });
-router.delete('/despesas/:id', async (req, res) => { await pool.query('DELETE FROM despesas_fixas WHERE id = $1', [req.params.id]); res.json({ message: 'Deletado' }); });
-router.get('/investimentos', async (req, res) => { const result = await pool.query('SELECT * FROM investimentos ORDER BY data_vencimento ASC, id DESC'); res.json(result.rows); });
-router.post('/investimentos', async (req, res) => { const { nome, valor, ativo, pago, beneficiario, data_vencimento } = req.body; await pool.query(`INSERT INTO investimentos (nome, valor, ativo, pago, beneficiario, data_vencimento) VALUES ($1, $2, $3, $4, $5, $6)`, [nome, valor, ativo ?? true, pago ?? false, beneficiario, data_vencimento]); res.json({ message: 'Salvo' }); });
-router.put('/investimentos/:id', async (req, res) => { const { id } = req.params; const { nome, valor, ativo, pago, beneficiario, data_vencimento } = req.body; await pool.query(`UPDATE investimentos SET nome=$1, valor=$2, ativo=$3, pago=$4, beneficiario=$5, data_vencimento=$6 WHERE id=$7`, [nome, valor, ativo, pago, beneficiario, data_vencimento, id]); res.json({ message: 'Atualizado' }); });
-router.delete('/investimentos/:id', async (req, res) => { await pool.query('DELETE FROM investimentos WHERE id = $1', [req.params.id]); res.json({ message: 'Deletado' }); });
+// ==========================================
+// 3. DESPESAS FIXAS
+// ==========================================
+router.get('/despesas', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const despesas = await FinanceiroService.listarDespesas();
+        res.json(despesas);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao listar despesas' });
+    }
+});
 
-// --- SNAPSHOTS ---
-router.post('/snapshots', async (req: Request, res: Response) => {
+router.post('/despesas', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const dados: ItemFinanceiroInput = req.body;
+        await FinanceiroService.salvarDespesa(dados);
+        res.status(201).json({ message: 'Despesa salva com sucesso' });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao salvar despesa' });
+    }
+});
+
+router.put('/despesas/:id', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        const dados: ItemFinanceiroInput = req.body;
+        await FinanceiroService.atualizarDespesa(id, dados);
+        res.json({ message: 'Despesa atualizada com sucesso' });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao atualizar despesa' });
+    }
+});
+
+router.delete('/despesas/:id', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        await FinanceiroService.deletarDespesa(id);
+        res.json({ message: 'Despesa deletada com sucesso' });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao deletar despesa' });
+    }
+});
+
+// ==========================================
+// 4. INVESTIMENTOS
+// ==========================================
+router.get('/investimentos', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const investimentos = await FinanceiroService.listarInvestimentos();
+        res.json(investimentos);
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao listar investimentos' });
+    }
+});
+
+router.post('/investimentos', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const dados: ItemFinanceiroInput = req.body;
+        await FinanceiroService.salvarInvestimento(dados);
+        res.status(201).json({ message: 'Investimento salvo com sucesso' });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao salvar investimento' });
+    }
+});
+
+router.put('/investimentos/:id', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        const dados: ItemFinanceiroInput = req.body;
+        await FinanceiroService.atualizarInvestimento(id, dados);
+        res.json({ message: 'Investimento atualizado com sucesso' });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao atualizar investimento' });
+    }
+});
+
+router.delete('/investimentos/:id', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        await FinanceiroService.deletarInvestimento(id);
+        res.json({ message: 'Investimento deletado com sucesso' });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao deletar investimento' });
+    }
+});
+
+// ==========================================
+// 5. SNAPSHOTS (HISTÓRICO)
+// ==========================================
+router.post('/snapshots', async (req: Request, res: Response): Promise<void> => {
     const { descricao, faturamento, totalDespesas, totalInvestimentos, taxaCustoFixo, dadosBackup } = req.body;
     try {
         await pool.query(
             `INSERT INTO snapshots_financeiros (descricao, faturamento, total_despesas, total_investimentos, taxa_custo_fixo, dados_backup) VALUES ($1, $2, $3, $4, $5, $6)`,
             [descricao || 'Checkpoint Manual', faturamento, totalDespesas, totalInvestimentos, taxaCustoFixo, JSON.stringify(dadosBackup)]
         );
-        res.json({ message: 'Snapshot salvo com sucesso!' });
+        res.status(201).json({ message: 'Snapshot salvo com sucesso!' });
     } catch (err) {
         console.error("Erro ao salvar snapshot:", err);
         res.status(500).json({ error: 'Erro ao salvar histórico' });
     }
 });
 
-router.get('/snapshots', async (req: Request, res: Response) => {
+router.get('/snapshots', async (req: Request, res: Response): Promise<void> => {
     try {
         const result = await pool.query(`SELECT id, criado_em, descricao, faturamento, total_despesas, taxa_custo_fixo FROM snapshots_financeiros ORDER BY criado_em DESC`);
         res.json(result.rows);
@@ -113,9 +195,10 @@ router.get('/snapshots', async (req: Request, res: Response) => {
     }
 });
 
-router.get('/snapshots/:id', async (req: Request, res: Response) => {
+router.get('/snapshots/:id', async (req: Request, res: Response): Promise<void> => {
     try {
-        const result = await pool.query('SELECT * FROM snapshots_financeiros WHERE id = $1', [req.params.id]);
+        const id = parseInt(req.params.id, 10);
+        const result = await pool.query('SELECT * FROM snapshots_financeiros WHERE id = $1', [id]);
         if (result.rows.length > 0) {
             res.json(result.rows[0]);
         } else {
@@ -127,15 +210,15 @@ router.get('/snapshots/:id', async (req: Request, res: Response) => {
     }
 });
 
-router.delete('/snapshots/:id', async (req, res) => {
+router.delete('/snapshots/:id', async (req: Request, res: Response): Promise<void> => {
     try {
-        await pool.query('DELETE FROM snapshots_financeiros WHERE id = $1', [req.params.id]);
-        res.json({ message: 'Deletado' });
+        const id = parseInt(req.params.id, 10);
+        await pool.query('DELETE FROM snapshots_financeiros WHERE id = $1', [id]);
+        res.json({ message: 'Deletado com sucesso' });
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: 'Erro ao deletar' });
     }
 });
 
-// ALTERAÇÃO APLICADA AQUI: Tipagem exata esperada pelo index.ts
 export const financeiroRoutes = router;

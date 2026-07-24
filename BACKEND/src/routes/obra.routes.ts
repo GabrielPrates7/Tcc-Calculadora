@@ -18,6 +18,7 @@ interface TaxaFuncaoRow {
 
 interface RecursoObraInput {
     funcao_id: number;
+    qtd_profissionais: number; // <-- ADICIONADO: Mantendo a granularidade
     horas_estimadas: number;
     custo_hora_aplicado: number;
 }
@@ -108,15 +109,17 @@ router.post('/', async (req: Request<{}, {}, NovaObraBody>, res: Response): Prom
         ]);
         const obraId = obraResult.rows[0].id;
 
+        // <-- CORREÇÃO: Adicionando qtd_profissionais no INSERT
         const insertRecursoQuery = `
-            INSERT INTO public.obra_recursos_humanos (obra_id, funcao_id, horas_estimadas, custo_hora_aplicado)
-            VALUES ($1, $2, $3, $4);
+            INSERT INTO public.obra_recursos_humanos (obra_id, funcao_id, qtd_profissionais, horas_estimadas, custo_hora_aplicado)
+            VALUES ($1, $2, $3, $4, $5);
         `;
         
         for (const recurso of recursos) {
             await client.query(insertRecursoQuery, [
                 obraId,
                 recurso.funcao_id,
+                recurso.qtd_profissionais, // <-- INJETANDO NO BANCO
                 recurso.horas_estimadas,
                 recurso.custo_hora_aplicado
             ]);
@@ -144,8 +147,6 @@ router.post('/', async (req: Request<{}, {}, NovaObraBody>, res: Response): Prom
 // ============================================================================
 router.get('/', async (req: Request, res: Response) => {
     try {
-        // DIDÁTICA: O json_agg agrupa os recursos filhos dentro da própria linha da Obra.
-        // O COALESCE evita valores nulos caso a obra não tenha recursos cadastrados.
         const query = `
             SELECT 
                 o.id, 
@@ -160,7 +161,7 @@ router.get('/', async (req: Request, res: Response) => {
                     json_agg(
                         json_build_object(
                             'funcao_nome', f.nome,
-                            'qtd_profissionais', 1,
+                            'qtd_profissionais', orh.qtd_profissionais, -- <-- CORREÇÃO: Puxando dado real do banco
                             'horas_estimadas', orh.horas_estimadas,
                             'custo_hora_aplicado', orh.custo_hora_aplicado
                         )
