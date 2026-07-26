@@ -12,7 +12,7 @@ export interface TaxaFuncao {
 
 export interface RecursoObraInput {
     funcao_id: number;
-    qtd_profissionais: number; // <-- ADICIONADO: Avisando o TypeScript
+    qtd_profissionais: number;
     horas_estimadas: number;
     custo_hora_aplicado: number;
 }
@@ -34,6 +34,7 @@ export interface ObraHistorico {
     custo_total_estimado: string; 
     criado_em: string;
     recursos: {
+        funcao_id: number; // <-- ADICIONADO PARA O FRONTEND CONSEGUIR EDITAR
         funcao_nome: string;
         qtd_profissionais: number;
         horas_estimadas: number;
@@ -62,6 +63,18 @@ export const CustoObraService = {
         });
 
         if (!res.ok) throw new Error('Falha ao salvar o orçamento da obra.');
+        return res.json();
+    },
+
+    // NOVO: Método de Atualização (PUT)
+    async atualizarOrcamento(id: number, dados: NovaObraBody): Promise<{ message: string; custo_total: number }> {
+        const res = await fetch(`${API_URL}/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dados)
+        });
+        
+        if (!res.ok) throw new Error('Falha ao atualizar o orçamento da obra.');
         return res.json();
     },
 

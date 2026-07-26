@@ -1,4 +1,4 @@
-import { FileDown, Trash2, Search, AlertTriangle } from 'lucide-react';
+import { FileDown, Trash2, Search, AlertTriangle, Edit } from 'lucide-react'; // <-- Edit Importado aqui
 import { formatarBRL } from '../../utils/formatters';
 import { useCustoObra } from './hooks/useCustoObra';
 import { FormularioObra } from './components/FormularioObra';
@@ -6,8 +6,7 @@ import { RelatorioPDF } from './components/RelatorioPDF';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 
 export function CustoObra() {
-    // Agora consumimos o deleteModal em vez do antigo excluirObra diretamente
-    const { historico, isLoadingHistorico, carregarHistorico, pagination, deleteModal } = useCustoObra();
+    const { historico, isLoadingHistorico, carregarHistorico, pagination, deleteModal, obraEmEdicao, iniciarEdicao, cancelarEdicao } = useCustoObra();
 
     return (
         <main style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
@@ -20,7 +19,12 @@ export function CustoObra() {
                 </p>
             </header>
 
-            <FormularioObra onSalvarSucesso={carregarHistorico} />
+            {/* Injeção das propriedades de edição no Formulário */}
+            <FormularioObra 
+                onSalvarSucesso={carregarHistorico} 
+                obraEmEdicao={obraEmEdicao} 
+                onCancelarEdicao={cancelarEdicao} 
+            />
 
             <section style={{ marginTop: '40px', backgroundColor: '#1e293b', borderRadius: '12px', border: '1px solid #334155', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
                 
@@ -36,17 +40,7 @@ export function CustoObra() {
                             placeholder="Buscar por Obra ou Cliente..."
                             value={pagination.searchTerm}
                             onChange={(e) => pagination.setSearchTerm(e.target.value)}
-                            style={{ 
-                                width: '100%', 
-                                padding: '10px 10px 10px 38px', 
-                                borderRadius: '6px', 
-                                backgroundColor: '#1e293b', 
-                                border: '1px solid #475569', 
-                                color: '#f8fafc', 
-                                outline: 'none',
-                                fontSize: '0.9rem',
-                                transition: 'border-color 0.2s'
-                            }}
+                            style={{ width: '100%', padding: '10px 10px 10px 38px', borderRadius: '6px', backgroundColor: '#1e293b', border: '1px solid #475569', color: '#f8fafc', outline: 'none', fontSize: '0.9rem', transition: 'border-color 0.2s' }}
                             onFocus={(e) => e.target.style.borderColor = '#f97316'}
                             onBlur={(e) => e.target.style.borderColor = '#475569'}
                         />
@@ -82,18 +76,24 @@ export function CustoObra() {
                                             <td style={{ padding: '15px 20px', color: '#f8fafc', fontWeight: '500' }}>{item.titulo}</td>
                                             <td style={{ padding: '15px 20px', color: '#94a3b8' }}>{item.cliente}</td>
                                             <td style={{ padding: '15px 20px', color: '#94a3b8' }}>{new Date(item.criado_em).toLocaleDateString('pt-BR')}</td>
-                                            <td style={{ padding: '15px 20px', color: '#f97316', fontWeight: 'bold' }}>
-                                                {formatarBRL(Number(item.custo_total_estimado))}
-                                            </td>
-                                            <td style={{ padding: '15px 20px', display: 'flex', justifyContent: 'center', gap: '12px' }}>
+                                            <td style={{ padding: '15px 20px', color: '#f97316', fontWeight: 'bold' }}>{formatarBRL(Number(item.custo_total_estimado))}</td>
+                                            <td style={{ padding: '15px 20px', display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                                                
+                                                {/* BOTÃO DE EDITAR ADICIONADO AQUI */}
+                                                <button
+                                                    onClick={() => iniciarEdicao(item)}
+                                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f172a', color: '#10b981', border: '1px solid #047857', padding: '8px', borderRadius: '6px', cursor: 'pointer' }}
+                                                    title="Editar Base de Cálculo"
+                                                >
+                                                    <Edit size={18} />
+                                                </button>
+
                                                 <PDFDownloadLink
                                                     document={
                                                         <RelatorioPDF dados={{
-                                                            titulo: item.titulo,
-                                                            cliente: item.cliente,
+                                                            titulo: item.titulo, cliente: item.cliente,
                                                             dataCriacao: new Date(item.criado_em).toLocaleDateString('pt-BR'),
-                                                            recursos: item.recursos, 
-                                                            custoTotalMaoDeObra: Number(item.custo_total_estimado)
+                                                            recursos: item.recursos, custoTotalMaoDeObra: Number(item.custo_total_estimado)
                                                         }} />
                                                     }
                                                     fileName={`Base-Calculo-${item.titulo}.pdf`}
@@ -104,7 +104,7 @@ export function CustoObra() {
                                                 </PDFDownloadLink>
 
                                                 <button
-                                                    onClick={() => deleteModal.open(item.id)} // NOVO: Abre o modal
+                                                    onClick={() => deleteModal.open(item.id)}
                                                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f172a', color: '#ef4444', border: '1px solid #7f1d1d', padding: '8px', borderRadius: '6px', cursor: 'pointer' }}
                                                     title="Excluir Base de Cálculo"
                                                 >
@@ -116,6 +116,7 @@ export function CustoObra() {
                                 </tbody>
                             </table>
                             
+                            {/* Rodapé de Paginação */}
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 20px', borderTop: '1px solid #334155', backgroundColor: '#0f172a', borderBottomLeftRadius: '12px', borderBottomRightRadius: '12px' }}>
                                 <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>
                                     Mostrando <strong style={{ color: '#f8fafc' }}>{pagination.indexOfFirstItem + 1}</strong> a <strong style={{ color: '#f8fafc' }}>{Math.min(pagination.indexOfLastItem, pagination.totalItems)}</strong> de <strong style={{ color: '#f8fafc' }}>{pagination.totalItems}</strong> registros
@@ -129,26 +130,15 @@ export function CustoObra() {
                                     >
                                         &lt;
                                     </button>
-                                    
                                     {pagination.getVisiblePages().map(page => (
                                         <button 
                                             key={page}
                                             onClick={() => pagination.setCurrentPage(page)}
-                                            style={{ 
-                                                padding: '6px 12px', 
-                                                backgroundColor: pagination.currentPage === page ? '#f97316' : '#1e293b', 
-                                                border: '1px solid',
-                                                borderColor: pagination.currentPage === page ? '#f97316' : '#334155',
-                                                color: pagination.currentPage === page ? '#ffffff' : '#cbd5e1', 
-                                                borderRadius: '6px', 
-                                                cursor: 'pointer', 
-                                                fontWeight: pagination.currentPage === page ? 'bold' : 'normal'
-                                            }}
+                                            style={{ padding: '6px 12px', backgroundColor: pagination.currentPage === page ? '#f97316' : '#1e293b', border: '1px solid', borderColor: pagination.currentPage === page ? '#f97316' : '#334155', color: pagination.currentPage === page ? '#ffffff' : '#cbd5e1', borderRadius: '6px', cursor: 'pointer', fontWeight: pagination.currentPage === page ? 'bold' : 'normal' }}
                                         >
                                             {page}
                                         </button>
                                     ))}
-                                    
                                     <button 
                                         onClick={() => pagination.setCurrentPage(prev => Math.min(prev + 1, pagination.totalPages))}
                                         disabled={pagination.currentPage === pagination.totalPages || pagination.totalPages === 0}
@@ -163,40 +153,20 @@ export function CustoObra() {
                 </div>
             </section>
 
-            {/* MODAL CUSTOMIZADO DE CONFIRMAÇÃO DE EXCLUSÃO */}
+            {/* Modal de Exclusão Oculto */}
             {deleteModal.isOpen && (
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(2, 6, 23, 0.75)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                     <div style={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '25px', maxWidth: '400px', width: '90%', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                        
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{ backgroundColor: '#fef2f2', padding: '8px', borderRadius: '50%', display: 'flex' }}>
-                                <AlertTriangle color="#ef4444" size={24} />
-                            </div>
+                            <div style={{ backgroundColor: '#fef2f2', padding: '8px', borderRadius: '50%', display: 'flex' }}><AlertTriangle color="#ef4444" size={24} /></div>
                             <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.25rem' }}>Excluir Base de Cálculo?</h3>
                         </div>
-                        
                         <p style={{ color: '#94a3b8', fontSize: '0.95rem', margin: 0, lineHeight: '1.5' }}>
                             Tem certeza que deseja excluir esta base? Todos os recursos alocados serão perdidos. Esta ação <strong style={{color: '#f8fafc'}}>não</strong> poderá ser desfeita.
                         </p>
-                        
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
-                            <button 
-                                onClick={deleteModal.close}
-                                style={{ padding: '10px 16px', backgroundColor: 'transparent', border: '1px solid #475569', color: '#cbd5e1', borderRadius: '6px', cursor: 'pointer', fontWeight: '500', transition: 'background-color 0.2s' }}
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#334155'}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                            >
-                                Cancelar
-                            </button>
-                            <button 
-                                onClick={deleteModal.confirm}
-                                style={{ padding: '10px 16px', backgroundColor: '#ef4444', border: 'none', color: '#fff', borderRadius: '6px', cursor: 'pointer', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px', transition: 'background-color 0.2s' }}
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#dc2626'}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#ef4444'}
-                            >
-                                <Trash2 size={16} />
-                                Sim, excluir
-                            </button>
+                            <button onClick={deleteModal.close} style={{ padding: '10px 16px', backgroundColor: 'transparent', border: '1px solid #475569', color: '#cbd5e1', borderRadius: '6px', cursor: 'pointer', fontWeight: '500' }}>Cancelar</button>
+                            <button onClick={deleteModal.confirm} style={{ padding: '10px 16px', backgroundColor: '#ef4444', border: 'none', color: '#fff', borderRadius: '6px', cursor: 'pointer', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}><Trash2 size={16} />Sim, excluir</button>
                         </div>
                     </div>
                 </div>

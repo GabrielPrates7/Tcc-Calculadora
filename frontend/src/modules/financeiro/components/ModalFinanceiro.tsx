@@ -33,18 +33,19 @@ export function ModalFinanceiro({ tipo, itemEdicao, valorFaturamentoAtual, onClo
     
     const [beneficiario, setBeneficiario] = useState(itemEdicao?.beneficiario || '');
     const [dataVencimento, setDataVencimento] = useState(itemEdicao?.dataVencimento || '');
+    
+    // O estado "ativo" continua existindo em background (mantém o valor original caso seja uma edição)
     const [ativo, setAtivo] = useState(itemEdicao?.ativo ?? true);
     const [pago, setPago] = useState(itemEdicao?.pago ?? false);
 
-    const [erro, setErro] = useState<string | null>(null); // NOVO ESTADO DE ERRO
+    const [erro, setErro] = useState<string | null>(null);
     const [salvando, setSalvando] = useState(false);
 
     const handleSubmit = async () => {
-        setErro(null); // Limpa o erro ao tentar de novo
+        setErro(null); 
         
         if (!valor) return setErro("Digite o valor do registro!");
         
-        // Validação estrita de campos obrigatórios para Despesas e Investimentos
         if (tipo !== 'faturamento') {
             if (!nome) return setErro("A descrição do item é obrigatória!");
             if (!dataVencimento) return setErro("A data de vencimento é obrigatória!");
@@ -140,20 +141,24 @@ export function ModalFinanceiro({ tipo, itemEdicao, valorFaturamentoAtual, onClo
                             </div>
 
                             <div className="switches-container">
-                                <div 
-                                    className={`switch-card ${ativo ? 'active' : ''}`} 
-                                    onClick={() => setAtivo(!ativo)}
-                                >
-                                    <div className="switch-icon">
-                                        <Power size={18} />
+                                {/* MUDANÇA: Switch de Ativo/Custo Fixo agora APARECE SOMENTE para Despesas */}
+                                {tipo === 'despesa' && (
+                                    <div 
+                                        className={`switch-card ${ativo ? 'active' : ''}`} 
+                                        onClick={() => setAtivo(!ativo)}
+                                    >
+                                        <div className="switch-icon">
+                                            <Power size={18} />
+                                        </div>
+                                        <div className="switch-info">
+                                            <span>Considerar no Custo Fixo?</span>
+                                            <small>{ativo ? 'Sim, ativo' : 'Não, ignorar'}</small>
+                                        </div>
+                                        <div className="switch-toggle"></div>
                                     </div>
-                                    <div className="switch-info">
-                                        <span>Considerar no Custo Fixo?</span>
-                                        <small>{ativo ? 'Sim, ativo' : 'Não, ignorar'}</small>
-                                    </div>
-                                    <div className="switch-toggle"></div>
-                                </div>
+                                )}
 
+                                {/* Switch de Pagamento aparece para todos (Despesas e Investimentos) */}
                                 <div 
                                     className={`switch-card ${pago ? 'paid' : ''}`} 
                                     onClick={() => setPago(!pago)}
@@ -189,7 +194,6 @@ export function ModalFinanceiro({ tipo, itemEdicao, valorFaturamentoAtual, onClo
                         </div>
                     )}
 
-                    {/* NOVA MENSAGEM DE ERRO BONITA */}
                     {erro && (
                         <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444', padding: '10px 15px', borderRadius: '6px', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', fontWeight: 500 }}>
                             <AlertCircle size={18} /> {erro}

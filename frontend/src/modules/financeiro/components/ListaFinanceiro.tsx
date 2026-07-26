@@ -158,7 +158,8 @@ export function ListaFinanceiro({
                 <div style={{flex: 2}}>Descrição / Beneficiário</div>
                 <div style={{width: 120}}>Vencimento</div>
                 <div style={{width: 100, textAlign:'center'}}>Status</div>
-                <div style={{width: 120, textAlign:'right', paddingRight: 20}}>Valor</div>
+                {/* ALTERADO: Largura ajustada de 120px para 160px */}
+                <div style={{width: 160, textAlign:'right', paddingRight: 20}}>Valor</div>
                 <div style={{width: 100}}>Ações</div>
             </div>
 
@@ -184,7 +185,24 @@ export function ListaFinanceiro({
                             <div className="col-status">
                                 {item.pago ? <span className="badge badge-pago"><CheckCircle size={12}/> Pago</span> : <span className="badge badge-pendente"><AlertCircle size={12}/> Pendente</span>}
                             </div>
-                            <div className="col-valor" style={{ color: item.ativo ? corTema : '#94a3b8' }}>{formatarBRL(item.valor)}</div>
+                            
+                            {/* ALTERADO: Aplicação de CSS Defensivo e espelhamento de layout */}
+                            <div 
+                                className="col-valor" 
+                                style={{ 
+                                    color: item.ativo ? corTema : '#94a3b8',
+                                    width: 160,
+                                    textAlign: 'right',
+                                    paddingRight: 20,
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis'
+                                }}
+                                title={formatarBRL(item.valor)}
+                            >
+                                {formatarBRL(item.valor)}
+                            </div>
+                            
                             <div className="col-acoes">
                                 <button className="btn-icon-sm btn-copy" onClick={() => onClonar(item)} title="Duplicar"><Copy size={16} /></button>
                                 <button className="btn-icon-sm btn-edit" onClick={() => onEditar(item)}><Edit2 size={16} /></button>
@@ -201,7 +219,6 @@ export function ListaFinanceiro({
                     Mostrando <strong style={{color: '#1e293b'}}>{totalItens === 0 ? 0 : indiceInicial + 1}</strong> a <strong style={{color: '#1e293b'}}>{indiceFinal}</strong> de <strong style={{color: '#1e293b'}}>{totalItens}</strong> registros
                 </div>
 
-                {/* MUDANÇA: Exibe os botões se houver ao menos 1 página (> 0) */}
                 {totalPaginas > 0 && (
                     <div style={{ display: 'flex', gap: '6px' }}>
                         <button

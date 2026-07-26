@@ -18,7 +18,7 @@ interface TaxaFuncaoRow {
 
 interface RecursoObraInput {
     funcao_id: number;
-    qtd_profissionais: number; // <-- ADICIONADO: Mantendo a granularidade
+    qtd_profissionais: number;
     horas_estimadas: number;
     custo_hora_aplicado: number;
 }
@@ -44,23 +44,16 @@ router.get('/taxas', async (req: Request, res: Response) => {
                 (COUNT(f.id) * func.base_horas_mensais) AS horas_totais_setor,
                 CASE 
                     WHEN COUNT(f.id) > 0 AND func.base_horas_mensais > 0 THEN 
-                        -- Precisão de 6 casas decimais para evitar furo financeiro
                         ROUND((SUM(f.custo_total_mensal) / (COUNT(f.id) * func.base_horas_mensais))::numeric, 6)
                     ELSE 
                         COALESCE(func.custo_hora_mercado, 0)::numeric
                 END AS custo_hora_calculado
-            FROM 
-                public.funcoes func
-            LEFT JOIN 
-                public.funcionarios f ON f.funcao_id = func.id AND f.ativo = true
-            GROUP BY 
-                func.id, func.nome, func.base_horas_mensais, func.custo_hora_mercado
-            ORDER BY 
-                func.nome;
+            FROM public.funcoes func
+            LEFT JOIN public.funcionarios f ON f.funcao_id = func.id AND f.ativo = true
+            GROUP BY func.id, func.nome, func.base_horas_mensais, func.custo_hora_mercado
+            ORDER BY func.nome;
         `;
-
         const result = await pool.query<TaxaFuncaoRow>(query);
-
         const taxasLimpas = result.rows.map(row => ({
             funcao_id: row.funcao_id,
             funcao_nome: row.funcao_nome,
@@ -68,11 +61,10 @@ router.get('/taxas', async (req: Request, res: Response) => {
             custo_mensal_setor: Number(row.custo_mensal_setor),
             custo_hora_calculado: Number(row.custo_hora_calculado)
         }));
-
         res.json(taxasLimpas);
     } catch (err) {
-        console.error("Erro ao calcular taxas das funções:", err);
-        res.status(500).json({ error: 'Erro interno ao processar as taxas de produção.' });
+        console.error("Erro ao calcular taxas:", err);
+        res.status(500).json({ error: 'Erro interno ao processar as taxas.' });
     }
 });
 
@@ -81,87 +73,98 @@ router.get('/taxas', async (req: Request, res: Response) => {
 // ============================================================================
 router.post('/', async (req: Request<{}, {}, NovaObraBody>, res: Response): Promise<void> => {
     const { titulo, cliente, data_entrega, recursos } = req.body;
-
     if (!titulo || !cliente || !recursos || recursos.length === 0) {
         res.status(400).json({ error: 'Título, cliente e ao menos um recurso são obrigatórios.' });
         return;
     }
-
     const client = await pool.connect();
-
     try {
         await client.query('BEGIN');
-
-        const custoTotalEstimado = recursos.reduce((acc, recurso) => {
+        
+        // CORREÇÃO: Tipagem explícita no reduce (acc: number, recurso: RecursoObraInput)
+        const custoTotalEstimado = recursos.reduce((acc: number, recurso: RecursoObraInput) => {
             return acc + (recurso.horas_estimadas * recurso.custo_hora_aplicado);
         }, 0);
 
-        const insertObraQuery = `
-            INSERT INTO public.obras (titulo, cliente, data_entrega, custo_total_estimado)
-            VALUES ($1, $2, $3, $4)
-            RETURNING id;
-        `;
-        const obraResult = await client.query(insertObraQuery, [
-            titulo, 
-            cliente, 
-            data_entrega || null, 
-            custoTotalEstimado
-        ]);
+        const insertObraQuery = `INSERT INTO public.obras (titulo, cliente, data_entrega, custo_total_estimado) VALUES ($1, $2, $3, $4) RETURNING id;`;
+        const obraResult = await client.query(insertObraQuery, [titulo, cliente, data_entrega || null, custoTotalEstimado]);
         const obraId = obraResult.rows[0].id;
 
-        // <-- CORREÇÃO: Adicionando qtd_profissionais no INSERT
-        const insertRecursoQuery = `
-            INSERT INTO public.obra_recursos_humanos (obra_id, funcao_id, qtd_profissionais, horas_estimadas, custo_hora_aplicado)
-            VALUES ($1, $2, $3, $4, $5);
-        `;
-        
+        const insertRecursoQuery = `INSERT INTO public.obra_recursos_humanos (obra_id, funcao_id, qtd_profissionais, horas_estimadas, custo_hora_aplicado) VALUES ($1, $2, $3, $4, $5);`;
         for (const recurso of recursos) {
-            await client.query(insertRecursoQuery, [
-                obraId,
-                recurso.funcao_id,
-                recurso.qtd_profissionais, // <-- INJETANDO NO BANCO
-                recurso.horas_estimadas,
-                recurso.custo_hora_aplicado
-            ]);
+            await client.query(insertRecursoQuery, [obraId, recurso.funcao_id, recurso.qtd_profissionais, recurso.horas_estimadas, recurso.custo_hora_aplicado]);
         }
-
         await client.query('COMMIT');
-
-        res.status(201).json({ 
-            message: 'Obra e orçamento criados com sucesso!', 
-            obra_id: obraId,
-            custo_total: custoTotalEstimado 
-        });
-
+        res.status(201).json({ message: 'Criado com sucesso!', obra_id: obraId, custo_total: custoTotalEstimado });
     } catch (err) {
         await client.query('ROLLBACK');
-        console.error("Erro na transação de salvar obra:", err);
-        res.status(500).json({ error: 'Erro ao salvar o orçamento da obra.' });
+        console.error("Erro ao salvar obra:", err);
+        res.status(500).json({ error: 'Erro ao salvar o orçamento.' });
     } finally {
         client.release();
     }
 });
 
 // ============================================================================
-// ROTA 3: LISTAR HISTÓRICO DE OBRAS (GET /)
+// NOVA ROTA 3: ATUALIZAR (PUT /:id)
+// ============================================================================
+router.put('/:id', async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.params;
+    const { titulo, cliente, data_entrega, recursos } = req.body;
+
+    if (!titulo || !cliente || !recursos || recursos.length === 0) {
+        res.status(400).json({ error: 'Dados incompletos para atualização.' });
+        return;
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        
+        // CORREÇÃO: Tipagem explícita no reduce (acc: number, recurso: RecursoObraInput)
+        const custoTotalEstimado = recursos.reduce((acc: number, recurso: RecursoObraInput) => {
+            return acc + (recurso.horas_estimadas * recurso.custo_hora_aplicado);
+        }, 0);
+        
+        // 1. Atualiza o registo Pai
+        await client.query(
+            `UPDATE public.obras SET titulo = $1, cliente = $2, data_entrega = $3, custo_total_estimado = $4 WHERE id = $5`,
+            [titulo, cliente, data_entrega || null, custoTotalEstimado, id]
+        );
+
+        // 2. Apaga os Recursos Antigos
+        await client.query(`DELETE FROM public.obra_recursos_humanos WHERE obra_id = $1`, [id]);
+
+        // 3. Insere os Novos Recursos
+        const insertRecursoQuery = `INSERT INTO public.obra_recursos_humanos (obra_id, funcao_id, qtd_profissionais, horas_estimadas, custo_hora_aplicado) VALUES ($1, $2, $3, $4, $5);`;
+        for (const recurso of recursos) {
+            await client.query(insertRecursoQuery, [id, recurso.funcao_id, recurso.qtd_profissionais, recurso.horas_estimadas, recurso.custo_hora_aplicado]);
+        }
+
+        await client.query('COMMIT');
+        res.json({ message: 'Atualizado com sucesso!', custo_total: custoTotalEstimado });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error("Erro ao atualizar obra:", err);
+        res.status(500).json({ error: 'Erro ao atualizar o orçamento.' });
+    } finally {
+        client.release();
+    }
+});
+
+// ============================================================================
+// ROTA 4: LISTAR HISTÓRICO DE OBRAS (GET /)
 // ============================================================================
 router.get('/', async (req: Request, res: Response) => {
     try {
         const query = `
-            SELECT 
-                o.id, 
-                o.titulo, 
-                o.cliente, 
-                o.data_inicio, 
-                o.data_entrega, 
-                o.status, 
-                o.custo_total_estimado, 
-                o.criado_em,
+            SELECT o.id, o.titulo, o.cliente, o.data_inicio, o.data_entrega, o.status, o.custo_total_estimado, o.criado_em,
                 COALESCE(
                     json_agg(
                         json_build_object(
+                            'funcao_id', f.id, 
                             'funcao_nome', f.nome,
-                            'qtd_profissionais', orh.qtd_profissionais, -- <-- CORREÇÃO: Puxando dado real do banco
+                            'qtd_profissionais', orh.qtd_profissionais,
                             'horas_estimadas', orh.horas_estimadas,
                             'custo_hora_aplicado', orh.custo_hora_aplicado
                         )
@@ -177,18 +180,18 @@ router.get('/', async (req: Request, res: Response) => {
         res.json(result.rows);
     } catch (err) {
         console.error("Erro ao listar obras:", err);
-        res.status(500).json({ error: 'Erro ao buscar o histórico de obras.' });
+        res.status(500).json({ error: 'Erro ao buscar o histórico.' });
     }
 });
 
 // ============================================================================
-// ROTA 4: EXCLUIR OBRA (DELETE /:id)
+// ROTA 5: EXCLUIR OBRA (DELETE /:id)
 // ============================================================================
 router.delete('/:id', async (req: Request, res: Response) => {
     const { id } = req.params;
     try {
         await pool.query('DELETE FROM public.obras WHERE id = $1', [id]);
-        res.json({ message: 'Obra excluída com sucesso.' });
+        res.json({ message: 'Obra excluída.' });
     } catch (err) {
         console.error("Erro ao excluir obra:", err);
         res.status(500).json({ error: 'Erro ao excluir a obra.' });

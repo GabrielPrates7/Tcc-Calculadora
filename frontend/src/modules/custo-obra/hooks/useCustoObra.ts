@@ -9,8 +9,10 @@ export function useCustoObra() {
     const [searchTerm, setSearchTerm] = useState('');
     const itemsPerPage = 8;
 
-    // NOVO: Estado para gerenciar o Pop-up/Modal de exclusão
     const [deleteModalState, setDeleteModalState] = useState<{isOpen: boolean, obraId: number | null}>({ isOpen: false, obraId: null });
+    
+    // NOVO: Estado que guarda a obra que está a ser editada
+    const [obraEmEdicao, setObraEmEdicao] = useState<ObraHistorico | null>(null);
 
     const handleSearchChange = (term: string) => {
         setSearchTerm(term);
@@ -42,7 +44,7 @@ export function useCustoObra() {
             })
             .catch(error => {
                 if (isMounted) {
-                    console.error('Erro ao carregar histórico inicial:', error);
+                    console.error('Erro:', error);
                     setIsLoadingHistorico(false);
                 }
             });
@@ -51,7 +53,6 @@ export function useCustoObra() {
 
     const historicoFiltrado = useMemo(() => {
         if (!searchTerm) return historicoTotal;
-
         const lowerSearch = searchTerm.toLowerCase();
         return historicoTotal.filter(obra => 
             obra.titulo.toLowerCase().includes(lowerSearch) || 
@@ -61,45 +62,42 @@ export function useCustoObra() {
 
     const totalItems = historicoFiltrado.length;
     const totalPages = Math.ceil(totalItems / itemsPerPage);
-    
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    
     const currentItems = historicoFiltrado.slice(indexOfFirstItem, indexOfLastItem);
 
     const getVisiblePages = () => {
-        if (totalPages <= 5) {
-            return Array.from({ length: totalPages }, (_, i) => i + 1);
-        }
-        
+        if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i + 1);
         let start = Math.max(1, currentPage - 2);
         let end = Math.min(totalPages, currentPage + 2);
-
-        if (currentPage <= 3) {
-            end = 5;
-        } else if (currentPage >= totalPages - 2) {
-            start = totalPages - 4;
-        }
-
+        if (currentPage <= 3) end = 5;
+        else if (currentPage >= totalPages - 2) start = totalPages - 4;
         return Array.from({ length: (end - start) + 1 }, (_, i) => start + i);
+    };
+
+    // NOVO: Funções de manipulação da edição
+    const iniciarEdicao = (obra: ObraHistorico) => {
+        setObraEmEdicao(obra);
+        // UX: Rola o ecrã suavemente até ao topo onde está o formulário
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+    
+    const cancelarEdicao = () => {
+        setObraEmEdicao(null);
     };
 
     return {
         historico: currentItems, 
         isLoadingHistorico,
         carregarHistorico,
+        obraEmEdicao,       // Exportado para a UI
+        iniciarEdicao,      // Exportado para a UI
+        cancelarEdicao,     // Exportado para a UI
         pagination: {
-            currentPage,
-            setCurrentPage,
-            totalPages,
-            totalItems,
-            getVisiblePages,
-            indexOfFirstItem,
-            indexOfLastItem,
-            searchTerm,      
-            setSearchTerm: handleSearchChange 
+            currentPage, setCurrentPage, totalPages, totalItems,
+            getVisiblePages, indexOfFirstItem, indexOfLastItem,
+            searchTerm, setSearchTerm: handleSearchChange 
         },
-        // NOVO: Objeto de controle exportado para a UI (Interface do Usuário)
         deleteModal: {
             isOpen: deleteModalState.isOpen,
             open: (id: number) => setDeleteModalState({ isOpen: true, obraId: id }),
@@ -107,27 +105,17 @@ export function useCustoObra() {
             confirm: async () => {
                 const id = deleteModalState.obraId;
                 if (id === null) return;
-                
                 try {
                     await CustoObraService.excluirObra(id);
-                    
                     setHistoricoTotal(prev => {
                         const novaLista = prev.filter(obra => obra.id !== id);
-                        
-                        // Garante que a página não fique vazia se excluir o último item da tela
                         const totalPagesAfterDelete = Math.ceil(novaLista.length / itemsPerPage);
-                        setCurrentPage(prevPage => {
-                            if (prevPage > totalPagesAfterDelete && totalPagesAfterDelete > 0) return totalPagesAfterDelete;
-                            return prevPage;
-                        });
-                        
+                        setCurrentPage(prevPage => (prevPage > totalPagesAfterDelete && totalPagesAfterDelete > 0) ? totalPagesAfterDelete : prevPage);
                         return novaLista;
                     });
-                    
                     setDeleteModalState({ isOpen: false, obraId: null });
                 } catch (error) {
-                    console.error('Erro ao excluir obra:', error);
-                    alert('Falha ao excluir a obra.');
+                    console.error('Erro ao excluir:', error);
                 }
             }
         }

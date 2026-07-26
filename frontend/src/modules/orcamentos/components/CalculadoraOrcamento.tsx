@@ -4,7 +4,7 @@ import {
     FileText, Save, XCircle, Percent, Info, Briefcase, Search, X, ChevronRight 
 } from 'lucide-react';
 import type { Orcamento, CenarioMaoObra } from '../types';
-import { formatarBRL } from '../../../utils/formatters'; // <-- IMPORTAÇÃO DA SUA FUNÇÃO PADRÃO
+import { formatarBRL } from '../../../utils/formatters'; 
 import './CalculadoraOrcamento.css';
 
 type OrcamentoPayload = Orcamento & { valorHoraSelecionado?: number };
@@ -63,8 +63,8 @@ export function CalculadoraOrcamento({ listaCenarios, taxaFixa, orcamentoEdicao,
             return 0;
         });
 
-    // Função de porcentagem mantida, mas BRL foi removida daqui!
-    const PCT = (v: number) => v.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + '%';
+    // ✅ CORREÇÃO: Força sempre a exibição de 2 casas decimais, mesmo em números inteiros (ex: 14,00%)
+    const PCT = (v: number) => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
 
     const valorHora = cenarioAtivo?.valorUnitario || 0;
     const unidadeTempo = cenarioAtivo?.unidade || 'horas';
@@ -125,9 +125,8 @@ export function CalculadoraOrcamento({ listaCenarios, taxaFixa, orcamentoEdicao,
                         onClick={() => setIsModalOpen(true)}
                     >
                         <div className="base-selecionada-info">
-                            <strong>{cenarioAtivo ? cenarioAtivo.titulo : 'Carregando...'}</strong>
-                            {/* 👇 Usando a função padronizada aqui 👇 */}
-                            <span>{cenarioAtivo ? `${formatarBRL(cenarioAtivo.valorUnitario)} / ${cenarioAtivo.unidade}` : 'Selecione uma base'}</span>
+                            <strong>{cenarioAtivo ? cenarioAtivo.titulo : 'Nenhuma base disponível'}</strong>
+                            <span>{cenarioAtivo ? `${formatarBRL(cenarioAtivo.valorUnitario)} / ${cenarioAtivo.unidade}` : 'Crie uma base no Módulo de Obras'}</span>
                         </div>
                         <ChevronRight size={20} color="#64748b" />
                     </button>
@@ -164,7 +163,6 @@ export function CalculadoraOrcamento({ listaCenarios, taxaFixa, orcamentoEdicao,
                             <input type="number" min="0" step="0.5" value={tempo} onChange={e => setTempo(e.target.value)} />
                         </div>
                         <small style={{color:'#64748b', fontSize:'0.75rem', marginTop: '4px', display: 'block'}}>
-                            {/* 👇 Usando a função padronizada aqui 👇 */}
                             Custo Base: {formatarBRL(valorHora)} / {unidadeTempo}
                         </small>
                     </div>
@@ -194,25 +192,21 @@ export function CalculadoraOrcamento({ listaCenarios, taxaFixa, orcamentoEdicao,
                     </div>
                     <div className="custo-linha">
                         <span>Mão de Obra ({Number(tempo) || 0} {unidadeTempo})</span>
-                        {/* 👇 Usando a função padronizada aqui 👇 */}
                         <span className="custo-valor">{formatarBRL(custoMaoObra)}</span>
                     </div>
                     <div className="custo-linha">
                         <span>Materiais</span>
-                        {/* 👇 Usando a função padronizada aqui 👇 */}
                         <span className="custo-valor">{formatarBRL(Number(materiais) || 0)}</span>
                     </div>
                     
                     <div className="custo-linha destaque">
                         <span>Custo de Produção (Total)</span>
-                        {/* 👇 Usando a função padronizada aqui 👇 */}
                         <span className="custo-valor">{formatarBRL(custoProducao)}</span>
                     </div>
                 </div>
                 
                 <div className="resultado-box">
                     <span className="resultado-label">Preço de Venda Sugerido</span>
-                    {/* 👇 Usando a função padronizada aqui 👇 */}
                     <div className="resultado-valor">{formatarBRL(precoFinal)}</div>
                     
                     {divisor <= 0 && (
@@ -223,7 +217,7 @@ export function CalculadoraOrcamento({ listaCenarios, taxaFixa, orcamentoEdicao,
                 </div>
 
                 <div style={{display:'flex', gap:'15px'}}>
-                    <button className="btn-salvar" onClick={handleSalvar}>
+                    <button className="btn-salvar" onClick={handleSalvar} disabled={!cenarioAtivo}>
                         <Save size={20}/> {orcamentoEdicao ? 'Atualizar Orçamento' : 'Salvar Orçamento'}
                     </button>
                     {orcamentoEdicao && (
@@ -282,7 +276,6 @@ export function CalculadoraOrcamento({ listaCenarios, taxaFixa, orcamentoEdicao,
                                             <span>Métrica: por {cenario.unidade}</span>
                                         </div>
                                         <div className="base-item-valor">
-                                            {/* 👇 Usando a função padronizada aqui 👇 */}
                                             {formatarBRL(cenario.valorUnitario)}
                                         </div>
                                     </div>

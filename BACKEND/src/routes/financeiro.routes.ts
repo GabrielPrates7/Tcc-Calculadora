@@ -5,6 +5,9 @@ import { FinanceiroService, ItemFinanceiroInput } from '../services/financeiro.s
 
 const router = Router();
 
+// CONSTANTE DE SEGURANÇA: Limite de 9 Trilhões (Compatível com NUMERIC(15,2))
+const MAX_VALOR_PERMITIDO = 9999999999999.99;
+
 // ==========================================
 // 1. DASHBOARD
 // ==========================================
@@ -75,6 +78,13 @@ router.get('/faturamento/:mes/:ano', async (req: Request, res: Response): Promis
 router.post('/faturamento', async (req: Request, res: Response): Promise<void> => {
     try {
         const { mes, ano, valor } = req.body;
+        
+        // VALIDAÇÃO DE SEGURANÇA
+        if (Number(valor) > MAX_VALOR_PERMITIDO) {
+            res.status(400).json({ error: 'Faturamento excede o limite numérico permitido.' });
+            return;
+        }
+
         const novoValor = await FaturamentoService.salvar(Number(mes), Number(ano), Number(valor));
         res.status(201).json({ valor: novoValor });
     } catch (error) {
@@ -97,9 +107,17 @@ router.get('/despesas', async (req: Request, res: Response): Promise<void> => {
 router.post('/despesas', async (req: Request, res: Response): Promise<void> => {
     try {
         const dados: ItemFinanceiroInput = req.body;
+        
+        // VALIDAÇÃO DE SEGURANÇA
+        if (Number(dados.valor) > MAX_VALOR_PERMITIDO) {
+            res.status(400).json({ error: 'Valor da despesa excede o limite numérico.' });
+            return;
+        }
+
         await FinanceiroService.salvarDespesa(dados);
         res.status(201).json({ message: 'Despesa salva com sucesso' });
     } catch (error) {
+        console.error("Erro backend (Salvar Despesa):", error);
         res.status(500).json({ error: 'Erro ao salvar despesa' });
     }
 });
@@ -108,6 +126,13 @@ router.put('/despesas/:id', async (req: Request, res: Response): Promise<void> =
     try {
         const id = parseInt(req.params.id, 10);
         const dados: ItemFinanceiroInput = req.body;
+
+        // VALIDAÇÃO DE SEGURANÇA
+        if (Number(dados.valor) > MAX_VALOR_PERMITIDO) {
+            res.status(400).json({ error: 'Valor da despesa excede o limite numérico.' });
+            return;
+        }
+
         await FinanceiroService.atualizarDespesa(id, dados);
         res.json({ message: 'Despesa atualizada com sucesso' });
     } catch (error) {
@@ -140,6 +165,13 @@ router.get('/investimentos', async (req: Request, res: Response): Promise<void> 
 router.post('/investimentos', async (req: Request, res: Response): Promise<void> => {
     try {
         const dados: ItemFinanceiroInput = req.body;
+
+        // VALIDAÇÃO DE SEGURANÇA
+        if (Number(dados.valor) > MAX_VALOR_PERMITIDO) {
+            res.status(400).json({ error: 'Valor do investimento excede o limite numérico.' });
+            return;
+        }
+
         await FinanceiroService.salvarInvestimento(dados);
         res.status(201).json({ message: 'Investimento salvo com sucesso' });
     } catch (error) {
@@ -151,6 +183,13 @@ router.put('/investimentos/:id', async (req: Request, res: Response): Promise<vo
     try {
         const id = parseInt(req.params.id, 10);
         const dados: ItemFinanceiroInput = req.body;
+
+        // VALIDAÇÃO DE SEGURANÇA
+        if (Number(dados.valor) > MAX_VALOR_PERMITIDO) {
+            res.status(400).json({ error: 'Valor do investimento excede o limite numérico.' });
+            return;
+        }
+
         await FinanceiroService.atualizarInvestimento(id, dados);
         res.json({ message: 'Investimento atualizado com sucesso' });
     } catch (error) {
@@ -172,11 +211,20 @@ router.delete('/investimentos/:id', async (req: Request, res: Response): Promise
 // 5. SNAPSHOTS (HISTÓRICO)
 // ==========================================
 router.post('/snapshots', async (req: Request, res: Response): Promise<void> => {
-    const { descricao, faturamento, totalDespesas, totalInvestimentos, taxaCustoFixo, dadosBackup } = req.body;
+    const descricao = req.body.descricao || 'Checkpoint Manual';
+    const faturamento = req.body.faturamento ?? 0;
+    const totalDespesas = req.body.total_despesas ?? req.body.totalDespesas ?? 0;
+    const totalInvestimentos = req.body.total_investimentos ?? req.body.totalInvestimentos ?? 0;
+    const taxaCustoFixo = req.body.taxa_custo_fixo ?? req.body.taxaCustoFixo ?? 0;
+
+    const dadosBackup = req.body.dados_backup ?? req.body.dadosBackup ?? { despesas: [], investimentos: [] };
+
     try {
         await pool.query(
-            `INSERT INTO snapshots_financeiros (descricao, faturamento, total_despesas, total_investimentos, taxa_custo_fixo, dados_backup) VALUES ($1, $2, $3, $4, $5, $6)`,
-            [descricao || 'Checkpoint Manual', faturamento, totalDespesas, totalInvestimentos, taxaCustoFixo, JSON.stringify(dadosBackup)]
+            `INSERT INTO snapshots_financeiros 
+            (descricao, faturamento, total_despesas, total_investimentos, taxa_custo_fixo, dados_backup) 
+            VALUES ($1, $2, $3, $4, $5, $6)`,
+            [descricao, faturamento, totalDespesas, totalInvestimentos, taxaCustoFixo, JSON.stringify(dadosBackup)]
         );
         res.status(201).json({ message: 'Snapshot salvo com sucesso!' });
     } catch (err) {
@@ -199,8 +247,26 @@ router.get('/snapshots/:id', async (req: Request, res: Response): Promise<void> 
     try {
         const id = parseInt(req.params.id, 10);
         const result = await pool.query('SELECT * FROM snapshots_financeiros WHERE id = $1', [id]);
+        
         if (result.rows.length > 0) {
-            res.json(result.rows[0]);
+            const row = result.rows[0];
+
+            let backupParsed = { despesas: [], investimentos: [] };
+            
+            if (row.dados_backup) {
+                if (typeof row.dados_backup === 'string') {
+                    try {
+                        backupParsed = JSON.parse(row.dados_backup);
+                    } catch (e) {
+                        console.error("Erro no Parse do JSON do banco:", e);
+                    }
+                } else {
+                    backupParsed = row.dados_backup;
+                }
+            }
+            row.dados_backup = backupParsed;
+
+            res.json(row);
         } else {
             res.status(404).json({ error: 'Snapshot não encontrado' });
         }

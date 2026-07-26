@@ -9,7 +9,8 @@ import { ModalFinanceiro } from './components/ModalFinanceiro';
 import { FiltroFinanceiro } from './components/FiltroFinanceiro'; 
 import { ModalRelatorio } from './components/ModalRelatorio';
 import { ModalHistorico } from './components/ModalHistorico'; 
-import { ModalConfirmacao } from './components/ModalConfirmacao'; // NOVO: Importando o modal customizado
+import { ModalConfirmacao } from './components/ModalConfirmacao'; 
+import { ModalNovoCheckpoint } from './components/ModalNovoCheckpoint';
 import type { ViewMode, TipoModal, ItemFinanceiro, StatusFilter } from './types'; 
 import { analisarIntervalo } from './utils/dateHelper';
 import './Financeiro.css'; 
@@ -49,8 +50,9 @@ export function Financeiro() {
     const [modalRelatorioAberto, setModalRelatorioAberto] = useState(false);
     const [modalHistoricoAberto, setModalHistoricoAberto] = useState(false); 
 
-    // NOVO: Estado para controlar a abertura e o ID alvo do Modal de Confirmação de Exclusão
     const [modalExclusao, setModalExclusao] = useState<{ aberto: boolean; id: number | null }>({ aberto: false, id: null });
+    
+    const [modalCheckpointAberto, setModalCheckpointAberto] = useState(false);
 
     const [modalConfig, setModalConfig] = useState<{
         aberto: boolean;
@@ -117,27 +119,34 @@ export function Financeiro() {
         };
     }, [despesas, investimentos, filtroDataInicio, filtroDataFim, faturamentoExibido, dashboardOriginal]);
 
-    const handleSalvarCheckpoint = async () => {
-        const descricao = prompt("Dê um nome para este ponto de controle (Ex: Fechamento):");
-        if (!descricao) return;
+    const handleSalvarCheckpoint = () => {
+        setModalCheckpointAberto(true);
+    };
 
+    const confirmarSalvarCheckpoint = async (descricao: string): Promise<boolean> => {
         try {
-            await fetch(`${API_BASE}/snapshots`, {
+            const response = await fetch(`${API_BASE}/snapshots`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     descricao,
                     faturamento: dashboardCalculado.faturamento,
-                    totalDespesas: dashboardCalculado.totalDespesas,
-                    totalInvestimentos: dashboardCalculado.totalInvestimentos,
-                    taxaCustoFixo: dashboardCalculado.taxaCustoFixo,
-                    dadosBackup: { despesas, investimentos }
+                    total_despesas: dashboardCalculado.totalDespesas,
+                    total_investimentos: dashboardCalculado.totalInvestimentos,
+                    taxa_custo_fixo: dashboardCalculado.taxaCustoFixo,
+                    dados_backup: { despesas, investimentos }
                 })
             });
-            alert("Estado atual salvo na Linha do Tempo!");
+            
+            if (!response.ok) {
+                throw new Error('Falha na requisição');
+            }
+            
+            return true;
         } catch (error) {
             console.error("Erro ao salvar checkpoint:", error);
-            alert("Erro de conexão ao salvar.");
+            alert("Erro de conexão ao salvar na API.");
+            return false;
         }
     };
 
@@ -154,16 +163,23 @@ export function Financeiro() {
     const handleSalvarModal = async (dados: Partial<ItemFinanceiro>) => {
         const { tipo, itemEdicao, modo } = modalConfig;
         
+        let sucesso = false; // Controle de fluxo inserido
+
         if (tipo === 'faturamento') {
             const novoValor = Number(dados.valor);
             if (infoDatas.isMesUnico && infoDatas.ano) {
-                const sucesso = await salvarFaturamentoMensal(infoDatas.meses[0] + 1, infoDatas.ano, novoValor);
+                sucesso = await salvarFaturamentoMensal(infoDatas.meses[0] + 1, infoDatas.ano, novoValor);
                 if (sucesso) setFaturamentoExibido(novoValor);
             } 
         } else {
             const rota = tipo === 'despesa' ? 'despesas' : 'investimentos';
             const idParaSalvar = modo === 'editar' ? itemEdicao?.id : undefined;
-            await salvarItem(rota, { ...dados, id: idParaSalvar });
+            sucesso = await salvarItem(rota, { ...dados, id: idParaSalvar });
+        }
+
+        // ALERTA: Fim da "falha silenciosa".
+        if (!sucesso) {
+            alert("O sistema bloqueou o cadastro: O valor excede o limite permitido ou ocorreu um erro de conexão com o banco.");
         }
     };
 
@@ -178,12 +194,10 @@ export function Financeiro() {
         await salvarItem(rota, { ...item, ativo: !item.ativo });
     };
 
-    // ALTERADO: Apenas abre o modal de confirmação bonito
     const handleExcluir = (id: number) => {
         setModalExclusao({ aberto: true, id });
     };
 
-    // NOVO: Executa a exclusão de fato após o usuário confirmar no modal
     const confirmarExclusao = () => {
         if (modalExclusao.id !== null) {
             excluirItem(view === 'despesas' ? 'despesas' : 'investimentos', modalExclusao.id);
@@ -292,11 +306,16 @@ export function Financeiro() {
                 <ModalHistorico onClose={() => setModalHistoricoAberto(false)} />
             )}
 
-            {/* NOVO: Renderização do Modal de Confirmação de Exclusão */}
             <ModalConfirmacao 
                 isOpen={modalExclusao.aberto}
                 onClose={() => setModalExclusao({ aberto: false, id: null })}
                 onConfirm={confirmarExclusao}
+            />
+
+            <ModalNovoCheckpoint
+                isOpen={modalCheckpointAberto}
+                onClose={() => setModalCheckpointAberto(false)}
+                onConfirm={confirmarSalvarCheckpoint}
             />
         </div>
     );

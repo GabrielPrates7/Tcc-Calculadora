@@ -54,17 +54,21 @@ export function useFinanceiro() {
     const recarregar = () => { setLoading(true); setVersaoDados(v => v + 1); };
 
     const salvarItem = async (tipo: 'despesas' | 'investimentos', item: Partial<ItemFinanceiro>) => {
-        try { await FinanceiroService.salvarItem(tipo, item); recarregar(); return true; } 
-        catch (error) { 
-            console.error("Erro ao salvar item:", error);
+        try { 
+            await FinanceiroService.salvarItem(tipo, item); 
+            recarregar(); 
+            return true; 
+        } catch (error) { 
+            console.error(`Erro ao salvar item (${tipo}):`, error);
             return false; 
         }
     };
 
-    // MUDANÇA: O 'confirm' feio do navegador foi removido daqui!
     const excluirItem = async (tipo: 'despesas' | 'investimentos', id: number) => {
-        try { await FinanceiroService.excluirItem(tipo, id); recarregar(); } 
-        catch (error) {
+        try { 
+            await FinanceiroService.excluirItem(tipo, id); 
+            recarregar(); 
+        } catch (error) {
             console.error("Erro ao excluir item:", error);
         }
     };
@@ -82,8 +86,11 @@ export function useFinanceiro() {
     };
 
     const salvarFaturamentoMensal = async (mes: number, ano: number, valor: number) => {
-        try { await FinanceiroService.salvarFaturamento(mes, ano, valor); recarregar(); return true; } 
-        catch (error) { 
+        try { 
+            await FinanceiroService.salvarFaturamento(mes, ano, valor); 
+            recarregar(); 
+            return true; 
+        } catch (error) { 
             console.error("Erro ao salvar faturamento:", error);
             return false; 
         }
