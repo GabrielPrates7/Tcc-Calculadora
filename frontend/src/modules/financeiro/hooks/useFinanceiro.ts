@@ -1,5 +1,3 @@
-// ARQUIVO: src/modules/financeiro/hooks/useFinanceiro.ts
-
 import { useState, useEffect } from 'react';
 import { FinanceiroService } from '../services/financeiro.service';
 import type { ItemFinanceiro, DashboardData } from '../types';
@@ -40,7 +38,7 @@ export function useFinanceiro() {
                     }
                 }
             } catch (error) {
-                console.error("🔴 [CRÍTICO] Erro geral de execução no carregamento:", error);
+                console.error("Erro de execução no carregamento:", error);
             } finally {
                 if (isMounted) setLoading(false);
             }
@@ -110,8 +108,34 @@ export function useFinanceiro() {
         }
     };
 
+    // NOVA FUNÇÃO: Persistência do Snapshot Financeiro
+    const salvarSnapshot = async (descricao: string) => {
+        try {
+            const payload = {
+                descricao,
+                faturamento: dashboard.faturamento,
+                total_despesas: dashboard.totalDespesas,
+                total_investimentos: dashboard.totalInvestimentos,
+                taxa_custo_fixo: dashboard.taxaCustoFixo,
+                dados_backup: { despesas, investimentos }
+            };
+
+            const response = await fetch(`${API_BASE}/snapshots`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error("Falha ao salvar snapshot no servidor");
+            return true;
+        } catch (error) {
+            console.error("Erro ao persistir snapshot:", error);
+            return false;
+        }
+    };
+
     return {
         loading, dashboard, despesas, investimentos,
-        salvarItem, excluirItem, buscarFaturamentoMensal, salvarFaturamentoMensal, somarFaturamentoPeriodo, recarregar
+        salvarItem, excluirItem, buscarFaturamentoMensal, salvarFaturamentoMensal, somarFaturamentoPeriodo, salvarSnapshot, recarregar
     };
 }

@@ -1,4 +1,4 @@
-import { FileDown, Trash2, Search, AlertTriangle, Edit } from 'lucide-react'; // <-- Edit Importado aqui
+import { FileDown, Trash2, Search, AlertTriangle, Edit } from 'lucide-react';
 import { formatarBRL } from '../../utils/formatters';
 import { useCustoObra } from './hooks/useCustoObra';
 import { FormularioObra } from './components/FormularioObra';
@@ -19,7 +19,6 @@ export function CustoObra() {
                 </p>
             </header>
 
-            {/* Injeção das propriedades de edição no Formulário */}
             <FormularioObra 
                 onSalvarSucesso={carregarHistorico} 
                 obraEmEdicao={obraEmEdicao} 
@@ -60,63 +59,83 @@ export function CustoObra() {
                         </div>
                     ) : (
                         <div style={{ overflowX: 'auto' }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', tableLayout: 'fixed' }}>
                                 <thead>
                                     <tr>
-                                        <th style={{ padding: '15px 20px', borderBottom: '1px solid #334155', backgroundColor: '#0f172a', color: '#cbd5e1', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 'bold' }}>Obra / Projeto</th>
-                                        <th style={{ padding: '15px 20px', borderBottom: '1px solid #334155', backgroundColor: '#0f172a', color: '#cbd5e1', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 'bold' }}>Cliente</th>
-                                        <th style={{ padding: '15px 20px', borderBottom: '1px solid #334155', backgroundColor: '#0f172a', color: '#cbd5e1', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 'bold' }}>Data de Criação</th>
-                                        <th style={{ padding: '15px 20px', borderBottom: '1px solid #334155', backgroundColor: '#0f172a', color: '#cbd5e1', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 'bold' }}>Custo Mão de Obra</th>
-                                        <th style={{ padding: '15px 20px', borderBottom: '1px solid #334155', textAlign: 'center', backgroundColor: '#0f172a', color: '#cbd5e1', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 'bold' }}>Ações</th>
+                                        {/* Definindo larguras fixas nas colunas para o Ellipsis funcionar perfeitamente */}
+                                        <th style={{ width: '30%', padding: '15px 20px', borderBottom: '1px solid #334155', backgroundColor: '#0f172a', color: '#cbd5e1', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 'bold' }}>Obra / Projeto</th>
+                                        <th style={{ width: '20%', padding: '15px 20px', borderBottom: '1px solid #334155', backgroundColor: '#0f172a', color: '#cbd5e1', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 'bold' }}>Cliente</th>
+                                        <th style={{ width: '15%', padding: '15px 20px', borderBottom: '1px solid #334155', backgroundColor: '#0f172a', color: '#cbd5e1', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 'bold' }}>Data</th>
+                                        <th style={{ width: '15%', padding: '15px 20px', borderBottom: '1px solid #334155', backgroundColor: '#0f172a', color: '#cbd5e1', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 'bold' }}>Custo Total</th>
+                                        <th style={{ width: '20%', padding: '15px 20px', borderBottom: '1px solid #334155', textAlign: 'center', backgroundColor: '#0f172a', color: '#cbd5e1', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 'bold' }}>Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {historico.map((item) => (
                                         <tr key={item.id} style={{ borderBottom: '1px solid #334155', backgroundColor: '#1e293b' }}>
-                                            <td style={{ padding: '15px 20px', color: '#f8fafc', fontWeight: '500' }}>{item.titulo}</td>
-                                            <td style={{ padding: '15px 20px', color: '#94a3b8' }}>{item.cliente}</td>
-                                            <td style={{ padding: '15px 20px', color: '#94a3b8' }}>{new Date(item.criado_em).toLocaleDateString('pt-BR')}</td>
-                                            <td style={{ padding: '15px 20px', color: '#f97316', fontWeight: 'bold' }}>{formatarBRL(Number(item.custo_total_estimado))}</td>
-                                            <td style={{ padding: '15px 20px', display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                                                
-                                                {/* BOTÃO DE EDITAR ADICIONADO AQUI */}
-                                                <button
-                                                    onClick={() => iniciarEdicao(item)}
-                                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f172a', color: '#10b981', border: '1px solid #047857', padding: '8px', borderRadius: '6px', cursor: 'pointer' }}
-                                                    title="Editar Base de Cálculo"
-                                                >
-                                                    <Edit size={18} />
-                                                </button>
+                                            
+                                            {/* CORREÇÃO UX: Truncamento com reticências (...) e Tooltip nativo (title) */}
+                                            <td 
+                                                style={{ padding: '15px 20px', color: '#f8fafc', fontWeight: '500', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                                                title={item.titulo}
+                                            >
+                                                {item.titulo}
+                                            </td>
+                                            
+                                            <td 
+                                                style={{ padding: '15px 20px', color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                                                title={item.cliente}
+                                            >
+                                                {item.cliente}
+                                            </td>
+                                            
+                                            <td style={{ padding: '15px 20px', color: '#94a3b8', whiteSpace: 'nowrap' }}>
+                                                {new Date(item.criado_em).toLocaleDateString('pt-BR')}
+                                            </td>
+                                            
+                                            <td style={{ padding: '15px 20px', color: '#f97316', fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                                                {formatarBRL(Number(item.custo_total_estimado))}
+                                            </td>
+                                            
+                                            <td style={{ padding: '15px 20px' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                                                    <button
+                                                        onClick={() => iniciarEdicao(item)}
+                                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f172a', color: '#10b981', border: '1px solid #047857', padding: '8px', borderRadius: '6px', cursor: 'pointer' }}
+                                                        title="Editar Base de Cálculo"
+                                                    >
+                                                        <Edit size={18} />
+                                                    </button>
 
-                                                <PDFDownloadLink
-                                                    document={
-                                                        <RelatorioPDF dados={{
-                                                            titulo: item.titulo, cliente: item.cliente,
-                                                            dataCriacao: new Date(item.criado_em).toLocaleDateString('pt-BR'),
-                                                            recursos: item.recursos, custoTotalMaoDeObra: Number(item.custo_total_estimado)
-                                                        }} />
-                                                    }
-                                                    fileName={`Base-Calculo-${item.titulo}.pdf`}
-                                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f172a', color: '#38bdf8', border: '1px solid #0369a1', padding: '8px', borderRadius: '6px', textDecoration: 'none' }}
-                                                    title="Baixar Relatório em PDF"
-                                                >
-                                                    {({ loading }) => (loading ? <span style={{ fontSize: '0.7rem', padding: '0 5px' }}>...</span> : <FileDown size={18} />)}
-                                                </PDFDownloadLink>
+                                                    <PDFDownloadLink
+                                                        document={
+                                                            <RelatorioPDF dados={{
+                                                                titulo: item.titulo, cliente: item.cliente,
+                                                                dataCriacao: new Date(item.criado_em).toLocaleDateString('pt-BR'),
+                                                                recursos: item.recursos, custoTotalMaoDeObra: Number(item.custo_total_estimado)
+                                                            }} />
+                                                        }
+                                                        fileName={`Base-Calculo-${item.titulo}.pdf`}
+                                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f172a', color: '#38bdf8', border: '1px solid #0369a1', padding: '8px', borderRadius: '6px', textDecoration: 'none' }}
+                                                        title="Baixar Relatório em PDF"
+                                                    >
+                                                        {({ loading }) => (loading ? <span style={{ fontSize: '0.7rem', padding: '0 5px' }}>...</span> : <FileDown size={18} />)}
+                                                    </PDFDownloadLink>
 
-                                                <button
-                                                    onClick={() => deleteModal.open(item.id)}
-                                                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f172a', color: '#ef4444', border: '1px solid #7f1d1d', padding: '8px', borderRadius: '6px', cursor: 'pointer' }}
-                                                    title="Excluir Base de Cálculo"
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
+                                                    <button
+                                                        onClick={() => deleteModal.open(item.id)}
+                                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f172a', color: '#ef4444', border: '1px solid #7f1d1d', padding: '8px', borderRadius: '6px', cursor: 'pointer' }}
+                                                        title="Excluir Base de Cálculo"
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                             
-                            {/* Rodapé de Paginação */}
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px 20px', borderTop: '1px solid #334155', backgroundColor: '#0f172a', borderBottomLeftRadius: '12px', borderBottomRightRadius: '12px' }}>
                                 <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>
                                     Mostrando <strong style={{ color: '#f8fafc' }}>{pagination.indexOfFirstItem + 1}</strong> a <strong style={{ color: '#f8fafc' }}>{Math.min(pagination.indexOfLastItem, pagination.totalItems)}</strong> de <strong style={{ color: '#f8fafc' }}>{pagination.totalItems}</strong> registros
@@ -153,7 +172,6 @@ export function CustoObra() {
                 </div>
             </section>
 
-            {/* Modal de Exclusão Oculto */}
             {deleteModal.isOpen && (
                 <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(2, 6, 23, 0.75)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                     <div style={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '25px', maxWidth: '400px', width: '90%', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)', display: 'flex', flexDirection: 'column', gap: '15px' }}>

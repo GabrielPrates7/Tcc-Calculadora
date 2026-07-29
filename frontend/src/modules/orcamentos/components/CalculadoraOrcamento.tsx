@@ -63,13 +63,16 @@ export function CalculadoraOrcamento({ listaCenarios, taxaFixa, orcamentoEdicao,
             return 0;
         });
 
-    // ✅ CORREÇÃO: Força sempre a exibição de 2 casas decimais, mesmo em números inteiros (ex: 14,00%)
     const PCT = (v: number) => Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
 
     const valorHora = cenarioAtivo?.valorUnitario || 0;
     const unidadeTempo = cenarioAtivo?.unidade || 'horas';
+    
+    // Condicional de avaliação de métrica
+    const isCustoFechado = unidadeTempo === 'total da obra' || unidadeTempo === 'projeto';
+    const tempoEfetivo = isCustoFechado ? 1 : (Number(tempo) || 0);
 
-    const custoMaoObra = Number(tempo) * valorHora;
+    const custoMaoObra = tempoEfetivo * valorHora;
     const custoProducao = Number(materiais) + custoMaoObra;
 
     const somaPorcentagens = taxaFixa + Number(lucro) + Number(imposto);
@@ -86,7 +89,7 @@ export function CalculadoraOrcamento({ listaCenarios, taxaFixa, orcamentoEdicao,
             cliente,
             nome_produto: produto,
             custo_materiais: Number(materiais),
-            horas_trabalhadas: Number(tempo),
+            horas_trabalhadas: tempoEfetivo,
             lucro_desejado: Number(lucro),
             imposto: Number(imposto),
             preco_venda: precoFinal,
@@ -124,11 +127,17 @@ export function CalculadoraOrcamento({ listaCenarios, taxaFixa, orcamentoEdicao,
                         className="btn-abrir-modal-base"
                         onClick={() => setIsModalOpen(true)}
                     >
-                        <div className="base-selecionada-info">
-                            <strong>{cenarioAtivo ? cenarioAtivo.titulo : 'Nenhuma base disponível'}</strong>
-                            <span>{cenarioAtivo ? `${formatarBRL(cenarioAtivo.valorUnitario)} / ${cenarioAtivo.unidade}` : 'Crie uma base no Módulo de Obras'}</span>
+                        <div className="base-selecionada-info" style={{ flex: 1, minWidth: 0, paddingRight: '10px' }}>
+                            <strong style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
+                                {cenarioAtivo ? cenarioAtivo.titulo : 'Nenhuma base disponível'}
+                            </strong>
+                            <span>
+                                {cenarioAtivo 
+                                    ? `${formatarBRL(cenarioAtivo.valorUnitario)} ${isCustoFechado ? '(Custo Total da Equipe)' : `/ ${cenarioAtivo.unidade}`}` 
+                                    : 'Crie uma base no Módulo de Obras'}
+                            </span>
                         </div>
-                        <ChevronRight size={20} color="#64748b" />
+                        <ChevronRight size={20} color="#64748b" style={{ flexShrink: 0 }} />
                     </button>
                 </div>
 
@@ -156,16 +165,19 @@ export function CalculadoraOrcamento({ listaCenarios, taxaFixa, orcamentoEdicao,
                             <input type="number" min="0" step="0.01" value={materiais} onChange={e => setMateriais(e.target.value)} />
                         </div>
                     </div>
-                    <div className="form-group">
-                        <label>Tempo ({unidadeTempo})</label>
-                        <div className="input-icon-wrapper">
-                            <FileText size={18} className="input-icon"/>
-                            <input type="number" min="0" step="0.5" value={tempo} onChange={e => setTempo(e.target.value)} />
+                    
+                    {!isCustoFechado && (
+                        <div className="form-group">
+                            <label>Tempo ({unidadeTempo})</label>
+                            <div className="input-icon-wrapper">
+                                <FileText size={18} className="input-icon"/>
+                                <input type="number" min="0" step="0.5" value={tempo} onChange={e => setTempo(e.target.value)} />
+                            </div>
+                            <small style={{color:'#64748b', fontSize:'0.75rem', marginTop: '4px', display: 'block'}}>
+                                Custo Base: {formatarBRL(valorHora)} / {unidadeTempo}
+                            </small>
                         </div>
-                        <small style={{color:'#64748b', fontSize:'0.75rem', marginTop: '4px', display: 'block'}}>
-                            Custo Base: {formatarBRL(valorHora)} / {unidadeTempo}
-                        </small>
-                    </div>
+                    )}
                 </div>
 
                 <div className="row-inputs">
@@ -191,7 +203,7 @@ export function CalculadoraOrcamento({ listaCenarios, taxaFixa, orcamentoEdicao,
                         <span className="custo-valor">{PCT(taxaFixa)}</span>
                     </div>
                     <div className="custo-linha">
-                        <span>Mão de Obra ({Number(tempo) || 0} {unidadeTempo})</span>
+                        <span>Mão de Obra {isCustoFechado ? '(Custo Total da Equipe)' : `(${tempoEfetivo} ${unidadeTempo})`}</span>
                         <span className="custo-valor">{formatarBRL(custoMaoObra)}</span>
                     </div>
                     <div className="custo-linha">
@@ -271,11 +283,41 @@ export function CalculadoraOrcamento({ listaCenarios, taxaFixa, orcamentoEdicao,
                                         className={`base-item ${cenario.id === idCenarioSelecionado ? 'selecionado' : ''}`}
                                         onClick={() => handleSelecionarCenario(cenario.id)}
                                     >
-                                        <div className="base-item-info">
-                                            <h4>{cenario.titulo}</h4>
-                                            <span>Métrica: por {cenario.unidade}</span>
+                                        <div className="base-item-info" style={{ flex: 1, minWidth: 0, paddingRight: '15px' }}>
+                                            <h4 
+                                                style={{ 
+                                                    margin: '0 0 4px 0', 
+                                                    color: '#0f172a', 
+                                                    fontSize: '1rem',
+                                                    whiteSpace: 'nowrap',
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis'
+                                                }}
+                                                title={cenario.titulo}
+                                            >
+                                                {cenario.titulo}
+                                            </h4>
+                                            
+                                            {isCustoFechado ? (
+                                                <span style={{ 
+                                                    display: 'inline-block', 
+                                                    backgroundColor: '#f1f5f9', 
+                                                    color: '#475569', 
+                                                    padding: '2px 8px', 
+                                                    borderRadius: '4px', 
+                                                    fontSize: '0.75rem', 
+                                                    fontWeight: 600, 
+                                                    marginTop: '4px' 
+                                                }}>
+                                                    Custo Total de Mão de Obra
+                                                </span>
+                                            ) : (
+                                                <span style={{ color: '#64748b', fontSize: '0.85rem' }}>
+                                                    Métrica: por {cenario.unidade}
+                                                </span>
+                                            )}
                                         </div>
-                                        <div className="base-item-valor">
+                                        <div className="base-item-valor" style={{ whiteSpace: 'nowrap' }}>
                                             {formatarBRL(cenario.valorUnitario)}
                                         </div>
                                     </div>

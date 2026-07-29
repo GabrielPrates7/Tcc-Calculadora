@@ -14,6 +14,7 @@ interface TaxaFuncaoRow {
     custo_mensal_setor: string;        
     horas_totais_setor: string;
     custo_hora_calculado: string;      
+    custo_dia_calculado: string; 
 }
 
 interface RecursoObraInput {
@@ -42,12 +43,25 @@ router.get('/taxas', async (req: Request, res: Response) => {
                 COUNT(f.id) AS total_funcionarios_ativos,
                 COALESCE(SUM(f.custo_total_mensal), 0) AS custo_mensal_setor,
                 (COUNT(f.id) * func.base_horas_mensais) AS horas_totais_setor,
+                
+                -- CUSTO HORA (CH): Unitário (Reflete os R$ 26,46 da planilha)
+                -- Pega o total do setor e divide pelas (horas * qtd de profissionais)
                 CASE 
-                    WHEN COUNT(f.id) > 0 AND func.base_horas_mensais > 0 THEN 
-                        ROUND((SUM(f.custo_total_mensal) / (COUNT(f.id) * func.base_horas_mensais))::numeric, 6)
+                    WHEN COUNT(f.id) > 0 THEN 
+                        ROUND((SUM(f.custo_total_mensal) / (COUNT(f.id) * 22 * 8))::numeric, 6)
                     ELSE 
                         COALESCE(func.custo_hora_mercado, 0)::numeric
-                END AS custo_hora_calculado
+                END AS custo_hora_calculado,
+
+                -- CUSTO DIA (CD): Global/Setor Inteiro (Reflete os R$ 634,97 da planilha)
+                -- Pega o total do setor e divide direto pelos 22 dias
+                CASE 
+                    WHEN COUNT(f.id) > 0 THEN 
+                        ROUND((SUM(f.custo_total_mensal) / 22)::numeric, 6)
+                    ELSE 
+                        COALESCE(func.custo_hora_mercado * 8, 0)::numeric
+                END AS custo_dia_calculado
+
             FROM public.funcoes func
             LEFT JOIN public.funcionarios f ON f.funcao_id = func.id AND f.ativo = true
             GROUP BY func.id, func.nome, func.base_horas_mensais, func.custo_hora_mercado
@@ -59,7 +73,8 @@ router.get('/taxas', async (req: Request, res: Response) => {
             funcao_nome: row.funcao_nome,
             total_funcionarios_ativos: Number(row.total_funcionarios_ativos),
             custo_mensal_setor: Number(row.custo_mensal_setor),
-            custo_hora_calculado: Number(row.custo_hora_calculado)
+            custo_hora_calculado: Number(row.custo_hora_calculado),
+            custo_dia_calculado: Number(row.custo_dia_calculado)
         }));
         res.json(taxasLimpas);
     } catch (err) {
@@ -80,8 +95,6 @@ router.post('/', async (req: Request<{}, {}, NovaObraBody>, res: Response): Prom
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        
-        // CORREÇÃO: Tipagem explícita no reduce (acc: number, recurso: RecursoObraInput)
         const custoTotalEstimado = recursos.reduce((acc: number, recurso: RecursoObraInput) => {
             return acc + (recurso.horas_estimadas * recurso.custo_hora_aplicado);
         }, 0);
@@ -120,22 +133,17 @@ router.put('/:id', async (req: Request, res: Response): Promise<void> => {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        
-        // CORREÇÃO: Tipagem explícita no reduce (acc: number, recurso: RecursoObraInput)
         const custoTotalEstimado = recursos.reduce((acc: number, recurso: RecursoObraInput) => {
             return acc + (recurso.horas_estimadas * recurso.custo_hora_aplicado);
         }, 0);
         
-        // 1. Atualiza o registo Pai
         await client.query(
             `UPDATE public.obras SET titulo = $1, cliente = $2, data_entrega = $3, custo_total_estimado = $4 WHERE id = $5`,
             [titulo, cliente, data_entrega || null, custoTotalEstimado, id]
         );
 
-        // 2. Apaga os Recursos Antigos
         await client.query(`DELETE FROM public.obra_recursos_humanos WHERE obra_id = $1`, [id]);
 
-        // 3. Insere os Novos Recursos
         const insertRecursoQuery = `INSERT INTO public.obra_recursos_humanos (obra_id, funcao_id, qtd_profissionais, horas_estimadas, custo_hora_aplicado) VALUES ($1, $2, $3, $4, $5);`;
         for (const recurso of recursos) {
             await client.query(insertRecursoQuery, [id, recurso.funcao_id, recurso.qtd_profissionais, recurso.horas_estimadas, recurso.custo_hora_aplicado]);

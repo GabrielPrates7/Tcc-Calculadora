@@ -14,7 +14,7 @@ export const OrcamentosService = {
     try {
       const [resHistorico, resFin, resOrc] = await Promise.all([
         fetch(`${API_URL}/orcamentos/historico-obra`), 
-        fetch(`${API_URL}/orcamentos/taxa-fixa`), // <-- Rota corrigida
+        fetch(`${API_URL}/orcamentos/taxa-fixa`),
         fetch(`${API_URL}/orcamentos`)
       ]);
 
@@ -28,7 +28,6 @@ export const OrcamentosService = {
 
       return {
         listaCenarios: Array.isArray(cenarios) ? cenarios : [],
-        // Mapeia a taxa extraída do backend
         taxaFixa: Number(dataFin?.taxaCustoFixo || 0),
         listaOrcamentos: Array.isArray(listaOrcamentos) ? listaOrcamentos : []
       };

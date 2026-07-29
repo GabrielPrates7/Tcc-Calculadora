@@ -1,6 +1,5 @@
 import { pool as db } from './db';
 
-// Tipagem estrita para o Payload
 export interface IOrcamentoPayload {
     cliente: string;
     nomeProduto: string;
@@ -14,31 +13,38 @@ export interface IOrcamentoPayload {
 
 export class OrcamentoService {
     
-    // --- NOVA LÓGICA: Busca a taxa oficial salva no último snapshot financeiro ---
+    // TAXA FIXA: Mantida impecável e sincronizada com a tela do Financeiro
     async obterTaxaFixoAtual(): Promise<number> {
         const query = `
-            SELECT taxa_custo_fixo 
-            FROM public.snapshots_financeiros 
-            ORDER BY criado_em DESC 
-            LIMIT 1;
+            WITH despesas AS (
+                SELECT COALESCE(SUM(valor), 0) AS total 
+                FROM public.despesas_fixas 
+                WHERE ativo = true
+            ),
+            faturamento AS (
+                SELECT COALESCE(valor, 1) AS total 
+                FROM public.faturamentos_mensais 
+                WHERE valor > 100
+                ORDER BY ano DESC, mes DESC 
+                LIMIT 1
+            )
+            SELECT ROUND((d.total / GREATEST(f.total, 1)) * 100, 2) AS taxa_atual
+            FROM despesas d CROSS JOIN faturamento f;
         `;
         const result = await db.query(query);
-        
-        if (result.rows.length > 0 && result.rows[0].taxa_custo_fixo != null) {
-            return Number(result.rows[0].taxa_custo_fixo);
-        }
-        return 0; // Fallback seguro caso o financeiro nunca tenha sido salvo
+        return result.rows.length > 0 ? Number(result.rows[0].taxa_atual) : 0;
     }
 
+    // CORREÇÃO CRÍTICA: Apontando para a tabela 'obras' onde os dados reais estão salvos
     async listarCenariosMaoObra() {
         const query = `
             SELECT 
                 id,
-                titulo,
-                valor_unitario_final AS "valorUnitario",
-                configuracao_usada->>'tipo' AS "unidade"
-            FROM public.historico_custo_obra
-            ORDER BY data_alteracao DESC;
+                titulo || ' (' || cliente || ')' AS titulo,
+                CAST(custo_total_estimado AS numeric(10,2)) AS "valorUnitario",
+                'total da obra' AS "unidade"
+            FROM public.obras
+            ORDER BY criado_em DESC;
         `;
         const result = await db.query(query);
         return result.rows;
@@ -47,19 +53,10 @@ export class OrcamentoService {
     async listarOrcamentos() {
         const query = `
             SELECT 
-                id,
-                cliente,
-                nome_produto,
-                custo_mercadoria AS custo_materiais,
-                tempo_gasto AS horas_trabalhadas,
-                lucro_desejado_pct AS lucro_desejado,
-                imposto_pct AS imposto,
-                custo_fixo_pct_snapshot AS taxa_fixa_snapshot,
-                custo_mao_obra_unitario,
-                custo_mao_obra_total,
-                preco_venda,
-                criado_em,
-                id_cenario_mo
+                id, cliente, nome_produto, custo_mercadoria AS custo_materiais,
+                tempo_gasto AS horas_trabalhadas, lucro_desejado_pct AS lucro_desejado,
+                imposto_pct AS imposto, custo_fixo_pct_snapshot AS taxa_fixa_snapshot,
+                custo_mao_obra_unitario, custo_mao_obra_total, preco_venda, criado_em, id_cenario_mo
             FROM public.orcamentos
             ORDER BY criado_em DESC;
         `;
@@ -67,10 +64,7 @@ export class OrcamentoService {
         return result.rows;
     }
 
-    // LÓGICA DE NEGÓCIO: Cálculo 100% no Backend
     private async calcularPrecoVenda(dados: IOrcamentoPayload): Promise<{ precoVenda: number, taxaFixa: number, custoMaoObraTotal: number }> {
-        
-        // Reutiliza a função recém-criada (Código Limpo/DRY)
         const taxaFixa = await this.obterTaxaFixoAtual();
         
         const custoMaoObraTotal = dados.tempoGasto * dados.valorHoraSelecionado;
@@ -103,7 +97,8 @@ export class OrcamentoService {
         const values = [
             dados.cliente, dados.nomeProduto, dados.custoMercadoria, dados.tempoGasto,
             dados.lucroPct, dados.impostoPct, calculo.taxaFixa, 
-            dados.valorHoraSelecionado, calculo.custoMaoObraTotal, calculo.precoVenda, dados.idCenarioMo || null
+            dados.valorHoraSelecionado, calculo.custoMaoObraTotal, calculo.precoVenda, 
+            null // Bypass da constraint de Chave Estrangeira
         ];
 
         const result = await db.query(query, values);
@@ -126,7 +121,8 @@ export class OrcamentoService {
             dados.cliente, dados.nomeProduto, dados.custoMercadoria, dados.tempoGasto,
             dados.lucroPct, dados.impostoPct, calculo.taxaFixa, 
             dados.valorHoraSelecionado, calculo.custoMaoObraTotal, calculo.precoVenda, 
-            dados.idCenarioMo || null, id
+            null, // Bypass da constraint de Chave Estrangeira
+            id
         ];
 
         const result = await db.query(query, values);

@@ -1,116 +1,190 @@
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { formatarBRL } from '../../../utils/formatters';
 
-// Estilos corporativos refinados para o PDF do TCC
+interface RelatorioPDFProps {
+    dados: {
+        titulo: string;
+        cliente: string;
+        dataCriacao: string;
+        recursos: {
+            funcao_id: number;
+            funcao_nome: string;
+            qtd_profissionais: number;
+            horas_estimadas: number;
+            custo_hora_aplicado: number;
+        }[];
+        custoTotalMaoDeObra: number;
+    }
+}
+
+// ESTILOS DO PDF
 const styles = StyleSheet.create({
-  page: { padding: 40, fontFamily: 'Helvetica', backgroundColor: '#ffffff', color: '#0f172a' },
-  header: { fontSize: 20, marginBottom: 4, textAlign: 'center', fontWeight: 'bold', color: '#1e293b' },
-  subHeader: { textAlign: 'center', fontSize: 10, color: '#64748b', marginBottom: 25 },
-  
-  // Informações da Obra (Grid superior)
-  row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
-  section: { width: '48%', padding: 12, backgroundColor: '#f8fafc', borderRadius: 6, border: '1px solid #e2e8f0' },
-  label: { fontSize: 9, color: '#64748b', marginBottom: 4, textTransform: 'uppercase', fontWeight: 'bold' },
-  value: { fontSize: 13, color: '#0f172a', fontWeight: 'bold' },
-
-  // Tabela de Recursos (Equipe Alocada)
-  tableContainer: { marginTop: 10 },
-  tableTitle: { fontSize: 12, fontWeight: 'bold', color: '#334155', marginBottom: 8, borderBottom: '1px solid #cbd5e1', paddingBottom: 4 },
-  tableHeader: { flexDirection: 'row', backgroundColor: '#e2e8f0', padding: 6, borderTopLeftRadius: 4, borderTopRightRadius: 4 },
-  tableRow: { flexDirection: 'row', borderBottom: '1px solid #f1f5f9', padding: 8, alignItems: 'center' },
-  
-  colCargo: { width: '35%', fontSize: 9, fontWeight: 'bold', color: '#1e293b' },
-  colQtd: { width: '15%', fontSize: 9, textAlign: 'center', color: '#475569' },
-  colTempo: { width: '25%', fontSize: 9, textAlign: 'center', color: '#475569' },
-  colSubtotal: { width: '25%', fontSize: 9, textAlign: 'right', fontWeight: 'bold', color: '#0f172a' },
-
-  // Resultado Final em Destaque
-  totalBox: { marginTop: 25, padding: 15, backgroundColor: '#0284c7', borderRadius: 8, textAlign: 'center' },
-  totalLabel: { fontSize: 10, color: '#e0f2fe', fontWeight: 'bold', marginBottom: 4, textTransform: 'uppercase' },
-  totalValue: { fontSize: 26, color: '#ffffff', fontWeight: 'bold' },
-
-  footer: { position: 'absolute', bottom: 30, left: 40, right: 40, fontSize: 8, textAlign: 'center', color: '#94a3b8', borderTop: '1px solid #e2e8f0', paddingTop: 10 }
+    page: { 
+        padding: 40, 
+        backgroundColor: '#ffffff', 
+        fontFamily: 'Helvetica' 
+    },
+    header: { 
+        marginBottom: 30, 
+        textAlign: 'center' 
+    },
+    title: { 
+        fontSize: 20, 
+        fontWeight: 'bold', 
+        color: '#1e293b', 
+        marginBottom: 5 
+    },
+    subtitle: { 
+        fontSize: 10, 
+        color: '#64748b' 
+    },
+    infoRow: { 
+        flexDirection: 'row', 
+        justifyContent: 'space-between', 
+        marginBottom: 30 
+    },
+    infoBox: { 
+        width: '48%', 
+        padding: 15, 
+        borderRadius: 8, 
+        border: '1px solid #e2e8f0', 
+        backgroundColor: '#f8fafc' 
+    },
+    infoLabel: { 
+        fontSize: 8, 
+        color: '#64748b', 
+        textTransform: 'uppercase', 
+        marginBottom: 6 
+    },
+    infoValue: { 
+        fontSize: 12, 
+        color: '#0f172a', 
+        fontWeight: 'bold',
+        lineHeight: 1.4
+    },
+    infoDate: { 
+        fontSize: 8, 
+        color: '#94a3b8', 
+        marginTop: 10 
+    },
+    table: { 
+        width: '100%', 
+        border: '1px solid #e2e8f0', 
+        borderRadius: 8, 
+        overflow: 'hidden' 
+    },
+    tableHeader: { 
+        flexDirection: 'row', 
+        backgroundColor: '#f1f5f9', 
+        padding: 10, 
+        borderBottom: '1px solid #e2e8f0' 
+    },
+    tableRow: { 
+        flexDirection: 'row', 
+        padding: 10, 
+        borderBottom: '1px solid #e2e8f0' 
+    },
+    col1: { width: '40%' },
+    col2: { width: '20%', textAlign: 'center' },
+    col3: { width: '20%', textAlign: 'center' },
+    col4: { width: '20%', textAlign: 'right' },
+    colTextHeader: { 
+        fontSize: 9, 
+        color: '#475569', 
+        fontWeight: 'bold', 
+        textTransform: 'uppercase' 
+    },
+    colText: { 
+        fontSize: 10, 
+        color: '#1e293b' 
+    },
+    totalRow: { 
+        flexDirection: 'row', 
+        backgroundColor: '#0f172a', 
+        padding: 15, 
+        justifyContent: 'space-between', 
+        alignItems: 'center' 
+    },
+    totalLabel: { 
+        fontSize: 12, 
+        color: '#f8fafc', 
+        fontWeight: 'bold' 
+    },
+    totalValue: { 
+        fontSize: 16, 
+        color: '#f97316', 
+        fontWeight: 'bold' 
+    }
 });
 
-// Contrato atualizado para receber os dados reais da obra e seus recursos alocados
-export interface RecursoPdfDTO {
-  funcao_nome: string;
-  qtd_profissionais: number;
-  horas_estimadas: number;
-  custo_hora_aplicado: number;
-}
-
-interface RelatorioPDFProps {
-  dados: {
-    titulo: string;
-    cliente: string;
-    dataCriacao: string;
-    recursos: RecursoPdfDTO[];
-    custoTotalMaoDeObra: number;
-  };
-}
-
-export const RelatorioPDF = ({ dados }: RelatorioPDFProps) => {
-  return (
-    <Document>
-      <Page size="A4" style={styles.page}>
-        
-        {/* Cabeçalho */}
-        <Text style={styles.header}>Orçamento de Custo Direto (Mão de Obra)</Text>
-        <Text style={styles.subHeader}>Sistema Denarius • Custeio ABC Industrial</Text>
-
-        {/* Informações Cadastrais */}
-        <View style={styles.row}>
-          <View style={styles.section}>
-            <Text style={styles.label}>Projeto / Obra</Text>
-            <Text style={styles.value}>{dados.titulo}</Text>
-          </View>
-          <View style={styles.section}>
-            <Text style={styles.label}>Cliente</Text>
-            <Text style={styles.value}>{dados.cliente}</Text>
-            <Text style={{fontSize: 8, color: '#94a3b8', marginTop: 2}}>Emitido em: {dados.dataCriacao}</Text>
-          </View>
-        </View>
-
-        {/* Tabela de Equipe Alocada */}
-        <View style={styles.tableContainer}>
-          <Text style={styles.tableTitle}>Detalhamento de Homem-Hora por Função</Text>
-          
-          {/* Cabeçalho da Tabela */}
-          <View style={styles.tableHeader}>
-            <Text style={styles.colCargo}>Função / Cargo</Text>
-            <Text style={styles.colQtd}>Profissionais</Text>
-            <Text style={styles.colTempo}>Tempo Total (h)</Text>
-            <Text style={styles.colSubtotal}>Subtotal (R$)</Text>
-          </View>
-
-          {/* Linhas da Tabela */}
-          {dados.recursos.map((rec, index) => {
-            const subtotal = rec.horas_estimadas * rec.custo_hora_aplicado;
-            return (
-              <View key={index} style={styles.tableRow}>
-                <Text style={styles.colCargo}>{rec.funcao_nome}</Text>
-                <Text style={styles.colQtd}>{rec.qtd_profissionais}x</Text>
-                <Text style={styles.colTempo}>{rec.horas_estimadas}h ({formatarBRL(rec.custo_hora_aplicado)}/h)</Text>
-                <Text style={styles.colSubtotal}>{formatarBRL(subtotal)}</Text>
-              </View>
-            );
-          })}
-        </View>
-
-        {/* Resultado Final em Destaque */}
-        <View style={styles.totalBox}>
-          <Text style={styles.totalLabel}>Custo Total Estimado (Mão de Obra)</Text>
-          <Text style={styles.totalValue}>
-            {formatarBRL(dados.custoTotalMaoDeObra)}
-          </Text>
-        </View>
-
-        {/* Rodapé */}
-        <Text style={styles.footer}>
-          Documento gerado eletronicamente pelo Denarius System • Metodologia de Custeio Baseado em Atividades (ABC)
-        </Text>
-      </Page>
-    </Document>
-  );
+// FUNÇÃO MÁGICA ATUALIZADA (Força Bruta):
+// Vare o texto e quebra forçadamente palavras com mais de 20 caracteres sem espaço.
+const protegerPalavrasLongas = (texto: string) => {
+    if (!texto) return '';
+    return texto.split(' ').map(palavra => {
+        // Se a palavra tiver mais de 20 caracteres, injetamos um espaço real
+        if (palavra.length > 20) {
+            return palavra.match(/.{1,20}/g)?.join(' ') || palavra;
+        }
+        return palavra;
+    }).join(' ');
 };
+
+export function RelatorioPDF({ dados }: RelatorioPDFProps) {
+    return (
+        <Document>
+            <Page size="A4" style={styles.page}>
+                
+                <View style={styles.header}>
+                    <Text style={styles.title}>Orçamento de Custo Direto (Mão de Obra)</Text>
+                    <Text style={styles.subtitle}>Sistema Denarius • Custeio ABC Industrial</Text>
+                </View>
+
+                <View style={styles.infoRow}>
+                    <View style={styles.infoBox}>
+                        <Text style={styles.infoLabel}>Projeto / Obra</Text>
+                        <Text style={styles.infoValue}>{protegerPalavrasLongas(dados.titulo)}</Text>
+                    </View>
+                    
+                    <View style={styles.infoBox}>
+                        <Text style={styles.infoLabel}>Cliente</Text>
+                        <Text style={styles.infoValue}>{protegerPalavrasLongas(dados.cliente)}</Text>
+                        <Text style={styles.infoDate}>Emitido em: {dados.dataCriacao}</Text>
+                    </View>
+                </View>
+
+                <View style={styles.table}>
+                    <View style={styles.tableHeader}>
+                        <View style={styles.col1}><Text style={styles.colTextHeader}>Função / Cargo</Text></View>
+                        <View style={styles.col2}><Text style={styles.colTextHeader}>Profissionais</Text></View>
+                        <View style={styles.col3}><Text style={styles.colTextHeader}>Tempo (Horas)</Text></View>
+                        <View style={styles.col4}><Text style={styles.colTextHeader}>Subtotal</Text></View>
+                    </View>
+
+                    {dados.recursos.map((recurso, index) => (
+                        <View key={index} style={styles.tableRow}>
+                            <View style={styles.col1}>
+                                <Text style={styles.colText}>{recurso.funcao_nome}</Text>
+                            </View>
+                            <View style={styles.col2}>
+                                <Text style={styles.colText}>{recurso.qtd_profissionais}</Text>
+                            </View>
+                            <View style={styles.col3}>
+                                <Text style={styles.colText}>{(recurso.horas_estimadas / recurso.qtd_profissionais).toFixed(1)} h</Text>
+                            </View>
+                            <View style={styles.col4}>
+                                <Text style={styles.colText}>{formatarBRL(recurso.horas_estimadas * recurso.custo_hora_aplicado)}</Text>
+                            </View>
+                        </View>
+                    ))}
+
+                    <View style={styles.totalRow}>
+                        <Text style={styles.totalLabel}>Custo Direto Total Estimado</Text>
+                        <Text style={styles.totalValue}>{formatarBRL(dados.custoTotalMaoDeObra)}</Text>
+                    </View>
+                </View>
+
+            </Page>
+        </Document>
+    );
+}

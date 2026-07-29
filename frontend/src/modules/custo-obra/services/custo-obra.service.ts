@@ -8,6 +8,7 @@ export interface TaxaFuncao {
     total_funcionarios_ativos: number;
     custo_mensal_setor: number;
     custo_hora_calculado: number;
+    custo_dia_calculado: number; // <-- NOVA MÉTRICA RECEBIDA DA API
 }
 
 export interface RecursoObraInput {
@@ -34,7 +35,7 @@ export interface ObraHistorico {
     custo_total_estimado: string; 
     criado_em: string;
     recursos: {
-        funcao_id: number; // <-- ADICIONADO PARA O FRONTEND CONSEGUIR EDITAR
+        funcao_id: number;
         funcao_nome: string;
         qtd_profissionais: number;
         horas_estimadas: number;
@@ -66,7 +67,6 @@ export const CustoObraService = {
         return res.json();
     },
 
-    // NOVO: Método de Atualização (PUT)
     async atualizarOrcamento(id: number, dados: NovaObraBody): Promise<{ message: string; custo_total: number }> {
         const res = await fetch(`${API_URL}/${id}`, {
             method: 'PUT',

@@ -158,7 +158,6 @@ export function ListaFinanceiro({
                 <div style={{flex: 2}}>Descrição / Beneficiário</div>
                 <div style={{width: 120}}>Vencimento</div>
                 <div style={{width: 100, textAlign:'center'}}>Status</div>
-                {/* ALTERADO: Largura ajustada de 120px para 160px */}
                 <div style={{width: 160, textAlign:'right', paddingRight: 20}}>Valor</div>
                 <div style={{width: 100}}>Ações</div>
             </div>
@@ -175,10 +174,52 @@ export function ListaFinanceiro({
                             <div className="col-switch">
                                 <button className={`btn-switch ${item.ativo ? 'on' : 'off'}`} onClick={() => onAlternarAtivo(item)}><Power size={14} /></button>
                             </div>
-                            <div className="col-info">
-                                <span className="text-nome">{item.nome}</span>
-                                {item.beneficiario && <span className="text-beneficiario"><User size={12}/> {item.beneficiario}</span>}
+                            
+                            {/* AQUI ESTÁ A CORREÇÃO (BLINDAGEM FLEXBOX PARA TEXTOS GIGANTES) */}
+                            <div 
+                                className="col-info" 
+                                style={{ 
+                                    flex: 2, 
+                                    minWidth: 0, /* Regra vital para forçar o corte no flexbox */
+                                    display: 'flex', 
+                                    flexDirection: 'column', 
+                                    justifyContent: 'center' 
+                                }}
+                            >
+                                <span 
+                                    className="text-nome" 
+                                    style={{ 
+                                        whiteSpace: 'nowrap', 
+                                        overflow: 'hidden', 
+                                        textOverflow: 'ellipsis',
+                                        display: 'block'
+                                    }}
+                                    title={item.nome}
+                                >
+                                    {item.nome}
+                                </span>
+                                
+                                {item.beneficiario && (
+                                    <span 
+                                        className="text-beneficiario" 
+                                        style={{ 
+                                            whiteSpace: 'nowrap', 
+                                            overflow: 'hidden', 
+                                            textOverflow: 'ellipsis',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '4px'
+                                        }}
+                                        title={item.beneficiario}
+                                    >
+                                        <User size={12} style={{ flexShrink: 0 }}/> 
+                                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                            {item.beneficiario}
+                                        </span>
+                                    </span>
+                                )}
                             </div>
+                            
                             <div className="col-data">
                                 <Calendar size={14}/> {formatarData(item.dataVencimento)}
                             </div>
@@ -186,7 +227,7 @@ export function ListaFinanceiro({
                                 {item.pago ? <span className="badge badge-pago"><CheckCircle size={12}/> Pago</span> : <span className="badge badge-pendente"><AlertCircle size={12}/> Pendente</span>}
                             </div>
                             
-                            {/* ALTERADO: Aplicação de CSS Defensivo e espelhamento de layout */}
+                            {/* Blindagem de Valores numéricos gigantes já aplicada anteriormente */}
                             <div 
                                 className="col-valor" 
                                 style={{ 

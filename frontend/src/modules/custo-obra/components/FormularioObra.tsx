@@ -16,7 +16,7 @@ interface FormularioObraProps {
     onCancelarEdicao: () => void;       
 }
 
-const HORAS_POR_DIA = 8; 
+const HORAS_PADRAO_DIA = 8; 
 
 export function FormularioObra({ onSalvarSucesso, obraEmEdicao, onCancelarEdicao }: FormularioObraProps) {
     const [titulo, setTitulo] = useState('');
@@ -35,7 +35,6 @@ export function FormularioObra({ onSalvarSucesso, obraEmEdicao, onCancelarEdicao
                 const taxasReais = await CustoObraService.obterTaxas();
                 setTaxas(taxasReais);
             } catch (error) {
-                // CORREÇÃO 1: Utiliza a variável de erro para o linter não reclamar
                 console.error("Erro ao carregar taxas da API:", error);
                 setErro("Falha de comunicação com o servidor.");
             } finally {
@@ -46,7 +45,6 @@ export function FormularioObra({ onSalvarSucesso, obraEmEdicao, onCancelarEdicao
     }, []);
 
     useEffect(() => {
-        // CORREÇÃO 2: Força a execução assíncrona para evitar Cascading Renders
         const preencherFormulario = async () => {
             await Promise.resolve();
 
@@ -55,12 +53,18 @@ export function FormularioObra({ onSalvarSucesso, obraEmEdicao, onCancelarEdicao
                 setCliente(obraEmEdicao.cliente);
                 
                 const recursosFormatados: RecursoAlocado[] = obraEmEdicao.recursos.map(r => {
-                    const tempoIndividual = r.horas_estimadas / r.qtd_profissionais;
+                    // Descobre quantas horas cabem a cada profissional
+                    const horasIndividuais = r.horas_estimadas / r.qtd_profissionais;
+                    
+                    // INTELIGÊNCIA DE UX (Heurística): 
+                    // Se as horas forem múltiplas exatas de 8, converte visualmente para "Dias"
+                    const isDia = horasIndividuais > 0 && horasIndividuais % HORAS_PADRAO_DIA === 0;
+
                     return {
                         funcao_id: r.funcao_id,
                         qtd_profissionais: r.qtd_profissionais,
-                        tempo: tempoIndividual,
-                        unidade: 'horas'
+                        tempo: isDia ? (horasIndividuais / HORAS_PADRAO_DIA) : horasIndividuais,
+                        unidade: isDia ? 'dias' : 'horas'
                     };
                 });
                 setRecursos(recursosFormatados);
@@ -88,8 +92,13 @@ export function FormularioObra({ onSalvarSucesso, obraEmEdicao, onCancelarEdicao
     const custoTotalMaoDeObra = useMemo(() => {
         return recursos.reduce((total, recurso) => {
             const taxa = taxas.find(t => t.funcao_id === recurso.funcao_id);
-            const horasBase = recurso.unidade === 'dias' ? recurso.tempo * HORAS_POR_DIA : recurso.tempo;
-            return total + ((horasBase * recurso.qtd_profissionais) * (taxa ? taxa.custo_hora_calculado : 0));
+            if (!taxa) return total;
+
+            const custoDaLinha = recurso.unidade === 'dias' 
+                ? (recurso.tempo * recurso.qtd_profissionais * taxa.custo_dia_calculado)
+                : (recurso.tempo * recurso.qtd_profissionais * taxa.custo_hora_calculado);
+
+            return total + custoDaLinha;
         }, 0);
     }, [recursos, taxas]);
 
@@ -102,12 +111,18 @@ export function FormularioObra({ onSalvarSucesso, obraEmEdicao, onCancelarEdicao
                 titulo, cliente,
                 recursos: recursosFiltrados.map(r => {
                     const taxa = taxas.find(t => t.funcao_id === r.funcao_id);
-                    const horasBase = r.unidade === 'dias' ? r.tempo * HORAS_POR_DIA : r.tempo;
+                    const isDia = r.unidade === 'dias';
+                    
+                    const horasEstimadas = isDia ? r.tempo * HORAS_PADRAO_DIA : r.tempo;
+                    const custoAplicado = isDia 
+                        ? (taxa ? taxa.custo_dia_calculado / HORAS_PADRAO_DIA : 0) 
+                        : (taxa ? taxa.custo_hora_calculado : 0);
+
                     return {
                         funcao_id: r.funcao_id,
                         qtd_profissionais: r.qtd_profissionais,
-                        horas_estimadas: horasBase * r.qtd_profissionais, 
-                        custo_hora_aplicado: taxa ? taxa.custo_hora_calculado : 0
+                        horas_estimadas: horasEstimadas * r.qtd_profissionais, 
+                        custo_hora_aplicado: custoAplicado
                     };
                 })
             };
@@ -129,7 +144,6 @@ export function FormularioObra({ onSalvarSucesso, obraEmEdicao, onCancelarEdicao
         }
     };
 
-    // CORREÇÃO 3: Variáveis do motor de busca restauradas
     const funcoesDisponiveis = taxas.filter(t => !recursos.some(r => r.funcao_id === t.funcao_id));
     const funcoesFiltradas = funcoesDisponiveis.filter(t => 
         t.funcao_nome.toLowerCase().includes(termoBusca.toLowerCase())
@@ -177,7 +191,9 @@ export function FormularioObra({ onSalvarSucesso, obraEmEdicao, onCancelarEdicao
                                 <div key={taxa.funcao_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', borderBottom: '1px solid #1e293b' }}>
                                     <div>
                                         <span style={{ color: '#f8fafc', fontWeight: '500', display: 'block' }}>{taxa.funcao_nome}</span>
-                                        <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{formatarBRL(taxa.custo_hora_calculado)}/h</span>
+                                        <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>
+                                            {formatarBRL(taxa.custo_hora_calculado)}/h &bull; {formatarBRL(taxa.custo_dia_calculado)}/dia
+                                        </span>
                                     </div>
                                     <button onClick={() => handleAdicionarRecurso(taxa.funcao_id)} style={{ padding: '6px 16px', backgroundColor: '#1e293b', color: '#f97316', border: '1px solid #334155', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>
                                         <Plus size={16} style={{ verticalAlign: 'middle', marginRight: '4px' }}/> Add
@@ -199,14 +215,18 @@ export function FormularioObra({ onSalvarSucesso, obraEmEdicao, onCancelarEdicao
                             {recursos.map(recurso => {
                                 const taxa = taxas.find(t => t.funcao_id === recurso.funcao_id);
                                 if (!taxa) return null;
-                                const horasBase = recurso.unidade === 'dias' ? recurso.tempo * HORAS_POR_DIA : recurso.tempo;
-                                const subtotal = (horasBase * recurso.qtd_profissionais) * taxa.custo_hora_calculado;
+                                
+                                const subtotal = recurso.unidade === 'dias' 
+                                    ? (recurso.tempo * recurso.qtd_profissionais * taxa.custo_dia_calculado)
+                                    : (recurso.tempo * recurso.qtd_profissionais * taxa.custo_hora_calculado);
 
                                 return (
                                     <div key={taxa.funcao_id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 2fr 1fr auto', alignItems: 'center', backgroundColor: '#0f172a', padding: '15px', borderRadius: '8px', border: '1px solid #334155', borderLeft: '4px solid #f97316', gap: '15px' }}>
                                         <div>
                                             <span style={{ color: '#f8fafc', fontWeight: 'bold', display: 'block', fontSize: '1.05rem' }}>{taxa.funcao_nome}</span>
-                                            <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Base: {formatarBRL(taxa.custo_hora_calculado)} /h</span>
+                                            <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>
+                                                Base: {formatarBRL(taxa.custo_hora_calculado)}/h &bull; {formatarBRL(taxa.custo_dia_calculado)}/dia
+                                            </span>
                                         </div>
                                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                                             <label style={{ fontSize: '0.75rem', color: '#64748b', marginBottom: '4px' }}>Profissionais</label>
@@ -241,7 +261,7 @@ export function FormularioObra({ onSalvarSucesso, obraEmEdicao, onCancelarEdicao
                     <div style={{ backgroundColor: '#0f172a', border: '1px solid #334155', padding: '20px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
                         <div>
                             <h3 style={{ color: '#f8fafc', margin: 0, fontSize: '1.1rem' }}>Custo Direto Total (Mão de Obra)</h3>
-                            <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '5px 0 0 0' }}>Soma dos homens-hora de todas as funções alocadas.</p>
+                            <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '5px 0 0 0' }}>Soma dos custos de todas as funções alocadas.</p>
                         </div>
                         <div style={{ fontSize: '2.2rem', fontWeight: 'bold', color: '#f97316' }}>{formatarBRL(custoTotalMaoDeObra)}</div>
                     </div>
