@@ -2,12 +2,12 @@
 -- PostgreSQL database dump
 --
 
-\restrict HkNJKajTttjkOi5iBGeHeMqG5WzQ7pxPMHaDAbCQzOjsP9Zp3KaDo9I88QZcQ1Q
+\restrict YjfQg4522juO8apQnf5riCaA5MBgc9gkotzBmBPZZFPJxaZptMbztLOHvHIXJpd
 
 -- Dumped from database version 18.1
 -- Dumped by pg_dump version 18.1
 
--- Started on 2026-07-26 19:27:41
+-- Started on 2026-07-29 23:36:45
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -681,7 +681,6 @@ INSERT INTO public.despesas_fixas VALUES (84, 'Marketing', 1500.00, '2026-07-26 
 INSERT INTO public.despesas_fixas VALUES (85, 'INSS', 160.00, '2026-07-26 02:44:12.659045', true, false, NULL, '2026-07-26', NULL);
 INSERT INTO public.despesas_fixas VALUES (86, 'Outros', 5000.00, '2026-07-26 02:44:46.00266', true, false, NULL, '2026-07-26', NULL);
 INSERT INTO public.despesas_fixas VALUES (87, 'Caçamba', 960.00, '2026-07-26 04:18:08.076148', true, false, NULL, '2026-07-26', NULL);
-INSERT INTO public.despesas_fixas VALUES (89, 'Aluguel 2', 5200.00, '2026-07-26 12:47:16.950091', true, false, NULL, '2026-07-26', NULL);
 
 
 --
@@ -781,7 +780,8 @@ INSERT INTO public.funcoes VALUES (60, 'Marceneiro', 176.00, 0.00);
 -- Data for Name: historico_custo_obra; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public.historico_custo_obra VALUES (1, '2026-07-26 12:34:56.920171', 5000.00, '{"tipo": "horas"}', 150.00, 'Base Teste Injetada');
+INSERT INTO public.historico_custo_obra VALUES (2, '2026-07-29 19:29:43.644464', 119965.66, '{"dias": 22, "tipo": "horas", "horasDia": 8}', 150.00, 'Base Teste Injetada');
+INSERT INTO public.historico_custo_obra VALUES (3, '2026-07-29 19:36:03.447011', 39468.70, '{"dias": 22, "horas_dia": 8, "tipo_tempo": "horas", "qtd_unidades": 1}', 224.25, 'Custo Padrão Produção (Inicial)');
 
 
 --
@@ -804,11 +804,35 @@ INSERT INTO public.investimentos VALUES (21, 'Saveiro', 1100.00, '2026-07-26 02:
 -- Data for Name: obra_recursos_humanos; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public.obra_recursos_humanos VALUES (22, 13, 21, 20.00, 26.46, 2);
-INSERT INTO public.obra_recursos_humanos VALUES (23, 13, 22, 8.00, 29.18, 1);
-INSERT INTO public.obra_recursos_humanos VALUES (24, 13, 23, 10.00, 14.34, 2);
+INSERT INTO public.obra_recursos_humanos VALUES (86, 17, 23, 32.00, 14.34, 2);
+INSERT INTO public.obra_recursos_humanos VALUES (87, 17, 21, 24.00, 26.46, 1);
+INSERT INTO public.obra_recursos_humanos VALUES (88, 18, 21, 28.00, 26.46, 2);
+INSERT INTO public.obra_recursos_humanos VALUES (89, 18, 22, 12.00, 29.18, 1);
+INSERT INTO public.obra_recursos_humanos VALUES (90, 19, 21, 120.00, 26.46, 3);
+INSERT INTO public.obra_recursos_humanos VALUES (91, 19, 23, 32.00, 14.34, 2);
+INSERT INTO public.obra_recursos_humanos VALUES (92, 20, 23, 20.00, 14.34, 2);
+INSERT INTO public.obra_recursos_humanos VALUES (93, 20, 21, 16.00, 26.46, 1);
+INSERT INTO public.obra_recursos_humanos VALUES (94, 21, 21, 44.00, 26.46, 2);
+INSERT INTO public.obra_recursos_humanos VALUES (95, 21, 22, 40.00, 29.18, 2);
+INSERT INTO public.obra_recursos_humanos VALUES (96, 21, 23, 6.00, 14.34, 1);
+INSERT INTO public.obra_recursos_humanos VALUES (97, 22, 21, 16.00, 26.46, 1);
 INSERT INTO public.obra_recursos_humanos VALUES (27, 14, 21, 30.00, 26.46, 6);
 INSERT INTO public.obra_recursos_humanos VALUES (28, 14, 22, 12.00, 29.18, 3);
+INSERT INTO public.obra_recursos_humanos VALUES (29, 15, 40, 15.00, 12.99, 3);
+INSERT INTO public.obra_recursos_humanos VALUES (98, 22, 23, 32.00, 14.34, 2);
+INSERT INTO public.obra_recursos_humanos VALUES (99, 23, 22, 8.00, 29.18, 1);
+INSERT INTO public.obra_recursos_humanos VALUES (100, 23, 21, 45.00, 26.46, 3);
+INSERT INTO public.obra_recursos_humanos VALUES (101, 24, 21, 12.00, 26.46, 1);
+INSERT INTO public.obra_recursos_humanos VALUES (102, 24, 23, 8.00, 14.34, 1);
+INSERT INTO public.obra_recursos_humanos VALUES (103, 25, 21, 64.00, 26.46, 2);
+INSERT INTO public.obra_recursos_humanos VALUES (104, 25, 22, 24.00, 29.18, 1);
+INSERT INTO public.obra_recursos_humanos VALUES (105, 25, 23, 8.00, 14.34, 1);
+INSERT INTO public.obra_recursos_humanos VALUES (55, 16, 23, 4.00, 14.34, 1);
+INSERT INTO public.obra_recursos_humanos VALUES (56, 16, 22, 10.00, 29.18, 1);
+INSERT INTO public.obra_recursos_humanos VALUES (57, 16, 21, 36.00, 26.46, 2);
+INSERT INTO public.obra_recursos_humanos VALUES (69, 13, 21, 20.00, 26.46, 2);
+INSERT INTO public.obra_recursos_humanos VALUES (70, 13, 22, 1.00, 29.18, 1);
+INSERT INTO public.obra_recursos_humanos VALUES (71, 13, 23, 10.00, 14.34, 2);
 
 
 --
@@ -817,8 +841,19 @@ INSERT INTO public.obra_recursos_humanos VALUES (28, 14, 22, 12.00, 29.18, 3);
 -- Data for Name: obras; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public.obras VALUES (13, 'Primeiro teste', 'Fulano', NULL, NULL, 'orcamento', 905.94, '2026-07-26 02:53:16.87667');
 INSERT INTO public.obras VALUES (14, 'Segundo teste', 'teste', NULL, NULL, 'orcamento', 1143.88, '2026-07-26 12:25:14.732725');
+INSERT INTO public.obras VALUES (15, 'Terceiro teste', 'Ciclano', NULL, NULL, 'orcamento', 194.85, '2026-07-26 20:25:56.658848');
+INSERT INTO public.obras VALUES (16, '01-Fabricação de Base para Prensa Hidráulica', 'Indústria Metal Forte Ltda', NULL, NULL, 'orcamento', 1301.60, '2026-07-29 00:14:07.20738');
+INSERT INTO public.obras VALUES (13, 'Primeiro testeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', 'Fulano', NULL, NULL, 'orcamento', 701.67, '2026-07-26 02:53:16.87667');
+INSERT INTO public.obras VALUES (17, '02-Armário Planejado em MDF para Escritório', 'Marcenaria Carvalho Design', NULL, NULL, 'orcamento', 1093.70, '2026-07-29 00:15:01.838361');
+INSERT INTO public.obras VALUES (18, '03-Recuperação de Eixo de Transmissão', 'AgroMáquinas Cerrado', NULL, NULL, 'orcamento', 1090.96, '2026-07-29 00:15:43.334601');
+INSERT INTO public.obras VALUES (19, '04-Estrutura Metálica para Mezanino', 'Construtora Horizonte', NULL, NULL, 'orcamento', 3633.57, '2026-07-29 00:17:21.897679');
+INSERT INTO public.obras VALUES (20, '05-Cozinha Planejada Completa', 'Móveis Elegance Planejados', NULL, NULL, 'orcamento', 710.02, '2026-07-29 00:18:24.69783');
+INSERT INTO public.obras VALUES (21, '06-Fabricação de Suportes Industriais', 'Siderúrgica Alfa', NULL, NULL, 'orcamento', 2417.35, '2026-07-29 00:49:09.049023');
+INSERT INTO public.obras VALUES (22, '07-Painel Ripado com Nichos e Iluminação', 'Hotel Serra Azul', NULL, NULL, 'orcamento', 882.04, '2026-07-29 00:49:44.930421');
+INSERT INTO public.obras VALUES (23, '08-Reparo em Tambor Transportador', 'Mineração Vale Verde', NULL, NULL, 'orcamento', 1424.01, '2026-07-29 00:50:37.402042');
+INSERT INTO public.obras VALUES (24, '09-Balcão de Atendimento Planejado', 'Clínica Odonto Prime', NULL, NULL, 'orcamento', 432.17, '2026-07-29 00:51:03.288948');
+INSERT INTO public.obras VALUES (25, '10-Fabricação de Cavaletes Industriais', 'Indústria Aliança Equipamentos', NULL, NULL, 'orcamento', 2508.27, '2026-07-29 00:51:47.048929');
 
 
 --
@@ -827,6 +862,7 @@ INSERT INTO public.obras VALUES (14, 'Segundo teste', 'teste', NULL, NULL, 'orca
 -- Data for Name: orcamentos; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
+INSERT INTO public.orcamentos VALUES (1, 'Peça mecanica', 3000.00, 1.00, 30.00, 5.00, 13.72, 905.94, 905.94, 7616.89, '2026-07-26 20:41:33.881934', 'Fulano', NULL);
 
 
 --
@@ -871,7 +907,7 @@ SELECT pg_catalog.setval('public.configuracao_producao_id_seq', 1, false);
 -- Name: despesas_fixas_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.despesas_fixas_id_seq', 89, true);
+SELECT pg_catalog.setval('public.despesas_fixas_id_seq', 91, true);
 
 
 --
@@ -907,7 +943,7 @@ SELECT pg_catalog.setval('public.funcoes_id_seq', 61, true);
 -- Name: historico_custo_obra_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.historico_custo_obra_id_seq', 1, true);
+SELECT pg_catalog.setval('public.historico_custo_obra_id_seq', 3, true);
 
 
 --
@@ -925,7 +961,7 @@ SELECT pg_catalog.setval('public.investimentos_id_seq', 21, true);
 -- Name: obra_recursos_humanos_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.obra_recursos_humanos_id_seq', 28, true);
+SELECT pg_catalog.setval('public.obra_recursos_humanos_id_seq', 105, true);
 
 
 --
@@ -934,7 +970,7 @@ SELECT pg_catalog.setval('public.obra_recursos_humanos_id_seq', 28, true);
 -- Name: obras_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.obras_id_seq', 14, true);
+SELECT pg_catalog.setval('public.obras_id_seq', 25, true);
 
 
 --
@@ -943,7 +979,7 @@ SELECT pg_catalog.setval('public.obras_id_seq', 14, true);
 -- Name: orcamentos_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.orcamentos_id_seq', 1, false);
+SELECT pg_catalog.setval('public.orcamentos_id_seq', 1, true);
 
 
 --
@@ -1135,11 +1171,11 @@ ALTER TABLE ONLY public.ordens_servico
     ADD CONSTRAINT ordens_servico_orcamento_id_fkey FOREIGN KEY (orcamento_id) REFERENCES public.orcamentos(id) ON DELETE CASCADE;
 
 
--- Completed on 2026-07-26 19:27:41
+-- Completed on 2026-07-29 23:36:45
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict HkNJKajTttjkOi5iBGeHeMqG5WzQ7pxPMHaDAbCQzOjsP9Zp3KaDo9I88QZcQ1Q
+\unrestrict YjfQg4522juO8apQnf5riCaA5MBgc9gkotzBmBPZZFPJxaZptMbztLOHvHIXJpd
 

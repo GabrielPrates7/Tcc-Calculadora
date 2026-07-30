@@ -1,74 +1,74 @@
-import type { Orcamento, CenarioMaoObra } from '../types';
+import type { IOrcamento, IOrcamentoPayload, ICenarioMaoObra } from '../types';
 
-const API_URL = 'http://localhost:3000/api';
-
-export interface DadosIniciaisOrcamento {
-  listaCenarios: CenarioMaoObra[];
-  taxaFixa: number;
-  listaOrcamentos: Orcamento[];
-}
+const API_BASE_URL = '/api/orcamentos';
 
 export const OrcamentosService = {
-  
-  async buscarDadosIniciais(): Promise<DadosIniciaisOrcamento> {
-    try {
-      const [resHistorico, resFin, resOrc] = await Promise.all([
-        fetch(`${API_URL}/orcamentos/historico-obra`), 
-        fetch(`${API_URL}/orcamentos/taxa-fixa`),
-        fetch(`${API_URL}/orcamentos`)
-      ]);
+    /**
+     * Busca simultaneamente os cenários de mão de obra, a taxa fixa atual e a lista de orçamentos.
+     */
+    async buscarDadosIniciais(): Promise<{
+        listaCenarios: ICenarioMaoObra[];
+        taxaFixa: number;
+        listaOrcamentos: IOrcamento[];
+    }> {
+        const [resCenarios, resTaxa, resOrcamentos] = await Promise.all([
+            fetch(`${API_BASE_URL}/historico-obra`),
+            fetch(`${API_BASE_URL}/taxa-fixa`),
+            fetch(API_BASE_URL)
+        ]);
 
-      if (!resHistorico.ok || !resFin.ok || !resOrc.ok) {
-        throw new Error('Erro ao buscar dados nos endpoints do servidor.');
-      }
+        if (!resCenarios.ok || !resTaxa.ok || !resOrcamentos.ok) {
+            throw new Error('Falha ao carregar dados iniciais do módulo de orçamentos.');
+        }
 
-      const cenarios = await resHistorico.json(); 
-      const dataFin = await resFin.json();
-      const listaOrcamentos = await resOrc.json();
+        const listaCenarios = await resCenarios.json();
+        const dadosTaxa = await resTaxa.json();
+        const listaOrcamentos = await resOrcamentos.json();
 
-      return {
-        listaCenarios: Array.isArray(cenarios) ? cenarios : [],
-        taxaFixa: Number(dataFin?.taxaCustoFixo || 0),
-        listaOrcamentos: Array.isArray(listaOrcamentos) ? listaOrcamentos : []
-      };
-    } catch (error) {
-      console.error("Falha na comunicação com a API:", error);
-      return { 
-        listaCenarios: [], 
-        taxaFixa: 0, 
-        listaOrcamentos: [] 
-      };
+        return {
+            listaCenarios: Array.isArray(listaCenarios) ? listaCenarios : [],
+            taxaFixa: Number(dadosTaxa?.taxaCustoFixo) || 0,
+            listaOrcamentos: Array.isArray(listaOrcamentos) ? listaOrcamentos : []
+        };
+    },
+
+    async listarOrcamentos(): Promise<IOrcamento[]> {
+        const response = await fetch(API_BASE_URL);
+        if (!response.ok) throw new Error('Falha ao listar orçamentos.');
+        return response.json();
+    },
+
+    /**
+     * Centraliza criação e atualização: se existir id, executa PUT; caso contrário, POST.
+     */
+    async salvar(payload: IOrcamentoPayload): Promise<IOrcamento> {
+        const url = payload.id ? `${API_BASE_URL}/${payload.id}` : API_BASE_URL;
+        const method = payload.id ? 'PUT' : 'POST';
+
+        const response = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.error || 'Erro ao salvar orçamento.');
+        }
+        return payload.id ? data.data : data;
+    },
+
+    async excluir(id: number): Promise<void> {
+        const response = await fetch(`${API_BASE_URL}/${id}`, {
+            method: 'DELETE'
+        });
+
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(data.error || 'Erro ao deletar orçamento.');
+        }
     }
-  },
-
-  async salvar(orcamento: Orcamento): Promise<boolean> {
-    try {
-      const isUpdate = !!orcamento.id;
-      const url = isUpdate ? `${API_URL}/orcamentos/${orcamento.id}` : `${API_URL}/orcamentos`;
-      const method = isUpdate ? 'PUT' : 'POST';
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orcamento)
-      });
-
-      return response.ok;
-    } catch (error) {
-      console.error("Erro ao persistir orçamento:", error);
-      return false;
-    }
-  },
-
-  async excluir(id: number): Promise<boolean> {
-    try {
-      const response = await fetch(`${API_URL}/orcamentos/${id}`, { 
-        method: 'DELETE' 
-      });
-      return response.ok;
-    } catch (error) {
-      console.error(`Erro ao remover orçamento ${id}:`, error);
-      return false;
-    }
-  }
 };
+
+// Alias de compatibilidade para evitar quebra de contratos em outros arquivos
+export const orcamentosService = OrcamentosService;

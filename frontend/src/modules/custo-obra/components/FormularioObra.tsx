@@ -53,11 +53,8 @@ export function FormularioObra({ onSalvarSucesso, obraEmEdicao, onCancelarEdicao
                 setCliente(obraEmEdicao.cliente);
                 
                 const recursosFormatados: RecursoAlocado[] = obraEmEdicao.recursos.map(r => {
-                    // Descobre quantas horas cabem a cada profissional
                     const horasIndividuais = r.horas_estimadas / r.qtd_profissionais;
-                    
-                    // INTELIGÊNCIA DE UX (Heurística): 
-                    // Se as horas forem múltiplas exatas de 8, converte visualmente para "Dias"
+                    // Dedução inteligente: se for múltiplo exato de 8, visualiza em "Dias"
                     const isDia = horasIndividuais > 0 && horasIndividuais % HORAS_PADRAO_DIA === 0;
 
                     return {
@@ -89,6 +86,7 @@ export function FormularioObra({ onSalvarSucesso, obraEmEdicao, onCancelarEdicao
     const handleUpdateTempo = (funcao_id: number, tempo: number) => setRecursos(prev => prev.map(r => r.funcao_id === funcao_id ? { ...r, tempo: tempo < 0 ? 0 : tempo } : r));
     const handleToggleUnidade = (funcao_id: number, novaUnidade: 'horas' | 'dias') => setRecursos(prev => prev.map(r => r.funcao_id === funcao_id ? { ...r, unidade: novaUnidade } : r));
 
+    // CÁLCULO DE SUBTOTAL: Multiplica (Tempo × Qtd Profissionais × Taxa Unitária)
     const custoTotalMaoDeObra = useMemo(() => {
         return recursos.reduce((total, recurso) => {
             const taxa = taxas.find(t => t.funcao_id === recurso.funcao_id);

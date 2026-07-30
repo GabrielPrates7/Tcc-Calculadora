@@ -44,8 +44,8 @@ router.get('/taxas', async (req: Request, res: Response) => {
                 COALESCE(SUM(f.custo_total_mensal), 0) AS custo_mensal_setor,
                 (COUNT(f.id) * func.base_horas_mensais) AS horas_totais_setor,
                 
-                -- CUSTO HORA (CH): Unitário (Reflete os R$ 26,46 da planilha)
-                -- Pega o total do setor e divide pelas (horas * qtd de profissionais)
+                -- CUSTO HORA (CH): Unitário médio (Ex: R$ 26,46)
+                -- Soma do setor / (Qtd Funcionários * 176h)
                 CASE 
                     WHEN COUNT(f.id) > 0 THEN 
                         ROUND((SUM(f.custo_total_mensal) / (COUNT(f.id) * 22 * 8))::numeric, 6)
@@ -53,11 +53,11 @@ router.get('/taxas', async (req: Request, res: Response) => {
                         COALESCE(func.custo_hora_mercado, 0)::numeric
                 END AS custo_hora_calculado,
 
-                -- CUSTO DIA (CD): Global/Setor Inteiro (Reflete os R$ 634,97 da planilha)
-                -- Pega o total do setor e divide direto pelos 22 dias
+                -- CUSTO DIA (CD): Unitário médio (Ex: R$ 211,66)
+                -- Soma do setor / (Qtd Funcionários * 22 dias)
                 CASE 
                     WHEN COUNT(f.id) > 0 THEN 
-                        ROUND((SUM(f.custo_total_mensal) / 22)::numeric, 6)
+                        ROUND((SUM(f.custo_total_mensal) / (COUNT(f.id) * 22))::numeric, 6)
                     ELSE 
                         COALESCE(func.custo_hora_mercado * 8, 0)::numeric
                 END AS custo_dia_calculado
@@ -119,7 +119,7 @@ router.post('/', async (req: Request<{}, {}, NovaObraBody>, res: Response): Prom
 });
 
 // ============================================================================
-// NOVA ROTA 3: ATUALIZAR (PUT /:id)
+// ROTA 3: ATUALIZAR ORÇAMENTO (PUT /:id)
 // ============================================================================
 router.put('/:id', async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
