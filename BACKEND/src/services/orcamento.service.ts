@@ -77,7 +77,7 @@ export class OrcamentoService {
             ),
             CenariosHistorico AS (
                 SELECT 
-                    h.id,
+                    (h.id + 100000) AS id,
                     COALESCE(h.titulo, 'Cenário #' || h.id) AS titulo,
                     CAST(h.valor_unitario_final AS numeric(10,2)) AS "valorUnitario",
                     'horas' AS "unidade",
@@ -92,7 +92,7 @@ export class OrcamentoService {
                     o.titulo || COALESCE(' (' || o.cliente || ')', '') AS titulo,
                     CAST(o.custo_total_estimado AS numeric(10,2)) AS "valorUnitario",
                     'total da obra' AS "unidade",
-                    'horas' AS "tipoTempo",
+                    COALESCE((SELECT c.tipo_tempo FROM public.configuracao_producao c LIMIT 1), 'horas') AS "tipoTempo",
                     TO_CHAR(o.criado_em, 'YYYY-MM-DD') AS "dataCriacao"
                 FROM public.obras o
                 WHERE o.custo_total_estimado IS NOT NULL

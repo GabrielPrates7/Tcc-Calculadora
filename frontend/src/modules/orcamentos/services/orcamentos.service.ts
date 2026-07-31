@@ -1,35 +1,48 @@
 import type { IOrcamento, IOrcamentoPayload, ICenarioMaoObra } from '../types';
 
-const API_BASE_URL = '/api/orcamentos';
+const API_BASE_URL = 'http://localhost:3000/api/orcamentos';
 
 export const OrcamentosService = {
     /**
-     * Busca simultaneamente os cenários de mão de obra, a taxa fixa atual e a lista de orçamentos.
+     * Carrega os dados de forma isolada. Se um endpoint falhar, os outros mantêm a renderização na tela.
      */
     async buscarDadosIniciais(): Promise<{
         listaCenarios: ICenarioMaoObra[];
         taxaFixa: number;
         listaOrcamentos: IOrcamento[];
     }> {
-        const [resCenarios, resTaxa, resOrcamentos] = await Promise.all([
+        const [resCenarios, resTaxa, resOrcamentos] = await Promise.allSettled([
             fetch(`${API_BASE_URL}/historico-obra`),
             fetch(`${API_BASE_URL}/taxa-fixa`),
             fetch(API_BASE_URL)
         ]);
 
-        if (!resCenarios.ok || !resTaxa.ok || !resOrcamentos.ok) {
-            throw new Error('Falha ao carregar dados iniciais do módulo de orçamentos.');
+        let listaCenarios: ICenarioMaoObra[] = [];
+        let taxaFixa = 0;
+        let listaOrcamentos: IOrcamento[] = [];
+
+        if (resCenarios.status === 'fulfilled' && resCenarios.value.ok) {
+            const data = await resCenarios.value.json();
+            listaCenarios = Array.isArray(data) ? data : [];
+        } else {
+            console.error('Erro na rota /historico-obra:', resCenarios);
         }
 
-        const listaCenarios = await resCenarios.json();
-        const dadosTaxa = await resTaxa.json();
-        const listaOrcamentos = await resOrcamentos.json();
+        if (resTaxa.status === 'fulfilled' && resTaxa.value.ok) {
+            const data = await resTaxa.value.json();
+            taxaFixa = Number(data?.taxaCustoFixo) || 0;
+        } else {
+            console.error('Erro na rota /taxa-fixa:', resTaxa);
+        }
 
-        return {
-            listaCenarios: Array.isArray(listaCenarios) ? listaCenarios : [],
-            taxaFixa: Number(dadosTaxa?.taxaCustoFixo) || 0,
-            listaOrcamentos: Array.isArray(listaOrcamentos) ? listaOrcamentos : []
-        };
+        if (resOrcamentos.status === 'fulfilled' && resOrcamentos.value.ok) {
+            const data = await resOrcamentos.value.json();
+            listaOrcamentos = Array.isArray(data) ? data : [];
+        } else {
+            console.error('Erro na rota /orcamentos:', resOrcamentos);
+        }
+
+        return { listaCenarios, taxaFixa, listaOrcamentos };
     },
 
     async listarOrcamentos(): Promise<IOrcamento[]> {
@@ -38,9 +51,6 @@ export const OrcamentosService = {
         return response.json();
     },
 
-    /**
-     * Centraliza criação e atualização: se existir id, executa PUT; caso contrário, POST.
-     */
     async salvar(payload: IOrcamentoPayload): Promise<IOrcamento> {
         const url = payload.id ? `${API_BASE_URL}/${payload.id}` : API_BASE_URL;
         const method = payload.id ? 'PUT' : 'POST';
@@ -70,5 +80,4 @@ export const OrcamentosService = {
     }
 };
 
-// Alias de compatibilidade para evitar quebra de contratos em outros arquivos
 export const orcamentosService = OrcamentosService;

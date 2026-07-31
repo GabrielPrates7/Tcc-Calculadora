@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Briefcase, ChevronRight, Search, Calendar, X } from 'lucide-react';
+import { Briefcase, ChevronRight, Search, X } from 'lucide-react';
 import type { ICenarioMaoObra } from '../types';
 import { formatarBRL } from '../../../utils/formatters';
 import './CustoObraOrcamentos.css';
@@ -17,7 +17,6 @@ const formatarDataBR = (isoDate?: string): string => {
     return isoDate.split('-').reverse().join('/');
 };
 
-// Converte formatos DD/MM/YYYY, YYYY-MM-DD ou ISO para YYYY-MM-DD sem regex (zero lint errors)
 const normalizarDataParaComparacao = (val?: string): string => {
     if (!val) return '';
     if (val.charAt(2) === '/') {
@@ -116,96 +115,65 @@ export function CustoObraOrcamentos({
                             </button>
                         </div>
 
-                        <div className="modal-base-filtros" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                            <div className="base-search" style={{ flex: 1, minWidth: '160px' }}>
+                        <div className="modal-base-filtros">
+                            <div className="base-search">
                                 <Search size={16} color="#64748b" />
                                 <input
                                     type="text"
-                                    placeholder="Buscar por nome..."
+                                    placeholder="Buscar por nome da obra ou cliente..."
                                     value={buscaCenario}
                                     onChange={e => setBuscaCenario(e.target.value)}
                                 />
                             </div>
 
-                            <div className="base-date-filter" style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                background: '#f8fafc',
-                                border: '1px solid #cbd5e1',
-                                borderRadius: '8px',
-                                padding: '0 8px',
-                                height: '38px',
-                                flexWrap: 'nowrap'
-                            }}>
-                                <Calendar size={14} color="#64748b" style={{ flexShrink: 0 }} />
-                                <input
-                                    type="date"
-                                    value={dataInicio}
-                                    onChange={e => setDataInicio(e.target.value)}
-                                    style={{
-                                        border: 'none',
-                                        background: 'transparent',
-                                        fontSize: '0.8rem',
-                                        color: '#0f172a',
-                                        outline: 'none',
-                                        cursor: 'pointer'
-                                    }}
-                                    title="Data inicial do período"
-                                />
-                                <span style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 600 }}>a</span>
-                                <input
-                                    type="date"
-                                    value={dataFim}
-                                    onChange={e => setDataFim(e.target.value)}
-                                    style={{
-                                        border: 'none',
-                                        background: 'transparent',
-                                        fontSize: '0.8rem',
-                                        color: '#0f172a',
-                                        outline: 'none',
-                                        cursor: 'pointer'
-                                    }}
-                                    title="Data final do período"
-                                />
-                                {isPeriodoAtivo && (
-                                    <button
-                                        type="button"
-                                        onClick={handleLimparPeriodo}
-                                        style={{
-                                            background: 'transparent',
-                                            border: 'none',
-                                            cursor: 'pointer',
-                                            padding: '2px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            color: '#94a3b8'
-                                        }}
-                                        title="Limpar filtro de período (Ver todas as datas)"
-                                    >
-                                        <X size={14} />
-                                    </button>
-                                )}
-                            </div>
+                            <div className="filter-row-secondary">
+                                <div className="date-range-clean">
+                                    <span className="date-label">De</span>
+                                    <input
+                                        type="date"
+                                        className="input-date-clean"
+                                        value={dataInicio}
+                                        onChange={e => setDataInicio(e.target.value)}
+                                        title="Data inicial do período"
+                                    />
+                                    <span className="date-label">até</span>
+                                    <input
+                                        type="date"
+                                        className="input-date-clean"
+                                        value={dataFim}
+                                        onChange={e => setDataFim(e.target.value)}
+                                        title="Data final do período"
+                                    />
+                                    {isPeriodoAtivo && (
+                                        <button
+                                            type="button"
+                                            className="btn-clear-date"
+                                            onClick={handleLimparPeriodo}
+                                            title="Limpar filtro de período"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    )}
+                                </div>
 
-                            <select
-                                className="base-sort"
-                                value={ordemCenario}
-                                onChange={e => setOrdemCenario(e.target.value)}
-                                style={{ height: '38px' }}
-                            >
-                                <option value="az">A-Z</option>
-                                <option value="za">Z-A</option>
-                                <option value="maior">Maior Preço</option>
-                                <option value="menor">Menor Preço</option>
-                            </select>
+                                <select
+                                    className="base-sort"
+                                    value={ordemCenario}
+                                    onChange={e => setOrdemCenario(e.target.value)}
+                                >
+                                    <option value="az">A-Z</option>
+                                    <option value="za">Z-A</option>
+                                    <option value="maior">Maior Preço</option>
+                                    <option value="menor">Menor Preço</option>
+                                </select>
+                            </div>
                         </div>
 
                         <div className="modal-base-lista">
                             {cenariosFiltrados.length === 0 ? (
                                 <div style={{ textAlign: 'center', padding: '30px 10px' }}>
                                     <p className="base-vazia">
-                                        Nenhuma base encontrada {isPeriodoAtivo ? `no período selecionado (${formatarDataBR(dataInicio) || 'início'} até ${formatarDataBR(dataFim) || 'hoje'})` : ''}.
+                                        Nenhuma base encontrada {isPeriodoAtivo ? `no período (${formatarDataBR(dataInicio) || 'início'} até ${formatarDataBR(dataFim) || 'hoje'})` : ''}.
                                     </p>
                                     {isPeriodoAtivo && (
                                         <button
