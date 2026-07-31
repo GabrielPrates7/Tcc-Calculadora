@@ -8,7 +8,7 @@ export interface TaxaFuncao {
     total_funcionarios_ativos: number;
     custo_mensal_setor: number;
     custo_hora_calculado: number;
-    custo_dia_calculado: number; // <-- NOVA MÉTRICA RECEBIDA DA API
+    custo_dia_calculado: number;
 }
 
 export interface RecursoObraInput {
@@ -22,6 +22,7 @@ export interface NovaObraBody {
     titulo: string;
     cliente: string;
     data_entrega?: string | null;
+    tipo_tempo?: 'horas' | 'dias';
     recursos: RecursoObraInput[];
 }
 
@@ -34,6 +35,7 @@ export interface ObraHistorico {
     status: string;
     custo_total_estimado: string; 
     criado_em: string;
+    tipo_tempo?: 'horas' | 'dias';
     recursos: {
         funcao_id: number;
         funcao_nome: string;

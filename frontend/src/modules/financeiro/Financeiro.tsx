@@ -163,7 +163,7 @@ export function Financeiro() {
     const handleSalvarModal = async (dados: Partial<ItemFinanceiro>) => {
         const { tipo, itemEdicao, modo } = modalConfig;
         
-        let sucesso = false; // Controle de fluxo inserido
+        let sucesso = false;
 
         if (tipo === 'faturamento') {
             const novoValor = Number(dados.valor);
@@ -177,7 +177,6 @@ export function Financeiro() {
             sucesso = await salvarItem(rota, { ...dados, id: idParaSalvar });
         }
 
-        // ALERTA: Fim da "falha silenciosa".
         if (!sucesso) {
             alert("O sistema bloqueou o cadastro: O valor excede o limite permitido ou ocorreu um erro de conexão com o banco.");
         }
@@ -215,7 +214,7 @@ export function Financeiro() {
 
     return (
         <div className="financeiro-container">
-            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                 <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
                     <h1>Gestão de Custos Fixos 📉</h1>
                     {infoDatas.label && (

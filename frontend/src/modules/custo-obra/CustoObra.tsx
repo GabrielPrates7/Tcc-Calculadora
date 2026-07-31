@@ -1,12 +1,47 @@
-import { FileDown, Trash2, Search, AlertTriangle, Edit } from 'lucide-react';
+import { useState } from 'react';
+import { FileDown, Trash2, Search, AlertTriangle, Edit, XCircle, Loader2 } from 'lucide-react';
 import { formatarBRL } from '../../utils/formatters';
 import { useCustoObra } from './hooks/useCustoObra';
 import { FormularioObra } from './components/FormularioObra';
 import { RelatorioPDF } from './components/RelatorioPDF';
-import { PDFDownloadLink } from '@react-pdf/renderer';
+import { pdf } from '@react-pdf/renderer';
+import type { ObraHistorico } from './services/custo-obra.service';
 
 export function CustoObra() {
     const { historico, isLoadingHistorico, carregarHistorico, pagination, deleteModal, obraEmEdicao, iniciarEdicao, cancelarEdicao } = useCustoObra();
+    
+    const [baixandoId, setBaixandoId] = useState<number | null>(null);
+
+    const temFiltroAtivo = Boolean(pagination.searchTerm || pagination.dataInicio || pagination.dataFim);
+
+    const handleDownloadPDF = async (item: ObraHistorico) => {
+        try {
+            setBaixandoId(item.id);
+            const blob = await pdf(
+                <RelatorioPDF dados={{
+                    titulo: item.titulo, 
+                    cliente: item.cliente,
+                    dataCriacao: new Date(item.criado_em).toLocaleDateString('pt-BR'),
+                    recursos: item.recursos || [], 
+                    custoTotalMaoDeObra: Number(item.custo_total_estimado)
+                }} />
+            ).toBlob();
+
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `Base-Calculo-${item.titulo.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Erro ao gerar PDF:", error);
+            alert("Não foi possível gerar o arquivo PDF desta base.");
+        } finally {
+            setBaixandoId(null);
+        }
+    };
 
     return (
         <main style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
@@ -32,37 +67,71 @@ export function CustoObra() {
                         Histórico de Bases de Cálculos
                     </h2>
                     
-                    <div style={{ position: 'relative', width: '100%', maxWidth: '350px' }}>
-                        <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                        <input
-                            type="text"
-                            placeholder="Buscar por Obra ou Cliente..."
-                            value={pagination.searchTerm}
-                            onChange={(e) => pagination.setSearchTerm(e.target.value)}
-                            style={{ width: '100%', padding: '10px 10px 10px 38px', borderRadius: '6px', backgroundColor: '#1e293b', border: '1px solid #475569', color: '#f8fafc', outline: 'none', fontSize: '0.9rem', transition: 'border-color 0.2s' }}
-                            onFocus={(e) => e.target.style.borderColor = '#f97316'}
-                            onBlur={(e) => e.target.style.borderColor = '#475569'}
-                        />
+                    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '6px', padding: '0 12px', height: '38px', flexShrink: 0 }}>
+                            <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 'bold' }}>DE</span>
+                            <input
+                                type="date"
+                                value={pagination.dataInicio}
+                                onChange={(e) => pagination.setDataInicio(e.target.value)}
+                                style={{ backgroundColor: 'transparent', border: 'none', color: '#f8fafc', outline: 'none', fontSize: '0.85rem', colorScheme: 'dark', cursor: 'pointer' }}
+                            />
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '6px', padding: '0 12px', height: '38px', flexShrink: 0 }}>
+                            <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 'bold' }}>ATÉ</span>
+                            <input
+                                type="date"
+                                value={pagination.dataFim}
+                                onChange={(e) => pagination.setDataFim(e.target.value)}
+                                style={{ backgroundColor: 'transparent', border: 'none', color: '#f8fafc', outline: 'none', fontSize: '0.85rem', colorScheme: 'dark', cursor: 'pointer' }}
+                            />
+                        </div>
+
+                        <div style={{ position: 'relative', width: '220px', height: '38px', flexShrink: 0 }}>
+                            <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                            <input
+                                type="text"
+                                placeholder="Obra ou Cliente..."
+                                value={pagination.searchTerm}
+                                onChange={(e) => pagination.setSearchTerm(e.target.value)}
+                                style={{ width: '100%', height: '100%', padding: '0 10px 0 34px', borderRadius: '6px', backgroundColor: '#1e293b', border: '1px solid #475569', color: '#f8fafc', outline: 'none', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                                onFocus={(e) => e.target.style.borderColor = '#f97316'}
+                                onBlur={(e) => e.target.style.borderColor = '#475569'}
+                            />
+                        </div>
+
+                        {temFiltroAtivo && (
+                            <button
+                                onClick={pagination.limparFiltros}
+                                style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '38px', padding: '0 14px', backgroundColor: '#334155', border: 'none', color: '#cbd5e1', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '500', flexShrink: 0, transition: 'background-color 0.2s' }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#475569'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#334155'}
+                                title="Limpar todos os filtros"
+                            >
+                                <XCircle size={15} />
+                                Limpar
+                            </button>
+                        )}
                     </div>
                 </div>
 
                 <div>
                     {isLoadingHistorico ? (
                         <div style={{ color: '#94a3b8', textAlign: 'center', padding: '40px' }}>Carregando histórico...</div>
-                    ) : pagination.totalItems === 0 && pagination.searchTerm === '' ? (
+                    ) : pagination.totalItems === 0 && !temFiltroAtivo ? (
                         <div style={{ color: '#94a3b8', textAlign: 'center', padding: '40px', margin: '20px', border: '1px dashed #475569', borderRadius: '8px', backgroundColor: '#0f172a' }}>
                             Nenhuma base de cálculo foi salva no sistema ainda.
                         </div>
-                    ) : pagination.totalItems === 0 && pagination.searchTerm !== '' ? (
+                    ) : pagination.totalItems === 0 && temFiltroAtivo ? (
                         <div style={{ color: '#94a3b8', textAlign: 'center', padding: '40px', margin: '20px', border: '1px dashed #475569', borderRadius: '8px', backgroundColor: '#0f172a' }}>
-                            Nenhum registro encontrado para "{pagination.searchTerm}".
+                            Nenhum registro encontrado para o período ou busca informada.
                         </div>
                     ) : (
                         <div style={{ overflowX: 'auto' }}>
                             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', tableLayout: 'fixed' }}>
                                 <thead>
                                     <tr>
-                                        {/* Definindo larguras fixas nas colunas para o Ellipsis funcionar perfeitamente */}
                                         <th style={{ width: '30%', padding: '15px 20px', borderBottom: '1px solid #334155', backgroundColor: '#0f172a', color: '#cbd5e1', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 'bold' }}>Obra / Projeto</th>
                                         <th style={{ width: '20%', padding: '15px 20px', borderBottom: '1px solid #334155', backgroundColor: '#0f172a', color: '#cbd5e1', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 'bold' }}>Cliente</th>
                                         <th style={{ width: '15%', padding: '15px 20px', borderBottom: '1px solid #334155', backgroundColor: '#0f172a', color: '#cbd5e1', fontSize: '0.85rem', textTransform: 'uppercase', fontWeight: 'bold' }}>Data</th>
@@ -73,8 +142,6 @@ export function CustoObra() {
                                 <tbody>
                                     {historico.map((item) => (
                                         <tr key={item.id} style={{ borderBottom: '1px solid #334155', backgroundColor: '#1e293b' }}>
-                                            
-                                            {/* CORREÇÃO UX: Truncamento com reticências (...) e Tooltip nativo (title) */}
                                             <td 
                                                 style={{ padding: '15px 20px', color: '#f8fafc', fontWeight: '500', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
                                                 title={item.titulo}
@@ -107,20 +174,18 @@ export function CustoObra() {
                                                         <Edit size={18} />
                                                     </button>
 
-                                                    <PDFDownloadLink
-                                                        document={
-                                                            <RelatorioPDF dados={{
-                                                                titulo: item.titulo, cliente: item.cliente,
-                                                                dataCriacao: new Date(item.criado_em).toLocaleDateString('pt-BR'),
-                                                                recursos: item.recursos, custoTotalMaoDeObra: Number(item.custo_total_estimado)
-                                                            }} />
-                                                        }
-                                                        fileName={`Base-Calculo-${item.titulo}.pdf`}
-                                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f172a', color: '#38bdf8', border: '1px solid #0369a1', padding: '8px', borderRadius: '6px', textDecoration: 'none' }}
+                                                    <button
+                                                        onClick={() => handleDownloadPDF(item)}
+                                                        disabled={baixandoId === item.id}
+                                                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#0f172a', color: baixandoId === item.id ? '#64748b' : '#38bdf8', border: '1px solid #0369a1', padding: '8px', borderRadius: '6px', cursor: baixandoId === item.id ? 'wait' : 'pointer' }}
                                                         title="Baixar Relatório em PDF"
                                                     >
-                                                        {({ loading }) => (loading ? <span style={{ fontSize: '0.7rem', padding: '0 5px' }}>...</span> : <FileDown size={18} />)}
-                                                    </PDFDownloadLink>
+                                                        {baixandoId === item.id ? (
+                                                            <Loader2 size={18} style={{ animation: 'spin 1s linear infinite' }} />
+                                                        ) : (
+                                                            <FileDown size={18} />
+                                                        )}
+                                                    </button>
 
                                                     <button
                                                         onClick={() => deleteModal.open(item.id)}

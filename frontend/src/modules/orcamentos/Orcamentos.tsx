@@ -4,7 +4,7 @@ import { useOrcamentos } from './hooks/useOrcamentos';
 import { CalculadoraOrcamento } from './components/CalculadoraOrcamento';
 import { ListaOrcamentos } from './components/ListaOrcamentos';
 import { ModalDemonstrativo } from './components/ModalDemonstrativo';
-import type { Orcamento } from './types';
+import type { Orcamento, IOrcamentoPayload } from './types';
 import './Orcamentos.css';
 
 export function Orcamentos() {
@@ -24,9 +24,9 @@ export function Orcamentos() {
     
     // Estados para Filtro e Ordenação
     const [busca, setBusca] = useState('');
-    const [ordenacao, setOrdenacao] = useState('data_desc'); // Padrão: Mais recentes primeiro
+    const [ordenacao, setOrdenacao] = useState('data_desc');
 
-    // Helpers
+    // Helpers de Interface
     const handleEditar = (orc: Orcamento) => {
         setIdEditando(orc.id || null);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -36,12 +36,19 @@ export function Orcamentos() {
         setIdEditando(null);
     };
 
+    // Adaptador de tipagem estrita
+    const handleSalvarOrcamento = async (payload: IOrcamentoPayload): Promise<boolean> => {
+        const dadosNormalizados: Orcamento = {
+            ...(payload as unknown as Orcamento),
+            preco_venda: Number(payload.preco_venda) || 0
+        };
+        return await salvarOrcamento(dadosNormalizados);
+    };
+
     // Filtra o objeto completo para edição
     const orcamentoEdicao = listaOrcamentos.find(o => o.id === idEditando) || null;
 
     // --- MOTOR DE FILTRAGEM E ORDENAÇÃO ---
-    
-    // 1. Primeiro filtramos pelo que foi digitado
     const orcamentosProcessados = listaOrcamentos.filter(orc => {
         const termo = busca.toLowerCase();
         const matchCliente = (orc.cliente || '').toLowerCase().includes(termo);
@@ -49,7 +56,6 @@ export function Orcamentos() {
         return matchCliente || matchProduto;
     });
 
-    // 2. Depois ordenamos o resultado conforme o select
     orcamentosProcessados.sort((a, b) => {
         switch (ordenacao) {
             case 'data_desc': return (b.id || 0) - (a.id || 0);
@@ -62,28 +68,36 @@ export function Orcamentos() {
         }
     });
 
-    if (loading) return <div style={{padding: 40, color:'white'}}>Carregando sistema...</div>;
+    if (loading) return <div style={{ padding: 40, color: 'white' }}>Carregando sistema...</div>;
 
     return (
         <div className="orcamentos-container">
-            <h1>Calculadora de Preços 🏛️</h1>
-            
             <div className="orcamento-grid">
                 
                 {/* ESQUERDA: Form + Cálculo */}
-                <CalculadoraOrcamento 
-                    key={orcamentoEdicao?.id || 'novo_orcamento'} 
-                    listaCenarios={listaCenarios}
-                    taxaFixa={taxaFixa}
-                    orcamentoEdicao={orcamentoEdicao}
-                    onSalvar={salvarOrcamento}
-                    onCancelarEdicao={handleCancelarEdicao}
-                />
+                <aside style={{ width: '100%' }}>
+                    <div className="header-secao-coluna">
+                        <h2>Calculadora de Preços 🏛️</h2>
+                    </div>
+
+                    <CalculadoraOrcamento 
+                        key={orcamentoEdicao?.id || 'novo_orcamento'} 
+                        listaCenarios={listaCenarios}
+                        taxaFixa={taxaFixa}
+                        orcamentoEdicao={orcamentoEdicao}
+                        onSalvar={handleSalvarOrcamento}
+                        onCancelarEdicao={handleCancelarEdicao}
+                    />
+                </aside>
 
                 {/* DIREITA: Tabela com Barra de Pesquisa e Filtros */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                <main style={{ display: 'flex', flexDirection: 'column', gap: '15px', minWidth: 0 }}>
                     
-                    {/* --- BARRA DE FERRAMENTAS MELHORADA --- */}
+                    <div className="header-secao-coluna">
+                        <h2>Orçamentos Salvos 📋</h2>
+                    </div>
+
+                    {/* --- BARRA DE FERRAMENTAS --- */}
                     <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                         
                         {/* Campo de Busca */}
@@ -105,8 +119,8 @@ export function Orcamentos() {
                                     outline: 'none', 
                                     width: '100%', 
                                     fontSize: '0.95rem', 
-                                    color: '#0f172a', /* <-- Letra escura garantida */
-                                    backgroundColor: 'transparent' /* <-- Remove o fundo preto do input */
+                                    color: '#0f172a',
+                                    backgroundColor: 'transparent'
                                 }}
                             />
                         </div>
@@ -146,7 +160,7 @@ export function Orcamentos() {
                         onExcluir={excluirOrcamento}
                         onVerDemonstrativo={setOrcamentoSelecionado}
                     />
-                </div>
+                </main>
             </div>
 
             {/* MODAL */}

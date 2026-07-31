@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { formatarBRL } from '../../../utils/formatters';
-import { CustoObraService, type TaxaFuncao, type ObraHistorico } from '../services/custo-obra.service';
+import { CustoObraService, type TaxaFuncao, type ObraHistorico, type NovaObraBody } from '../services/custo-obra.service';
 import { Plus, Trash2, Search, Clock, Calendar, Users, X } from 'lucide-react'; 
 
 interface RecursoAlocado {
@@ -54,8 +54,7 @@ export function FormularioObra({ onSalvarSucesso, obraEmEdicao, onCancelarEdicao
                 
                 const recursosFormatados: RecursoAlocado[] = obraEmEdicao.recursos.map(r => {
                     const horasIndividuais = r.horas_estimadas / r.qtd_profissionais;
-                    // Dedução inteligente: se for múltiplo exato de 8, visualiza em "Dias"
-                    const isDia = horasIndividuais > 0 && horasIndividuais % HORAS_PADRAO_DIA === 0;
+                    const isDia = obraEmEdicao.tipo_tempo === 'dias' || (horasIndividuais > 0 && horasIndividuais % HORAS_PADRAO_DIA === 0);
 
                     return {
                         funcao_id: r.funcao_id,
@@ -86,7 +85,6 @@ export function FormularioObra({ onSalvarSucesso, obraEmEdicao, onCancelarEdicao
     const handleUpdateTempo = (funcao_id: number, tempo: number) => setRecursos(prev => prev.map(r => r.funcao_id === funcao_id ? { ...r, tempo: tempo < 0 ? 0 : tempo } : r));
     const handleToggleUnidade = (funcao_id: number, novaUnidade: 'horas' | 'dias') => setRecursos(prev => prev.map(r => r.funcao_id === funcao_id ? { ...r, unidade: novaUnidade } : r));
 
-    // CÁLCULO DE SUBTOTAL: Multiplica (Tempo × Qtd Profissionais × Taxa Unitária)
     const custoTotalMaoDeObra = useMemo(() => {
         return recursos.reduce((total, recurso) => {
             const taxa = taxas.find(t => t.funcao_id === recurso.funcao_id);
@@ -105,8 +103,12 @@ export function FormularioObra({ onSalvarSucesso, obraEmEdicao, onCancelarEdicao
         
         try {
             setIsSaving(true);
-            const payload = {
-                titulo, cliente,
+            
+            // CORREÇÃO: Anotação explícita ': NovaObraBody' evita o erro ts(2345) de alargamento de tipo (string -> 'horas' | 'dias')
+            const payload: NovaObraBody = {
+                titulo, 
+                cliente,
+                tipo_tempo: recursosFiltrados.some(r => r.unidade === 'dias') ? 'dias' : 'horas',
                 recursos: recursosFiltrados.map(r => {
                     const taxa = taxas.find(t => t.funcao_id === r.funcao_id);
                     const isDia = r.unidade === 'dias';

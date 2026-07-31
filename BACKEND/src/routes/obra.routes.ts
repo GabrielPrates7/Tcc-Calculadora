@@ -28,6 +28,7 @@ interface NovaObraBody {
     titulo: string;
     cliente: string;
     data_entrega?: string;
+    tipo_tempo?: 'horas' | 'dias'; // <-- NOVO CAMPO
     recursos: RecursoObraInput[];
 }
 
@@ -44,8 +45,7 @@ router.get('/taxas', async (req: Request, res: Response) => {
                 COALESCE(SUM(f.custo_total_mensal), 0) AS custo_mensal_setor,
                 (COUNT(f.id) * func.base_horas_mensais) AS horas_totais_setor,
                 
-                -- CUSTO HORA (CH): Unitário médio (Ex: R$ 26,46)
-                -- Soma do setor / (Qtd Funcionários * 176h)
+                -- CUSTO HORA (CH): Unitário médio
                 CASE 
                     WHEN COUNT(f.id) > 0 THEN 
                         ROUND((SUM(f.custo_total_mensal) / (COUNT(f.id) * 22 * 8))::numeric, 6)
@@ -53,8 +53,7 @@ router.get('/taxas', async (req: Request, res: Response) => {
                         COALESCE(func.custo_hora_mercado, 0)::numeric
                 END AS custo_hora_calculado,
 
-                -- CUSTO DIA (CD): Unitário médio (Ex: R$ 211,66)
-                -- Soma do setor / (Qtd Funcionários * 22 dias)
+                -- CUSTO DIA (CD): Unitário médio
                 CASE 
                     WHEN COUNT(f.id) > 0 THEN 
                         ROUND((SUM(f.custo_total_mensal) / (COUNT(f.id) * 22))::numeric, 6)
@@ -87,7 +86,7 @@ router.get('/taxas', async (req: Request, res: Response) => {
 // ROTA 2: SALVAR ORÇAMENTO DE OBRA (POST /)
 // ============================================================================
 router.post('/', async (req: Request<{}, {}, NovaObraBody>, res: Response): Promise<void> => {
-    const { titulo, cliente, data_entrega, recursos } = req.body;
+    const { titulo, cliente, data_entrega, tipo_tempo, recursos } = req.body;
     if (!titulo || !cliente || !recursos || recursos.length === 0) {
         res.status(400).json({ error: 'Título, cliente e ao menos um recurso são obrigatórios.' });
         return;
@@ -99,8 +98,19 @@ router.post('/', async (req: Request<{}, {}, NovaObraBody>, res: Response): Prom
             return acc + (recurso.horas_estimadas * recurso.custo_hora_aplicado);
         }, 0);
 
-        const insertObraQuery = `INSERT INTO public.obras (titulo, cliente, data_entrega, custo_total_estimado) VALUES ($1, $2, $3, $4) RETURNING id;`;
-        const obraResult = await client.query(insertObraQuery, [titulo, cliente, data_entrega || null, custoTotalEstimado]);
+        // ATUALIZADO: Gravando tipo_tempo
+        const insertObraQuery = `
+            INSERT INTO public.obras (titulo, cliente, data_entrega, custo_total_estimado, tipo_tempo) 
+            VALUES ($1, $2, $3, $4, $5) 
+            RETURNING id;
+        `;
+        const obraResult = await client.query(insertObraQuery, [
+            titulo, 
+            cliente, 
+            data_entrega || null, 
+            custoTotalEstimado, 
+            tipo_tempo || 'horas'
+        ]);
         const obraId = obraResult.rows[0].id;
 
         const insertRecursoQuery = `INSERT INTO public.obra_recursos_humanos (obra_id, funcao_id, qtd_profissionais, horas_estimadas, custo_hora_aplicado) VALUES ($1, $2, $3, $4, $5);`;
@@ -123,7 +133,7 @@ router.post('/', async (req: Request<{}, {}, NovaObraBody>, res: Response): Prom
 // ============================================================================
 router.put('/:id', async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
-    const { titulo, cliente, data_entrega, recursos } = req.body;
+    const { titulo, cliente, data_entrega, tipo_tempo, recursos } = req.body;
 
     if (!titulo || !cliente || !recursos || recursos.length === 0) {
         res.status(400).json({ error: 'Dados incompletos para atualização.' });
@@ -137,9 +147,12 @@ router.put('/:id', async (req: Request, res: Response): Promise<void> => {
             return acc + (recurso.horas_estimadas * recurso.custo_hora_aplicado);
         }, 0);
         
+        // ATUALIZADO: Atualizando tipo_tempo
         await client.query(
-            `UPDATE public.obras SET titulo = $1, cliente = $2, data_entrega = $3, custo_total_estimado = $4 WHERE id = $5`,
-            [titulo, cliente, data_entrega || null, custoTotalEstimado, id]
+            `UPDATE public.obras 
+             SET titulo = $1, cliente = $2, data_entrega = $3, custo_total_estimado = $4, tipo_tempo = $5 
+             WHERE id = $6`,
+            [titulo, cliente, data_entrega || null, custoTotalEstimado, tipo_tempo || 'horas', id]
         );
 
         await client.query(`DELETE FROM public.obra_recursos_humanos WHERE obra_id = $1`, [id]);
@@ -165,8 +178,9 @@ router.put('/:id', async (req: Request, res: Response): Promise<void> => {
 // ============================================================================
 router.get('/', async (req: Request, res: Response) => {
     try {
+        // ATUALIZADO: Retornando o campo o.tipo_tempo
         const query = `
-            SELECT o.id, o.titulo, o.cliente, o.data_inicio, o.data_entrega, o.status, o.custo_total_estimado, o.criado_em,
+            SELECT o.id, o.titulo, o.cliente, o.data_inicio, o.data_entrega, o.status, o.custo_total_estimado, o.criado_em, o.tipo_tempo,
                 COALESCE(
                     json_agg(
                         json_build_object(

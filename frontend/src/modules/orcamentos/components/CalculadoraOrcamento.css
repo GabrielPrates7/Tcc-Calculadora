@@ -1,61 +1,79 @@
+/* ==========================================================================
+   1. ESTRUTURA PRINCIPAL (PALETA AZUL ESCURO COM BORDA LARANJA COMPLETA)
+   ========================================================================== */
 .card-calculadora {
-    background: white; 
-    padding: 30px; 
-    border-radius: 16px;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
-    border-top: 5px solid #3b82f6; 
+    background: #1e293b; 
+    padding: 28px; 
+    border-radius: 14px;
+    border: 2px solid #f97316;
+    box-shadow: 
+        0 0 18px -4px rgba(249, 115, 22, 0.35), 
+        0 20px 25px -5px rgba(0, 0, 0, 0.4);
     position: sticky; 
     top: 20px;
+    margin-left: 20px;
 }
 
 .card-calculadora h2 { 
     margin-top: 0; 
-    color: #1e293b; 
-    font-size: 1.4rem; 
-    margin-bottom: 25px; 
+    color: #f8fafc; 
+    font-size: 1.35rem; 
+    margin-bottom: 24px; 
     display: flex; 
     align-items: center; 
     gap: 10px; 
     font-weight: 700;
 }
 
-.select-custom {
-    width: 100%; 
-    height: 48px; 
-    box-sizing: border-box; 
-    padding: 0 40px 0 15px; 
-    text-indent: 32px;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px; 
-    font-size: 0.95rem; 
-    font-weight: 600; 
-    color: #0f172a; 
-    background-color: #fff; 
-    cursor: pointer;
-    transition: all 0.2s ease;
-    appearance: none; 
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-    background-repeat: no-repeat;
-    background-position: right 14px center;
-    background-size: 16px;
-    line-height: 46px; 
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+/* ==========================================================================
+   2. OVERRIDE DO SELETOR DE BASE DE CÁLCULO DENTRO DA CALCULADORA
+   ========================================================================== */
+.card-calculadora .secao-cenario {
+    background: #0f172a;
+    border: 1px solid #334155;
+    padding: 14px;
+    border-radius: 10px;
+    margin-bottom: 22px;
 }
 
-/* --- FORMULÁRIOS PADRÃO --- */
+.card-calculadora .secao-cenario label {
+    color: #f97316;
+    font-weight: 700;
+}
+
+.card-calculadora .btn-abrir-modal-base {
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    color: #f8fafc;
+}
+
+.card-calculadora .btn-abrir-modal-base:hover {
+    border-color: #f97316;
+    background-color: #0f172a;
+}
+
+.card-calculadora .base-selecionada-info strong {
+    color: #f8fafc;
+}
+
+.card-calculadora .base-selecionada-info span {
+    color: #94a3b8;
+}
+
+/* ==========================================================================
+   3. INPUTS E FORMULÁRIOS NO TEMA ESCURO
+   ========================================================================== */
 .form-group { 
-    margin-bottom: 18px; 
+    margin-bottom: 16px; 
     position: relative; 
 }
 
 .form-group label { 
     display: block; 
-    margin-bottom: 8px; 
+    margin-bottom: 6px; 
     font-weight: 600; 
-    color: #475569; 
-    font-size: 0.9rem; 
+    color: #cbd5e1; 
+    font-size: 0.85rem; 
 }
 
 .input-icon-wrapper { 
@@ -66,46 +84,57 @@
 
 .input-icon { 
     position: absolute; 
-    left: 18px; 
+    left: 16px; 
     color: #64748b; 
     pointer-events: none; 
     z-index: 2; 
+    transition: color 0.2s;
 }
 
 .form-group input {
     width: 100%; 
-    height: 48px; 
+    height: 46px; 
     box-sizing: border-box; 
-    padding: 0 14px 0 52px;
-    border: 1px solid #cbd5e1;
+    padding: 0 14px 0 46px;
+    border: 1px solid #334155;
     border-radius: 8px; 
     font-size: 0.95rem; 
     font-weight: 500; 
-    color: #1e293b;
-    background-color: #fff; 
+    color: #f8fafc;
+    background-color: #0f172a; 
     transition: all 0.2s ease; 
-    line-height: 46px; 
+    line-height: 44px; 
 }
 
-.select-custom:focus, 
+.form-group input::placeholder {
+    color: #475569;
+}
+
 .form-group input:focus { 
-    border-color: #3b82f6; 
+    border-color: #f97316; 
     outline: none; 
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); 
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15); 
+}
+
+.form-group input:focus ~ .input-icon,
+.input-icon-wrapper:focus-within .input-icon {
+    color: #f97316;
 }
 
 .row-inputs { 
     display: grid; 
     grid-template-columns: 1fr 1fr; 
-    gap: 15px; 
+    gap: 14px; 
 }
 
-/* --- RESUMO DE CUSTOS --- */
+/* ==========================================================================
+   4. RESUMO DE CUSTOS (BREAKDOWN)
+   ========================================================================== */
 .custos-breakdown { 
-    background-color: #f8fafc; 
-    border: 1px solid #e2e8f0; 
+    background-color: #0f172a; 
+    border: 1px solid #334155; 
     border-radius: 10px; 
-    padding: 18px; 
+    padding: 16px; 
     margin-bottom: 20px; 
     margin-top: 10px;
 }
@@ -113,76 +142,93 @@
 .custo-linha { 
     display: flex; 
     justify-content: space-between; 
-    font-size: 0.95rem; 
-    color: #64748b; 
+    font-size: 0.9rem; 
+    color: #94a3b8; 
     margin-bottom: 10px; 
     align-items: center; 
 }
 
 .custo-linha.destaque { 
-    border-top: 2px dashed #cbd5e1; 
+    border-top: 1px dashed #334155; 
     padding-top: 12px; 
     margin-top: 8px; 
     margin-bottom: 0; 
-    color: #0f172a; 
-    font-weight: 800; 
-    font-size: 1.1rem; 
+    color: #f8fafc; 
+    font-weight: 700; 
+    font-size: 1rem; 
 }
 
 .custo-valor { 
     font-family: 'Courier New', Courier, monospace; 
     font-weight: 700; 
-    color: #334155; 
+    color: #f8fafc; 
 }
 
-/* --- CAIXA DE PREÇO FINAL --- */
+.custo-linha.destaque .custo-valor {
+    color: #f97316;
+}
+
+/* ==========================================================================
+   5. CAIXA DE PREÇO FINAL SUGERIDO (DESTAQUE LARANJA)
+   ========================================================================== */
 .resultado-box {
-    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-    border: 2px dashed #38bdf8; 
-    padding: 25px 20px; 
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    border: 1px solid #f97316; 
+    padding: 22px 18px; 
     border-radius: 12px; 
     text-align: center; 
-    margin-top: 25px;
+    margin-top: 20px;
+    box-shadow: 0 10px 15px -3px rgba(249, 115, 22, 0.1);
 }
 
 .resultado-label { 
-    font-size: 0.9rem; 
-    color: #0284c7; 
+    font-size: 0.8rem; 
+    color: #fdba74; 
     text-transform: uppercase; 
     letter-spacing: 1px; 
     font-weight: 800; 
+    display: block;
 }
 
 .resultado-valor { 
-    font-size: 2.5rem; 
-    color: #0369a1; 
+    font-size: 2.4rem; 
+    color: #f97316; 
     font-weight: 900; 
-    margin: 8px 0; 
+    margin: 8px 0 4px 0; 
     letter-spacing: -1px; 
 }
 
-/* --- BOTÕES --- */
+/* ==========================================================================
+   6. BOTÕES DE AÇÃO
+   ========================================================================== */
 .btn-salvar {
     width: 100%; 
-    background-color: #1e293b; 
-    color: white; 
-    padding: 16px; 
+    background-color: #f97316; 
+    color: #ffffff; 
+    padding: 14px; 
     border: none;
-    border-radius: 10px; 
-    font-size: 1.05rem; 
-    font-weight: bold; 
+    border-radius: 8px; 
+    font-size: 1rem; 
+    font-weight: 700; 
     cursor: pointer; 
-    margin-top: 20px; 
-    transition: 0.2s ease-in-out; 
+    margin-top: 18px; 
+    transition: all 0.2s ease; 
     display: flex; 
     align-items: center; 
     justify-content: center; 
     gap: 8px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 6px -1px rgba(249, 115, 22, 0.25);
 }
 
-.btn-salvar:hover { 
-    background-color: #0f172a; 
-    transform: translateY(-2px); 
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); 
+.btn-salvar:hover:not(:disabled) { 
+    background-color: #ea580c; 
+    transform: translateY(-1px); 
+    box-shadow: 0 8px 12px -3px rgba(249, 115, 22, 0.35); 
+}
+
+.btn-salvar:disabled {
+    background-color: #334155;
+    color: #64748b;
+    cursor: not-allowed;
+    box-shadow: none;
 }

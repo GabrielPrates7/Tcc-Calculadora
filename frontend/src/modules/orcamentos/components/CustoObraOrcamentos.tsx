@@ -35,7 +35,7 @@ export function CustoObraOrcamentos({
 }: Props) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [buscaCenario, setBuscaCenario] = useState('');
-    const [ordemCenario, setOrdemCenario] = useState('az');
+    const [ordemCenario, setOrdemCenario] = useState('recente');
     const [dataInicio, setDataInicio] = useState<string>('');
     const [dataFim, setDataFim] = useState<string>('');
 
@@ -54,11 +54,15 @@ export function CustoObraOrcamentos({
                 return matchNome && matchInicio && matchFim;
             })
             .sort((a, b) => {
+                const idA = Number(a?.id) || 0;
+                const idB = Number(b?.id) || 0;
                 const tituloA = a?.titulo || '';
                 const tituloB = b?.titulo || '';
                 const valorA = Number(a?.valorUnitario) || 0;
                 const valorB = Number(b?.valorUnitario) || 0;
 
+                if (ordemCenario === 'recente') return idB - idA;
+                if (ordemCenario === 'antigo') return idA - idB;
                 if (ordemCenario === 'az') return tituloA.localeCompare(tituloB);
                 if (ordemCenario === 'za') return tituloB.localeCompare(tituloA);
                 if (ordemCenario === 'maior') return valorB - valorA;
@@ -101,7 +105,7 @@ export function CustoObraOrcamentos({
                                 : 'Crie uma base no Módulo de Obras'}
                         </span>
                     </div>
-                    <ChevronRight size={20} color="#64748b" style={{ flexShrink: 0 }} />
+                    <ChevronRight size={20} color="#94a3b8" style={{ flexShrink: 0 }} />
                 </button>
             </div>
 
@@ -111,7 +115,7 @@ export function CustoObraOrcamentos({
                         <div className="modal-base-header">
                             <h3>Escolher Base de Cálculo</h3>
                             <button className="btn-close-base" onClick={() => setIsModalOpen(false)}>
-                                <X size={20} />
+                                <X size={18} />
                             </button>
                         </div>
 
@@ -128,22 +132,30 @@ export function CustoObraOrcamentos({
 
                             <div className="filter-row-secondary">
                                 <div className="date-range-clean">
-                                    <span className="date-label">De</span>
-                                    <input
-                                        type="date"
-                                        className="input-date-clean"
-                                        value={dataInicio}
-                                        onChange={e => setDataInicio(e.target.value)}
-                                        title="Data inicial do período"
-                                    />
-                                    <span className="date-label">até</span>
-                                    <input
-                                        type="date"
-                                        className="input-date-clean"
-                                        value={dataFim}
-                                        onChange={e => setDataFim(e.target.value)}
-                                        title="Data final do período"
-                                    />
+                                    <div className="date-input-group">
+                                        <span className="date-label">DE</span>
+                                        <input
+                                            type="date"
+                                            className="input-date-clean"
+                                            value={dataInicio}
+                                            onChange={e => setDataInicio(e.target.value)}
+                                            title="Data inicial do período"
+                                        />
+                                    </div>
+
+                                    <span className="date-divisor">|</span>
+
+                                    <div className="date-input-group">
+                                        <span className="date-label">ATÉ</span>
+                                        <input
+                                            type="date"
+                                            className="input-date-clean"
+                                            value={dataFim}
+                                            onChange={e => setDataFim(e.target.value)}
+                                            title="Data final do período"
+                                        />
+                                    </div>
+
                                     {isPeriodoAtivo && (
                                         <button
                                             type="button"
@@ -151,7 +163,7 @@ export function CustoObraOrcamentos({
                                             onClick={handleLimparPeriodo}
                                             title="Limpar filtro de período"
                                         >
-                                            <X size={14} />
+                                            <X size={12} />
                                         </button>
                                     )}
                                 </div>
@@ -161,6 +173,8 @@ export function CustoObraOrcamentos({
                                     value={ordemCenario}
                                     onChange={e => setOrdemCenario(e.target.value)}
                                 >
+                                    <option value="recente">Mais Recentes</option>
+                                    <option value="antigo">Mais Antigas</option>
                                     <option value="az">A-Z</option>
                                     <option value="za">Z-A</option>
                                     <option value="maior">Maior Preço</option>
@@ -182,11 +196,11 @@ export function CustoObraOrcamentos({
                                             style={{
                                                 marginTop: '10px',
                                                 padding: '6px 14px',
-                                                background: '#f1f5f9',
-                                                border: '1px solid #cbd5e1',
+                                                background: '#1e293b',
+                                                border: '1px solid #334155',
                                                 borderRadius: '6px',
                                                 cursor: 'pointer',
-                                                color: '#334155',
+                                                color: '#f8fafc',
                                                 fontWeight: 600,
                                                 fontSize: '0.85rem'
                                             }}
@@ -205,9 +219,10 @@ export function CustoObraOrcamentos({
                                         <div className="base-item-info" style={{ flex: 1, minWidth: 0, paddingRight: '15px' }}>
                                             <h4
                                                 style={{
-                                                    margin: '0 0 4px 0',
-                                                    color: '#0f172a',
-                                                    fontSize: '1rem',
+                                                    margin: '0 0 6px 0',
+                                                    color: '#f97316',
+                                                    fontSize: '1.05rem',
+                                                    fontWeight: '700',
                                                     whiteSpace: 'nowrap',
                                                     overflow: 'hidden',
                                                     textOverflow: 'ellipsis'
@@ -219,14 +234,22 @@ export function CustoObraOrcamentos({
 
                                             <span style={{
                                                 display: 'inline-block',
-                                                backgroundColor: cenario.tipoTempo === 'dias' ? '#fef3c7' : '#e0f2fe',
-                                                color: cenario.tipoTempo === 'dias' ? '#92400e' : '#0369a1',
+                                                backgroundColor: cenario.tipoTempo === 'dias'
+                                                    ? 'rgba(249, 115, 22, 0.15)'
+                                                    : 'rgba(56, 189, 248, 0.15)',
+                                                color: cenario.tipoTempo === 'dias'
+                                                    ? '#fdba74'
+                                                    : '#7dd3fc',
                                                 padding: '3px 10px',
                                                 borderRadius: '6px',
                                                 fontSize: '0.75rem',
                                                 fontWeight: 700,
                                                 marginTop: '4px',
-                                                border: `1px solid ${cenario.tipoTempo === 'dias' ? '#fde68a' : '#bae6fd'}`
+                                                border: `1px solid ${
+                                                    cenario.tipoTempo === 'dias'
+                                                        ? 'rgba(249, 115, 22, 0.35)'
+                                                        : 'rgba(56, 189, 248, 0.35)'
+                                                }`
                                             }}>
                                                 {cenario.tipoTempo === 'dias'
                                                     ? 'Custo de Mão de Obra em Dias'

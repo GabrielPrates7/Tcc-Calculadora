@@ -45,64 +45,16 @@ export class OrcamentoService {
 
     async listarCenariosMaoObra(): Promise<ICenarioMaoObraDTO[]> {
         const query = `
-            WITH FolhaProducao AS (
-                SELECT COALESCE(SUM(custo_total_mensal), 0) AS custo_folha
-                FROM public.funcionarios 
-                WHERE ativo = true AND setor ILIKE 'producao'
-            ),
-            ConfigAtual AS (
-                SELECT 
-                    COALESCE(dias_trabalhados_mes, 22) AS dias_trabalhados_mes,
-                    COALESCE(horas_trabalhadas_dia, 8) AS horas_trabalhadas_dia,
-                    COALESCE(qtd_unidades, 1) AS qtd_unidades,
-                    COALESCE(tipo_tempo, 'horas') AS tipo_tempo
-                FROM public.configuracao_producao 
-                LIMIT 1
-            ),
-            CenarioTempoReal AS (
-                SELECT 
-                    0 AS id,
-                    'Configuração Atual (Tempo Real)' AS titulo,
-                    ROUND(
-                        (f.custo_folha / GREATEST(
-                            (c.dias_trabalhados_mes * 
-                            CASE WHEN c.tipo_tempo = 'horas' THEN c.horas_trabalhadas_dia ELSE 1 END * 
-                            GREATEST(c.qtd_unidades, 1)), 1
-                        )), 2
-                    )::numeric(10,2) AS "valorUnitario",
-                    'total da obra' AS "unidade",
-                    c.tipo_tempo AS "tipoTempo",
-                    TO_CHAR(CURRENT_DATE, 'YYYY-MM-DD') AS "dataCriacao"
-                FROM FolhaProducao f CROSS JOIN ConfigAtual c
-            ),
-            CenariosHistorico AS (
-                SELECT 
-                    (h.id + 100000) AS id,
-                    COALESCE(h.titulo, 'Cenário #' || h.id) AS titulo,
-                    CAST(h.valor_unitario_final AS numeric(10,2)) AS "valorUnitario",
-                    'horas' AS "unidade",
-                    COALESCE(h.configuracao_usada->>'tipo_tempo', h.configuracao_usada->>'tipo', 'horas') AS "tipoTempo",
-                    TO_CHAR(h.data_alteracao, 'YYYY-MM-DD') AS "dataCriacao"
-                FROM public.historico_custo_obra h
-                WHERE h.valor_unitario_final IS NOT NULL
-            ),
-            CenariosObras AS (
-                SELECT 
-                    o.id,
-                    o.titulo || COALESCE(' (' || o.cliente || ')', '') AS titulo,
-                    CAST(o.custo_total_estimado AS numeric(10,2)) AS "valorUnitario",
-                    'total da obra' AS "unidade",
-                    COALESCE((SELECT c.tipo_tempo FROM public.configuracao_producao c LIMIT 1), 'horas') AS "tipoTempo",
-                    TO_CHAR(o.criado_em, 'YYYY-MM-DD') AS "dataCriacao"
-                FROM public.obras o
-                WHERE o.custo_total_estimado IS NOT NULL
-            )
-            SELECT * FROM CenariosObras
-            UNION ALL
-            SELECT * FROM CenariosHistorico
-            UNION ALL
-            SELECT * FROM CenarioTempoReal
-            ORDER BY id DESC;
+            SELECT 
+                o.id,
+                o.titulo || COALESCE(' (' || o.cliente || ')', '') AS titulo,
+                CAST(o.custo_total_estimado AS numeric(10,2)) AS "valorUnitario",
+                'total da obra' AS "unidade",
+                COALESCE(o.tipo_tempo, 'horas') AS "tipoTempo",
+                TO_CHAR(o.criado_em, 'YYYY-MM-DD') AS "dataCriacao"
+            FROM public.obras o
+            WHERE o.custo_total_estimado IS NOT NULL
+            ORDER BY o.id DESC;
         `;
         const result = await db.query(query);
         return result.rows.map(row => ({

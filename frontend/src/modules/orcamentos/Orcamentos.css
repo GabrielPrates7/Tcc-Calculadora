@@ -1,4 +1,54 @@
-.orcamentos-container { display: flex; flex-direction: column; gap: 20px; padding-bottom: 50px; }
-.orcamentos-container h1 { color: var(--text-primary); font-size: 1.8rem; margin-bottom: 10px; }
-.orcamento-grid { display: grid; grid-template-columns: 380px 1fr; gap: 30px; align-items: start; }
-@media (max-width: 1100px) { .orcamento-grid { grid-template-columns: 1fr; } }
+/* ==========================================================================
+   1. CONTAINER PRINCIPAL (AFASTAMENTO DAS BORDAS ESQUERDA E DIREITA)
+   ========================================================================== */
+.orcamentos-container { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 20px; 
+    padding: 24px 36px 50px 36px; /* 36px nas laterais para afastar do menu e da borda */
+    width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+}
+
+/* ==========================================================================
+   2. TÍTULOS DE SEÇÃO CENTRALIZADOS EM CADA COLUNA
+   ========================================================================== */
+.header-secao-coluna {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid rgba(249, 115, 22, 0.35); /* Linha divisória laranja */
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.header-secao-coluna h2 {
+    color: #f8fafc;
+    font-size: 1.3rem;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    text-align: center;
+}
+
+/* ==========================================================================
+   3. GRID DE LAYOUT (430px PARA A CALCULADORA | RESTANTE PARA A TABELA)
+   ========================================================================== */
+.orcamento-grid { 
+    display: grid; 
+    grid-template-columns: 430px 1fr; 
+    gap: 30px; 
+    align-items: start; 
+    width: 100%;
+}
+
+@media (max-width: 1100px) { 
+    .orcamento-grid { 
+        grid-template-columns: 1fr; 
+    } 
+}

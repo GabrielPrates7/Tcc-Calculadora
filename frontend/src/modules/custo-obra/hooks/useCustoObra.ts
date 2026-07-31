@@ -7,16 +7,36 @@ export function useCustoObra() {
 
     const [currentPage, setCurrentPage] = useState(1);
     const [searchTerm, setSearchTerm] = useState('');
+    
+    // NOVOS ESTADOS: Filtro por período
+    const [dataInicio, setDataInicio] = useState('');
+    const [dataFim, setDataFim] = useState('');
+    
     const itemsPerPage = 8;
 
     const [deleteModalState, setDeleteModalState] = useState<{isOpen: boolean, obraId: number | null}>({ isOpen: false, obraId: null });
-    
-    // NOVO: Estado que guarda a obra que está a ser editada
     const [obraEmEdicao, setObraEmEdicao] = useState<ObraHistorico | null>(null);
 
     const handleSearchChange = (term: string) => {
         setSearchTerm(term);
         setCurrentPage(1); 
+    };
+
+    const handleDataInicioChange = (data: string) => {
+        setDataInicio(data);
+        setCurrentPage(1);
+    };
+
+    const handleDataFimChange = (data: string) => {
+        setDataFim(data);
+        setCurrentPage(1);
+    };
+
+    const limparFiltros = () => {
+        setSearchTerm('');
+        setDataInicio('');
+        setDataFim('');
+        setCurrentPage(1);
     };
 
     const carregarHistorico = useCallback(async () => {
@@ -51,14 +71,33 @@ export function useCustoObra() {
         return () => { isMounted = false; };
     }, []);
 
+    // MOTOR DE FILTRAGEM COMBINADO (Texto + Data Inicial + Data Final)
     const historicoFiltrado = useMemo(() => {
-        if (!searchTerm) return historicoTotal;
-        const lowerSearch = searchTerm.toLowerCase();
-        return historicoTotal.filter(obra => 
-            obra.titulo.toLowerCase().includes(lowerSearch) || 
-            obra.cliente.toLowerCase().includes(lowerSearch)
-        );
-    }, [historicoTotal, searchTerm]);
+        return historicoTotal.filter(obra => {
+            // 1. Filtro por Termo (Título ou Cliente)
+            const lowerSearch = searchTerm.toLowerCase();
+            const correspondeTexto = !searchTerm || 
+                obra.titulo.toLowerCase().includes(lowerSearch) || 
+                obra.cliente.toLowerCase().includes(lowerSearch);
+
+            if (!correspondeTexto) return false;
+
+            // 2. Filtro por Data (criado_em)
+            const dataObra = new Date(obra.criado_em);
+
+            if (dataInicio) {
+                const inicio = new Date(`${dataInicio}T00:00:00`);
+                if (dataObra < inicio) return false;
+            }
+
+            if (dataFim) {
+                const fim = new Date(`${dataFim}T23:59:59`);
+                if (dataObra > fim) return false;
+            }
+
+            return true;
+        });
+    }, [historicoTotal, searchTerm, dataInicio, dataFim]);
 
     const totalItems = historicoFiltrado.length;
     const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -75,10 +114,8 @@ export function useCustoObra() {
         return Array.from({ length: (end - start) + 1 }, (_, i) => start + i);
     };
 
-    // NOVO: Funções de manipulação da edição
     const iniciarEdicao = (obra: ObraHistorico) => {
         setObraEmEdicao(obra);
-        // UX: Rola o ecrã suavemente até ao topo onde está o formulário
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
     
@@ -90,13 +127,17 @@ export function useCustoObra() {
         historico: currentItems, 
         isLoadingHistorico,
         carregarHistorico,
-        obraEmEdicao,       // Exportado para a UI
-        iniciarEdicao,      // Exportado para a UI
-        cancelarEdicao,     // Exportado para a UI
+        obraEmEdicao,
+        iniciarEdicao,
+        cancelarEdicao,
         pagination: {
             currentPage, setCurrentPage, totalPages, totalItems,
             getVisiblePages, indexOfFirstItem, indexOfLastItem,
-            searchTerm, setSearchTerm: handleSearchChange 
+            searchTerm, setSearchTerm: handleSearchChange,
+            // NOVAS PROPRIEDADES EXPORTADAS
+            dataInicio, setDataInicio: handleDataInicioChange,
+            dataFim, setDataFim: handleDataFimChange,
+            limparFiltros
         },
         deleteModal: {
             isOpen: deleteModalState.isOpen,
