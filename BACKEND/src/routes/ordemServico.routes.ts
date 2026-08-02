@@ -8,39 +8,57 @@ const osService = new OrdemServicoService();
 router.get('/', async (req: Request, res: Response) => {
     try {
         const ordens = await osService.listarTodas();
-        res.json(ordens);
-    } catch (error) {
-        console.error("Erro ao listar O.S.:", error);
-        res.status(500).json({ error: 'Erro ao listar Ordens de Serviço' });
+        res.status(200).json(ordens);
+    } catch (error: unknown) {
+        const err = error instanceof Error ? error : new Error('Erro ao listar Ordens de Serviço');
+        console.error("Erro ao listar O.S.:", err.message);
+        res.status(500).json({ error: err.message });
     }
 });
 
-// POST: Gerar O.S. a partir de um Orçamento
+// POST: Gerar O.S. a partir de um Orçamento (Com bloqueio 409 para duplicidade)
 router.post('/', async (req: Request, res: Response) => {
     try {
         const { orcamento_id, data_entrega } = req.body;
-        if (!orcamento_id) {
-            return res.status(400).json({ error: 'ID do orçamento é obrigatório' });
+        
+        const idNumerico = Number(orcamento_id);
+        if (!orcamento_id || isNaN(idNumerico) || idNumerico <= 0) {
+            return res.status(400).json({ error: 'ID do orçamento é obrigatório e deve ser numérico.' });
         }
-        const novaOS = await osService.criarDeOrcamento(Number(orcamento_id), data_entrega);
+
+        const novaOS = await osService.criarDeOrcamento(idNumerico, data_entrega);
         res.status(201).json(novaOS);
-    } catch (error: any) {
-        console.error("Erro ao criar O.S.:", error);
-        res.status(400).json({ error: error.message || 'Erro ao criar Ordem de Serviço' });
+    } catch (error: unknown) {
+        const err = error instanceof Error ? error : new Error('Erro ao criar Ordem de Serviço');
+        console.error("Erro ao criar O.S.:", err.message);
+
+        // Retorna HTTP 409 (Conflict) se o orçamento já possuir O.S. aberta
+        if (err.message.includes('Já existe') || err.message.includes('already exists')) {
+            return res.status(409).json({ 
+                error: 'Este orçamento já possui uma Ordem de Serviço em andamento.' 
+            });
+        }
+
+        res.status(400).json({ error: err.message });
     }
 });
 
 // PATCH: Atualizar status do Kanban ou Financeiro
 router.patch('/:id/status', async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id = Number(req.params.id);
+        if (isNaN(id) || id <= 0) {
+            return res.status(400).json({ error: 'ID da Ordem de Serviço inválido.' });
+        }
+
         const { status_producao, status_financeiro } = req.body;
         
-        const osAtualizada = await osService.atualizarStatus(Number(id), status_producao, status_financeiro);
-        res.json(osAtualizada);
-    } catch (error) {
-        console.error("Erro ao atualizar O.S.:", error);
-        res.status(500).json({ error: 'Erro ao atualizar status' });
+        const osAtualizada = await osService.atualizarStatus(id, status_producao, status_financeiro);
+        res.status(200).json(osAtualizada);
+    } catch (error: unknown) {
+        const err = error instanceof Error ? error : new Error('Erro ao atualizar status');
+        console.error("Erro ao atualizar O.S.:", err.message);
+        res.status(400).json({ error: err.message });
     }
 });
 

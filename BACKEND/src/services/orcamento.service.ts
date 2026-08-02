@@ -67,16 +67,19 @@ export class OrcamentoService {
         }));
     }
 
+    // CORREÇÃO: LEFT JOIN com ordens_servico para retornar a coluna os_id
     async listarOrcamentos() {
         const query = `
             SELECT 
-                id, cliente, nome_produto, custo_mercadoria AS custo_materiais,
-                tempo_gasto AS horas_trabalhadas, lucro_desejado_pct AS lucro_desejado,
-                imposto_pct AS imposto, custo_fixo_pct_snapshot AS taxa_fixa_snapshot,
-                custo_mao_obra_unitario, custo_mao_obra_total, preco_venda, 
-                TO_CHAR(criado_em, 'YYYY-MM-DD') AS criado_em, id_cenario_mo
-            FROM public.orcamentos
-            ORDER BY id DESC;
+                o.id, o.cliente, o.nome_produto, o.custo_mercadoria AS custo_materiais,
+                o.tempo_gasto AS horas_trabalhadas, o.lucro_desejado_pct AS lucro_desejado,
+                o.imposto_pct AS imposto, o.custo_fixo_pct_snapshot AS taxa_fixa_snapshot,
+                o.custo_mao_obra_unitario, o.custo_mao_obra_total, o.preco_venda, 
+                TO_CHAR(o.criado_em, 'YYYY-MM-DD') AS criado_em, o.id_cenario_mo,
+                os.id AS os_id
+            FROM public.orcamentos o
+            LEFT JOIN public.ordens_servico os ON os.orcamento_id = o.id
+            ORDER BY o.id DESC;
         `;
         const result = await db.query(query);
         return result.rows;

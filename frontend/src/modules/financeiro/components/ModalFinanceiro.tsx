@@ -81,14 +81,16 @@ export function ModalFinanceiro({ tipo, itemEdicao, valorFaturamentoAtual, onClo
     const corHeader = tipo === 'despesa' ? '#ef4444' : tipo === 'investimento' ? '#8b5cf6' : '#3b82f6';
 
     return (
-        <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-content" onClick={e => e.stopPropagation()}>
-                <div className="modal-header">
-                    <h2 style={{ display:'flex', alignItems:'center', gap:8 }}>
-                        <span style={{color: corHeader}}>{getIcone()}</span> {getTitulo()}
-                    </h2>
-                    <button className="btn-close" onClick={onClose}><X size={24}/></button>
-                </div>
+    // CORREÇÃO: Removido onClick={onClose}. O modal agora é estático/modal verdadeiro.
+    <div className="modal-overlay">
+        <div className="modal-content">
+            <div className="modal-header">
+                <h2 style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <span style={{color: corHeader}}>{getIcone()}</span> {getTitulo()}
+                </h2>
+                {/* Fechamento via ação explícita do usuário no botão X */}
+                <button className="btn-close" onClick={onClose}><X size={24}/></button>
+            </div>
 
                 <div className="modal-body">
                     {/* --- FORMULÁRIO DE DESPESAS/INVESTIMENTOS --- */}

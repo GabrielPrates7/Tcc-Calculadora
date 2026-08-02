@@ -74,32 +74,23 @@ export function ModalHistorico({ onClose }: Props) {
             const fullData = await res.json();
             console.log("🔥 LOG DEBUG - Dados do Banco:", fullData);
 
-            // ==========================================
-            // 🛡️ MOTOR DE DESERIALIZAÇÃO PROFUNDA
-            // ==========================================
             let backup = fullData.dados_backup ?? fullData.dadosBackup;
 
-            // Loop para descascar o "Double Stringify"
             while (typeof backup === 'string') {
                 try {
                     backup = JSON.parse(backup);
                 } catch { 
-                    break; // Se falhar no parse, interrompe o loop
+                    break;
                 }
             }
 
-            // Garantia estrutural (Fallback se vier nulo/vazio)
             if (!backup || typeof backup !== 'object') {
                 backup = { despesas: [], investimentos: [] };
             }
 
-            // Garante que é estritamente um Array antes de ir para a tabela
             const despesasArchive = Array.isArray(backup.despesas) ? backup.despesas : [];
             console.log("✅ LOG DEBUG - Despesas Prontas para o PDF:", despesasArchive);
 
-            // ==========================================
-            // GERAÇÃO DO PDF
-            // ==========================================
             const doc = new jsPDF();
             
             doc.setFontSize(18);
@@ -141,8 +132,9 @@ export function ModalHistorico({ onClose }: Props) {
     };
 
     return (
-        <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-content" onClick={e => e.stopPropagation()} style={{maxWidth: '600px', position: 'relative'}}>
+        /* CORREÇÃO: Sem onClick={onClose} no backdrop */
+        <div className="modal-overlay">
+            <div className="modal-content" style={{maxWidth: '600px', position: 'relative'}}>
                 <div className="modal-header">
                     <h2><Clock size={20}/> Linha do Tempo</h2>
                     <button className="btn-close" onClick={onClose}><X size={24}/></button>

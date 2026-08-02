@@ -6,7 +6,6 @@ import { useState } from 'react';
 interface Props {
     isOpen: boolean;
     onClose: () => void;
-    // MUDANÇA: Agora a função retorna uma Promise booleana
     onConfirm: (descricao: string) => Promise<boolean>;
 }
 
@@ -19,17 +18,15 @@ export function ModalNovoCheckpoint({ isOpen, onClose, onConfirm }: Props) {
 
     const handleConfirm = async () => {
         if (!descricao.trim()) {
-            // MENSAGEM INLINE NO LUGAR DO ALERT FEIO
             alert("Por favor, informe um nome para o checkpoint."); 
             return;
         }
 
         setIsSubmitting(true);
-        const sucesso = await onConfirm(descricao); // Chama a API lá no Maestro
+        const sucesso = await onConfirm(descricao); 
         
         if (sucesso) {
             setIsSuccess(true);
-            // Fecha o modal automaticamente após 2 segundos
             setTimeout(() => {
                 fecharE_Resetar();
             }, 2000);
@@ -46,11 +43,11 @@ export function ModalNovoCheckpoint({ isOpen, onClose, onConfirm }: Props) {
     };
 
     return (
-        <div className="modal-overlay" onClick={fecharE_Resetar} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0, 0, 0, 0.4)', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999 }}>
+        /* CORREÇÃO: Sem onClick={fecharE_Resetar} no backdrop */
+        <div className="modal-overlay" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0, 0, 0, 0.4)', position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999 }}>
             
-            <div className="modal-content" onClick={e => e.stopPropagation()} style={{ backgroundColor: '#ffffff', borderRadius: '12px', width: '100%', maxWidth: '450px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', position: 'relative', overflow: 'hidden' }}>
+            <div className="modal-content" style={{ backgroundColor: '#ffffff', borderRadius: '12px', width: '100%', maxWidth: '450px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', position: 'relative', overflow: 'hidden' }}>
                 
-                {/* TELA DE SUCESSO (Renderiza apenas se isSuccess for true) */}
                 {isSuccess ? (
                     <div style={{ padding: '40px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
                         <CheckCircle size={64} color="#059669" style={{ marginBottom: '16px' }} />
@@ -59,12 +56,10 @@ export function ModalNovoCheckpoint({ isOpen, onClose, onConfirm }: Props) {
                     </div>
                 ) : (
                     <>
-                        {/* Botão X (Fechar) */}
                         <button onClick={fecharE_Resetar} style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
                             <X size={20} />
                         </button>
 
-                        {/* Corpo do Modal de Criação */}
                         <div style={{ padding: '24px 24px 16px 24px', display: 'flex', gap: '16px' }}>
                             <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#ecfdf5' }}>
                                 <Save size={24} color="#059669" />
@@ -94,7 +89,6 @@ export function ModalNovoCheckpoint({ isOpen, onClose, onConfirm }: Props) {
                             </div>
                         </div>
 
-                        {/* Rodapé com os Botões */}
                         <div style={{ backgroundColor: '#f8fafc', padding: '16px 24px', display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '1px solid #f1f5f9' }}>
                             <button onClick={fecharE_Resetar} disabled={isSubmitting} style={{ padding: '8px 16px', backgroundColor: '#ffffff', border: '1px solid #cbd5e1', color: '#475569', borderRadius: '6px', fontWeight: 500, fontSize: '0.875rem', cursor: isSubmitting ? 'not-allowed' : 'pointer' }}>
                                 Cancelar

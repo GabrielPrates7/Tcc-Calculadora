@@ -1,28 +1,145 @@
-/* ... Mantenha o CSS anterior (modal-overlay, modal-content, etc) ... */
+/* ARQUIVO: src/modules/financeiro/components/ModalFinanceiro.css */
 
-/* ADICIONE NO FINAL DO ARQUIVO: */
+/* --- ESTRUTURA DO MODAL --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 20px;
+    box-sizing: border-box;
+}
 
-/* Layout em Linha (2 colunas) */
+.modal-content {
+    background-color: #ffffff;
+    width: 100%;
+    max-width: 520px;
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: modalSlideIn 0.2s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 24px;
+    border-bottom: 1px solid #e2e8f0;
+    background-color: #f8fafc;
+}
+
+.modal-header h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+}
+
+.btn-close {
+    background: transparent;
+    border: none;
+    color: #64748b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 6px;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.btn-close:hover {
+    background-color: #e2e8f0;
+    color: #0f172a;
+}
+
+.modal-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* --- ISOLAMENTO DE FORMULÁRIOS (BLINDAGEM CONTRA TEMA ESCURO GERAL) --- */
+.modal-content .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.modal-content .form-group label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #334155; /* Força cor escura e legível */
+    text-align: left;
+}
+
+/* Redefinição explícita para evitar o vazamento do tema escuro global e bordas laranjas */
+.modal-content .form-group input,
+.modal-content .form-group select {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 0.95rem;
+    color: #1e293b;
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    font-family: inherit;
+}
+
+.modal-content .form-group input::placeholder {
+    color: #94a3b8;
+}
+
+.modal-content .form-group input:focus,
+.modal-content .form-group select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
 .form-row {
     display: flex;
     gap: 16px;
 }
 
-/* Switches Container */
+/* --- SWITCHES DE ESTADO (REGRA DE NEGÓCIO) --- */
 .switches-container {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    margin-top: 8px;
-    margin-bottom: 8px;
+    margin-top: 4px;
+    margin-bottom: 4px;
 }
 
-/* O Card do Switch */
 .switch-card {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px;
+    padding: 12px;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
     cursor: pointer;
@@ -32,47 +149,92 @@
 
 .switch-card:hover {
     border-color: #cbd5e1;
-    background-color: #fff;
+    background-color: #ffffff;
 }
 
-/* Estado Ativo (Verde/Azul) */
 .switch-card.active {
     background-color: #eff6ff;
     border-color: #3b82f6;
 }
-.switch-card.active .switch-icon { color: #3b82f6; }
-.switch-card.active .switch-toggle { background-color: #3b82f6; }
 
-/* Estado Pago (Verde) */
+.switch-card.active .switch-icon {
+    color: #3b82f6;
+}
+
+.switch-card.active .switch-toggle {
+    background-color: #3b82f6;
+}
+
 .switch-card.paid {
     background-color: #f0fdf4;
     border-color: #22c55e;
 }
-.switch-card.paid .switch-icon { color: #22c55e; }
-.switch-card.paid .switch-toggle { background-color: #22c55e; }
 
-/* Icone */
+.switch-card.paid .switch-icon {
+    color: #22c55e;
+}
+
+.switch-card.paid .switch-toggle {
+    background-color: #22c55e;
+}
+
 .switch-icon {
     color: #94a3b8;
     display: flex;
     align-items: center;
 }
 
-/* Texto */
 .switch-info {
     flex: 1;
     display: flex;
     flex-direction: column;
+    text-align: left;
 }
-.switch-info span { font-size: 0.9rem; font-weight: 500; color: #334155; }
-.switch-info small { font-size: 0.75rem; color: #64748b; }
 
-/* A Bolinha do Toggle */
+.switch-info span {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #334155;
+}
+
+.switch-info small {
+    font-size: 0.75rem;
+    color: #64748b;
+}
+
 .switch-toggle {
-    width: 12px;
-    height: 12px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
     background-color: #cbd5e1;
-    box-shadow: 0 0 0 2px rgba(255,255,255,1);
+    box-shadow: 0 0 0 2px #ffffff;
     transition: background-color 0.2s;
+}
+
+/* --- BOTÃO PRINCIPAL DE SALVAR --- */
+.btn-save-modal {
+    width: 100%;
+    padding: 12px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #ffffff;
+    border: none;
+    outline: none;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: filter 0.2s, opacity 0.2s;
+    margin-top: 8px;
+}
+
+.btn-save-modal:hover:not(:disabled) {
+    filter: brightness(0.92);
+}
+
+.btn-save-modal:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }

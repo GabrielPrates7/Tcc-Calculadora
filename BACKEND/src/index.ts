@@ -6,9 +6,11 @@ import { funcaoRoutes } from './routes/funcao.routes';
 import { funcionarioRoutes } from './routes/funcionario.routes';
 import { financeiroRoutes } from './routes/financeiro.routes';
 import obraRoutes from './routes/obra.routes';
-
-// ✅ 1. ADICIONADO: Importação da rota de Orçamentos
 import orcamentosRoutes from './routes/orcamentos.routes'; 
+import dashboardRoutes from './routes/dashboard.routes';
+
+// 1. CORREÇÃO: Importação das rotas de Ordem de Serviço
+import ordemServicoRoutes from './routes/ordemServico.routes';
 
 const app = express();
 const PORT = 3000;
@@ -21,9 +23,11 @@ app.use('/api/funcoes', funcaoRoutes);
 app.use('/api/funcionarios', funcionarioRoutes);
 app.use('/api/financeiro', financeiroRoutes);
 app.use('/api/obras', obraRoutes);
-
-// ✅ 2. ADICIONADO: Expondo a rota de orçamentos para o Frontend consumir
 app.use('/api/orcamentos', orcamentosRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+
+// 2. CORREÇÃO: Expondo a rota para responder em /api/ordens-servico
+app.use('/api/ordens-servico', ordemServicoRoutes);
 
 app.listen(PORT, () => {
     console.log(`🚀 Servidor backend rodando na porta ${PORT}`);

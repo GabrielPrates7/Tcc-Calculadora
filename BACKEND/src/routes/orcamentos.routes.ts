@@ -83,14 +83,23 @@ router.put('/:id', async (req: Request, res: Response) => {
     }
 });
 
-// --- 4. EXCLUIR ---
+// --- 4. EXCLUIR (Com bloqueio 409 caso haja O.S. vinculada via ON DELETE RESTRICT) ---
 router.delete('/:id', async (req: Request, res: Response) => {
     try {
         await orcamentoService.deletarOrcamento(Number(req.params.id));
         res.json({ message: 'Orçamento excluído' });
     } catch (err: unknown) {
-        console.error("Erro ao excluir:", err);
-        res.status(500).json({ error: 'Erro ao excluir' });
+        const error = err as { code?: string; message?: string };
+        console.error("Erro ao excluir:", error);
+
+        // Identifica violação de chave estrangeira do PostgreSQL (código 23503)
+        if (error.code === '23503' || (error.message && error.message.includes('fk_os_orcamento'))) {
+            return res.status(409).json({ 
+                error: 'Exclusão bloqueada: Este orçamento possui uma Ordem de Serviço vinculada a ele.' 
+            });
+        }
+
+        res.status(500).json({ error: 'Erro ao excluir orçamento.' });
     }
 });
 

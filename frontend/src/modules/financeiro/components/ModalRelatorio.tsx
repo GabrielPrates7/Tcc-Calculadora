@@ -6,7 +6,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { ItemFinanceiro } from '../types';
 import { analisarIntervalo } from '../utils/dateHelper';
-import { formatarBRL } from '../../../utils/formatters'; // IMPORTAÇÃO DA NOVA FUNÇÃO
+import { formatarBRL } from '../../../utils/formatters';
 import './ModalFinanceiro.css';
 
 interface Props {
@@ -25,7 +25,6 @@ export function ModalRelatorio({ despesas, investimentos, onClose, somarFaturame
     const [dataFim, setDataFim] = useState(fimPadrao);
     const [gerando, setGerando] = useState(false);
 
-    // --- CORREÇÃO DO BUG DE DATA (-1 DIA) ---
     const formatarDataSemFuso = (dataString: string) => {
         if (!dataString) return '-';
         const limpa = dataString.substring(0, 10);
@@ -62,7 +61,6 @@ export function ModalRelatorio({ despesas, investimentos, onClose, somarFaturame
                 ? (totalDespesas / faturamentoPeriodo) * 100 
                 : 0;
 
-            // --- GERAÇÃO DO PDF ---
             const doc = new jsPDF();
             const pageWidth = doc.internal.pageSize.width;
             
@@ -109,7 +107,6 @@ export function ModalRelatorio({ despesas, investimentos, onClose, somarFaturame
                 doc.text(value, x + 5, startY + 18);
             };
 
-            // AQUI ESTÃO AS MUDANÇAS NO DESENHO DOS CARDS DO PDF
             drawCard(margin, "Faturamento", formatarBRL(faturamentoPeriodo), AZUL_CLARO);
             drawCard(margin + cardWidth + gap, "Despesas", formatarBRL(totalDespesas), VERMELHO);
             drawCard(margin + (cardWidth + gap) * 2, "Investimentos", formatarBRL(totalInvestimentos), ROXO);
@@ -129,7 +126,7 @@ export function ModalRelatorio({ despesas, investimentos, onClose, somarFaturame
                     d.nome,
                     d.beneficiario || '-',
                     d.pago ? 'Pago' : 'Pendente',
-                    formatarBRL(d.valor) // AQUI ESTÁ A MUDANÇA NA TABELA DE DESPESAS DO PDF
+                    formatarBRL(d.valor)
                 ]),
                 theme: 'striped',
                 headStyles: { fillColor: [239, 68, 68], textColor: 255, fontStyle: 'bold' },
@@ -150,7 +147,7 @@ export function ModalRelatorio({ despesas, investimentos, onClose, somarFaturame
                 body: investimentosFiltrados.map((i: any) => [
                     formatarDataSemFuso(i.dataVencimento),
                     i.nome,
-                    formatarBRL(i.valor) // AQUI ESTÁ A MUDANÇA NA TABELA DE INVESTIMENTOS DO PDF
+                    formatarBRL(i.valor)
                 ]),
                 theme: 'striped',
                 headStyles: { fillColor: [139, 92, 246], textColor: 255, fontStyle: 'bold' },
@@ -181,8 +178,9 @@ export function ModalRelatorio({ despesas, investimentos, onClose, somarFaturame
     };
 
     return (
-        <div className="modal-overlay" onClick={onClose}>
-            <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '450px' }}>
+        /* CORREÇÃO: Sem onClick={onClose} no backdrop */
+        <div className="modal-overlay">
+            <div className="modal-content" style={{ maxWidth: '450px' }}>
                 <div className="modal-header">
                     <h2 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <FileText size={24} color="#475569" /> Relatório PDF

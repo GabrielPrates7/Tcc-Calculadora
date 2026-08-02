@@ -1,16 +1,15 @@
 import type { OrdemServico } from '../types';
 
-const API_URL = 'http://localhost:3000/ordens-servico';
+// CORREÇÃO: Adicionado o prefixo /api para coincidir com o Express
+const API_URL = 'http://localhost:3000/api/ordens-servico';
 
 export const OrdemServicoService = {
-    // Busca todas as O.S. para montar o Kanban
     listarTodas: async (): Promise<OrdemServico[]> => {
         const response = await fetch(API_URL);
         if (!response.ok) throw new Error('Erro ao buscar Ordens de Serviço');
         return response.json();
     },
 
-    // Cria uma nova O.S. a partir de um orçamento aprovado
     criarDeOrcamento: async (orcamentoId: number, dataEntrega?: string) => {
         const response = await fetch(API_URL, {
             method: 'POST',
@@ -24,7 +23,6 @@ export const OrdemServicoService = {
         return response.json();
     },
 
-    // Atualiza a coluna (produção) ou a etiqueta de pagamento (financeiro)
     atualizarStatus: async (id: number, status_producao?: string, status_financeiro?: string) => {
         const response = await fetch(`${API_URL}/${id}/status`, {
             method: 'PATCH',

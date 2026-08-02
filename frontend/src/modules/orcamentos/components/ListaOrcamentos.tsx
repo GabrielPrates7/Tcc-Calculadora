@@ -8,7 +8,7 @@ interface Props {
     lista: Orcamento[];
     idEditando: number | null;
     onEditar: (orc: Orcamento) => void;
-    onExcluir: (id: number) => void;
+    onExcluir: (id: number) => Promise<{ sucesso: boolean; mensagem?: string } | void> | void;
     onVerDemonstrativo: (orc: Orcamento) => void;
 }
 
@@ -18,6 +18,7 @@ type OrcamentoComData = Orcamento & {
     dataCriacao?: string;
     created_at?: string;
     data?: string;
+    os_id?: number;
 };
 
 const normalizarDataParaComparacao = (orc?: OrcamentoComData): string => {
@@ -37,8 +38,9 @@ export function ListaOrcamentos({ lista, idEditando, onEditar, onExcluir, onVerD
     const [dataInicio, setDataInicio] = useState<string>('');
     const [dataFim, setDataFim] = useState<string>('');
 
-    // --- ESTADO DO MODAL DE EXCLUSÃO ---
+    // --- ESTADOS DOS MODAIS ---
     const [orcamentoParaExcluir, setOrcamentoParaExcluir] = useState<Orcamento | null>(null);
+    const [erroModal, setErroModal] = useState<string | null>(null);
 
     // --- ESTADOS DA PAGINAÇÃO ---
     const [paginaAtual, setPaginaAtual] = useState<number>(1);
@@ -73,10 +75,14 @@ export function ListaOrcamentos({ lista, idEditando, onEditar, onExcluir, onVerD
         if (paginaEfetiva < totalPaginas) setPaginaAtual(paginaEfetiva + 1);
     };
 
-    const handleConfirmarExclusao = () => {
-        if (orcamentoParaExcluir?.id) {
-            onExcluir(orcamentoParaExcluir.id);
-            setOrcamentoParaExcluir(null);
+    const handleConfirmarExclusao = async () => {
+        if (!orcamentoParaExcluir?.id) return;
+        const id = orcamentoParaExcluir.id;
+        setOrcamentoParaExcluir(null);
+
+        const resultado = await onExcluir(id);
+        if (resultado && typeof resultado === 'object' && !resultado.sucesso) {
+            setErroModal(resultado.mensagem || 'Não foi possível excluir o orçamento.');
         }
     };
 
@@ -144,38 +150,56 @@ export function ListaOrcamentos({ lista, idEditando, onEditar, onExcluir, onVerD
                                 </td>
                             </tr>
                         ) : (
-                            itensPaginados.map(orc => (
-                                <tr key={orc.id} style={{ backgroundColor: idEditando === orc.id ? '#fff7ed' : 'transparent' }}>
-                                    <td>
-                                        <div style={{ fontWeight: 'bold', color: '#334155' }}>{orc.cliente || 'Sem cliente'}</div>
-                                        <div style={{ fontSize: '0.88rem', color: '#64748b' }}>{orc.nome_produto}</div>
-                                    </td>
-                                    
-                                    <td>{formatarBRL(orc.custo_materiais)}</td>
-                                    
-                                    <td>
-                                        <span className="badge-lucro">
-                                            {Number(orc.lucro_desejado).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
-                                        </span>
-                                    </td>
-                                    
-                                    <td style={{ fontWeight: 'bold', color: '#0f172a' }}>{formatarBRL(orc.preco_venda)}</td>
-                                    
-                                    <td>
-                                        <div className="acoes-td">
-                                            <button className="btn-icon btn-ver" title="Ver Demonstrativo" onClick={() => onVerDemonstrativo(orc)}>
-                                                <Eye size={16} />
-                                            </button>
-                                            <button className="btn-icon" style={{ backgroundColor: '#f59e0b' }} title="Editar" onClick={() => onEditar(orc)}>
-                                                <Edit2 size={16} />
-                                            </button>
-                                            <button className="btn-icon btn-del" title="Excluir" onClick={() => setOrcamentoParaExcluir(orc)}>
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))
+                            itensPaginados.map(orc => {
+                                const orcComOS = orc as OrcamentoComData;
+                                return (
+                                    <tr key={orc.id} style={{ backgroundColor: idEditando === orc.id ? '#fff7ed' : 'transparent' }}>
+                                        <td>
+                                            <div style={{ fontWeight: 'bold', color: '#334155' }}>{orc.cliente || 'Sem cliente'}</div>
+                                            <div style={{ fontSize: '0.88rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                {orc.nome_produto}
+                                                {orcComOS.os_id && (
+                                                    <span style={{
+                                                        backgroundColor: '#eff6ff',
+                                                        color: '#2563eb',
+                                                        border: '1px solid #bfdbfe',
+                                                        padding: '1px 6px',
+                                                        borderRadius: '4px',
+                                                        fontSize: '0.75rem',
+                                                        fontWeight: 'bold'
+                                                    }}>
+                                                        O.S. #{orcComOS.os_id}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </td>
+                                        
+                                        <td>{formatarBRL(orc.custo_materiais)}</td>
+                                        
+                                        <td>
+                                            <span className="badge-lucro">
+                                                {Number(orc.lucro_desejado).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+                                            </span>
+                                        </td>
+                                        
+                                        <td style={{ fontWeight: 'bold', color: '#0f172a' }}>{formatarBRL(orc.preco_venda)}</td>
+                                        
+                                        <td>
+                                            <div className="acoes-td">
+                                                <button className="btn-icon btn-ver" title="Ver Demonstrativo" onClick={() => onVerDemonstrativo(orc)}>
+                                                    <Eye size={16} />
+                                                </button>
+                                                <button className="btn-icon" style={{ backgroundColor: '#f59e0b' }} title="Editar" onClick={() => onEditar(orc)}>
+                                                    <Edit2 size={16} />
+                                                </button>
+                                                <button className="btn-icon btn-del" title="Excluir" onClick={() => setOrcamentoParaExcluir(orc)}>
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })
                         )}
                     </tbody>
                 </table>
@@ -261,6 +285,59 @@ export function ListaOrcamentos({ lista, idEditando, onEditar, onExcluir, onVerD
                                 Sim, excluir
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* --- MODAL ESCURO PARA AVISO DE BLOQUEIO DE EXCLUSÃO (ERR 409) --- */}
+            {erroModal && (
+                <div 
+                    className="modal-delete-overlay" 
+                    onClick={() => setErroModal(null)}
+                    style={{ zIndex: 10005 }}
+                >
+                    <div 
+                        className="modal-delete-content" 
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                            background: '#1e293b',
+                            border: '2px solid #ef4444',
+                            borderRadius: '12px',
+                            padding: '24px',
+                            width: '90%',
+                            maxWidth: '420px',
+                            textAlign: 'center',
+                            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.6)'
+                        }}
+                    >
+                        <div style={{ marginBottom: '12px' }}>
+                            <AlertTriangle size={38} color="#ef4444" style={{ margin: '0 auto' }} />
+                        </div>
+                        
+                        <h3 style={{ color: '#f8fafc', fontSize: '1.2rem', margin: '0 0 10px 0' }}>
+                            Ação Bloqueada
+                        </h3>
+
+                        <p style={{ color: '#94a3b8', fontSize: '0.95rem', marginBottom: '22px', lineHeight: '1.5' }}>
+                            {erroModal}
+                        </p>
+
+                        <button
+                            type="button"
+                            onClick={() => setErroModal(null)}
+                            style={{
+                                background: '#ef4444',
+                                color: '#ffffff',
+                                border: 'none',
+                                padding: '10px 24px',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                fontWeight: 700,
+                                fontSize: '0.95rem'
+                            }}
+                        >
+                            Entendi
+                        </button>
                     </div>
                 </div>
             )}

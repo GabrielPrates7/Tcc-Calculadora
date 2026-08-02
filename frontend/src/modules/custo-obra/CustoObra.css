@@ -1,5 +1,75 @@
 .custo-obra-container {
-    display: flex; flex-direction: column; gap: 30px;
-    max-width: 900px; margin: 0 auto; padding-bottom: 50px;
+    display: flex; 
+    flex-direction: column; 
+    gap: 30px;
+    max-width: 900px; 
+    margin: 0 auto; 
+    padding: 20px 0 50px 0;
 }
-.custo-obra-container h1 { color: var(--text-primary); margin-bottom: 5px; }
+
+.custo-obra-header {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+    padding-bottom: 16px;
+}
+
+.custo-obra-header h1 { 
+    color: var(--text-primary, #0f172a); 
+    margin: 0;
+    font-size: 1.75rem;
+    font-weight: 700;
+}
+
+.custo-obra-header p {
+    color: var(--text-secondary, #64748b);
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.custo-obra-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+}
+
+@media (min-width: 768px) {
+    .custo-obra-grid {
+        grid-template-columns: 1fr 1fr;
+        align-items: start;
+    }
+}
+
+.custo-obra-error {
+    padding: 12px 16px;
+    background-color: #fef2f2;
+    border-left: 4px solid #ef4444;
+    color: #991b1b;
+    font-weight: 500;
+    border-radius: 4px;
+}
+
+/* ==========================================================================
+   BLINDAGEM DE TABELA - TEMA CLARO CLEAN (IGUAL À LISTA DE FUNCIONÁRIOS)
+   ========================================================================== */
+
+/* 1. Fundo branco puro e texto escuro nitidamente contrastado */
+main table tbody tr {
+    background-color: #ffffff !important;
+    transition: background-color 0.15s ease-in-out;
+}
+
+/* 2. Hover com cinza bem claro (#f8fafc) não cansa a vista e dá toque moderno */
+main table tbody tr:hover,
+main table tbody tr:hover td {
+    background-color: #f8fafc !important;
+    color: #0f172a !important;
+}
+
+/* 3. Garante que as células não herdem bordas grossas ou fundos de estilos globais */
+main table tbody tr td {
+    background-color: transparent !important;
+    color: #0f172a !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+}
