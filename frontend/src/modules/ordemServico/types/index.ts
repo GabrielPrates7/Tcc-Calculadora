@@ -6,8 +6,15 @@ export interface OrdemServico {
     data_entrega?: string;
     criado_em: string;
     
-    // Dados que vêm do JOIN com a tabela de Orçamentos
+    // Dados que vêm do JOIN ou edição manual na O.S.
     cliente: string;
     nome_produto: string;
     preco_venda: number | string;
+
+    // Campos técnicos e operacionais da oficina
+    solicitante?: string;
+    observacoes?: string;
+    laudo_tecnico?: string;
+    custo_extra_materiais?: number;
+    descricao_materiais_extras?: string;
 }

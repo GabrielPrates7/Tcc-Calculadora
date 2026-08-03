@@ -1,27 +1,48 @@
-/* --- FUNDO ESCURO DO MODAL --- */
+/* --- FUNDO ESCURO DO MODAL (COM AFASTAMENTO VERTICAL OBRIGATÓRIO) --- */
 .modal-overlay-print {
     position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
+    top: 0; 
+    left: 0; 
+    right: 0; 
+    bottom: 0;
     background-color: rgba(15, 23, 42, 0.85);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 1000;
     backdrop-filter: blur(4px);
-    padding: 20px;
+    padding: 36px 20px; /* 36px topo/fundo e 20px laterais */
+    box-sizing: border-box;
 }
 
-/* --- A FOLHA A4 DO DOCUMENTO --- */
+/* --- A FOLHA A4 DO DOCUMENTO (COM TRAVA DE ALTURA E ROLAGEM INTERNA) --- */
 .modal-demonstrativo {
     background: #ffffff;
     width: 100%;
-    max-width: 750px; /* Mais contido para não alargar na impressão */
+    max-width: 750px;
     border-radius: 12px;
     padding: 40px;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
     position: relative;
-    max-height: 95vh;
+    max-height: calc(100vh - 72px); /* Respeita exatamente os 36px de margem do overlay */
     overflow-y: auto;
+    box-sizing: border-box;
+}
+
+/* --- BARRA DE ROLAGEM CUSTOMIZADA DO MODAL --- */
+.modal-demonstrativo::-webkit-scrollbar {
+    width: 6px;
+}
+.modal-demonstrativo::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 8px;
+}
+.modal-demonstrativo::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 8px;
+}
+.modal-demonstrativo::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
 }
 
 .btn-fechar-modal {
@@ -34,7 +55,10 @@
     cursor: pointer;
     transition: 0.2s;
 }
-.btn-fechar-modal:hover { color: #ef4444; transform: scale(1.1); }
+.btn-fechar-modal:hover { 
+    color: #ef4444; 
+    transform: scale(1.1); 
+}
 
 /* --- CABEÇALHO --- */
 .doc-header {
@@ -162,8 +186,9 @@
     margin-bottom: 20px;
 }
 
-/* --- BOTÃO IMPRIMIR --- */
+/* --- BOTÕES --- */
 .modal-actions { display: flex; justify-content: flex-end; }
+
 .btn-imprimir-doc {
     background-color: #2563eb;
     color: white;
@@ -179,7 +204,33 @@
     transition: 0.2s;
     box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
 }
-.btn-imprimir-doc:hover { background-color: #1d4ed8; transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3); }
+.btn-imprimir-doc:hover { 
+    background-color: #1d4ed8; 
+    transform: translateY(-2px); 
+    box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3); 
+}
+
+.btn-aprovar-os {
+    background-color: #16a34a;
+    color: white;
+    border: none;
+    padding: 14px 28px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: 0.2s;
+    box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.2);
+    margin-right: 15px;
+}
+.btn-aprovar-os:hover { 
+    background-color: #15803d; 
+    transform: translateY(-2px); 
+    box-shadow: 0 10px 15px -3px rgba(22, 163, 74, 0.3); 
+}
 
 /* ========================================================= */
 /* MÁGICA DA IMPRESSÃO: FORÇA UMA ÚNICA FOLHA A4 E REMOVE BORDAS */
@@ -193,28 +244,30 @@
 
     .modal-overlay-print {
         position: absolute;
-        left: 0; top: 0;
-        background: none; /* Remove fundo preto */
-        padding: 0;
+        left: 0; 
+        top: 0;
+        background: none !important;
+        padding: 0 !important;
+        display: block !important;
     }
 
     .modal-demonstrativo {
         position: absolute;
-        left: 0; top: 0;
-        width: 100%;
-        max-width: 100%;
-        box-shadow: none;
-        border: none;
-        padding: 0; /* A impressora já coloca a margem do A4 */
-        margin: 0;
-        max-height: none;
-        overflow: hidden; /* Corta o scroll que gera a 2ª página em branco */
-        page-break-inside: avoid; /* Evita que o modal se parta no meio */
+        left: 0; 
+        top: 0;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        max-height: none !important;
+        overflow: hidden !important;
+        page-break-inside: avoid;
     }
 
     .no-print { display: none !important; }
 
-    /* Margens oficiais da folha A4 e configuração Retrato */
     @page {
         size: A4 portrait;
         margin: 1.5cm;
@@ -222,31 +275,7 @@
     
     html, body {
         height: 100%;
-        overflow: hidden !important; /* Impede criação de páginas extras */
+        overflow: hidden !important;
         background-color: white;
     }
-}
-
-/* --- BOTÃO APROVAR O.S. --- */
-.btn-aprovar-os {
-    background-color: #16a34a; /* Verde Sucesso */
-    color: white;
-    border: none;
-    padding: 14px 28px;
-    border-radius: 8px;
-    font-weight: bold;
-    font-size: 1rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: 0.2s;
-    box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.2);
-    margin-right: 15px; /* Separa do botão de imprimir */
-}
-
-.btn-aprovar-os:hover { 
-    background-color: #15803d; 
-    transform: translateY(-2px); 
-    box-shadow: 0 10px 15px -3px rgba(22, 163, 74, 0.3); 
 }

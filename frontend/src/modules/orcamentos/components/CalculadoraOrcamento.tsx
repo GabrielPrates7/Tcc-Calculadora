@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Edit2, Calculator, User, Package, DollarSign, FileText, Save, XCircle, Percent, Info } from 'lucide-react';
+import { Edit2, Calculator, User, Package, DollarSign, FileText, Save, XCircle, Percent, Info, AlertCircle } from 'lucide-react';
 import type { IOrcamento, ICenarioMaoObra, IOrcamentoPayload } from '../types';
 import { formatarBRL } from '../../../utils/formatters';
 import { CustoObraOrcamentos } from './CustoObraOrcamentos';
@@ -14,7 +14,7 @@ interface Props {
 }
 
 export function CalculadoraOrcamento({
-    listaCenarios = [], // Blindagem contra undefined
+    listaCenarios = [],
     taxaFixa = 0,
     orcamentoEdicao,
     onSalvar,
@@ -26,6 +26,9 @@ export function CalculadoraOrcamento({
     const [tempo, setTempo] = useState<number | string>(orcamentoEdicao?.horas_trabalhadas || ''); 
     const [lucro, setLucro] = useState<number | string>(orcamentoEdicao?.lucro_desejado || 30); 
     const [imposto, setImposto] = useState<number | string>(orcamentoEdicao?.imposto || 5); 
+
+    // ESTADO PARA CONTROLE DO MODAL DE ERRO DE VALIDAÇÃO (SUBSTITUTO DO ALERT NATIVO)
+    const [erroValidacao, setErroValidacao] = useState<string | null>(null);
 
     const [idCenarioSelecionado, setIdCenarioSelecionado] = useState<number | null>(() => {
         if (orcamentoEdicao?.id_cenario_mo !== undefined) return orcamentoEdicao.id_cenario_mo ?? null;
@@ -76,8 +79,14 @@ export function CalculadoraOrcamento({
     const precoFinal = (divisor > 0 && custoProducao > 0) ? custoProducao / divisor : 0;
 
     const handleSalvar = async () => {
-        if (!produto) return alert("Por favor, digite o nome do produto.");
-        if (divisor <= 0) return alert("A soma das taxas ultrapassa 100%. Impossível calcular.");
+        if (!produto || !produto.trim()) {
+            setErroValidacao("Por favor, digite o nome do produto.");
+            return;
+        }
+        if (divisor <= 0) {
+            setErroValidacao("A soma das taxas ultrapassa 100%. Impossível calcular o preço de venda.");
+            return;
+        }
 
         const dados: IOrcamentoPayload = {
             id: orcamentoEdicao?.id,
@@ -208,6 +217,62 @@ export function CalculadoraOrcamento({
                     </button>
                 )}
             </div>
+
+            {/* --- MODAL ESCURO PARA VALIDAÇÃO DO FORMULÁRIO --- */}
+            {erroValidacao && (
+                <div 
+                    onClick={() => setErroValidacao(null)}
+                    style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundColor: 'rgba(0, 0, 0, 0.85)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        zIndex: 10005
+                    }}
+                >
+                    <div 
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                            background: '#1e293b',
+                            border: '2px solid #ef4444',
+                            borderRadius: '12px',
+                            padding: '24px',
+                            width: '90%',
+                            maxWidth: '400px',
+                            textAlign: 'center',
+                            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.6)'
+                        }}
+                    >
+                        <div style={{ marginBottom: '12px' }}>
+                            <AlertCircle size={38} color="#ef4444" style={{ margin: '0 auto' }} />
+                        </div>
+                        
+                        <h3 style={{ color: '#f8fafc', fontSize: '1.2rem', margin: '0 0 10px 0' }}>
+                            Campo Obrigatório
+                        </h3>
+
+                        <p style={{ color: '#94a3b8', fontSize: '0.95rem', marginBottom: '22px', lineHeight: '1.5' }}>
+                            {erroValidacao}
+                        </p>
+
+                        <button
+                            type="button"
+                            onClick={() => setErroValidacao(null)}
+                            style={{
+                                background: '#ef4444',
+                                color: '#ffffff',
+                                border: 'none',
+                                padding: '10px 24px',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                fontWeight: 700,
+                                fontSize: '0.95rem'
+                            }}
+                        >
+                            Entendi
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -14,8 +14,8 @@ interface Props {
 export function ModalDemonstrativo({ orcamento, onClose }: Props) {
     const navigate = useNavigate();
 
-    // Verificação de segurança para O.S. já existente
-    const idOS = (orcamento as Record<string, unknown>).os_id as number | undefined;
+    // Verificação segura sem violar regras de sobreposição do TypeScript
+    const idOS = (orcamento as unknown as { os_id?: number }).os_id;
     const jaTemOS = Boolean(idOS);
 
     // --- ESTADOS PARA OS MODAIS EM TEMA ESCURO ---
@@ -53,7 +53,6 @@ export function ModalDemonstrativo({ orcamento, onClose }: Props) {
             return;
         }
 
-        // CORREÇÃO: Bloqueia a abertura do modal se o orçamento já estiver em produção
         if (jaTemOS) {
             setTipoAlerta('erro');
             setMensagemAlerta(`Ação Bloqueada: Este orçamento já foi transformado na Ordem de Serviço #${idOS}. Não é possível emitir duplicidade.`);
@@ -211,7 +210,6 @@ export function ModalDemonstrativo({ orcamento, onClose }: Props) {
                         <p>Documento gerado automaticamente com base na metodologia de Markup Divisor.</p>
                     </div>
 
-                    {/* CORREÇÃO: Botão alterado visualmente caso a O.S. já tenha sido gerada */}
                     <div className="modal-actions no-print">
                         <button 
                             className="btn-aprovar-os" 

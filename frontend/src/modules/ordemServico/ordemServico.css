@@ -1,65 +1,71 @@
-/* CONTAINER PRINCIPAL */
+/* CONTAINER PRINCIPAL (FUNDO AZUL ESCURO DENARIUS) */
 .kanban-container {
-    padding: 20px 30px;
+    padding: 24px 32px;
     height: 100vh;
     display: flex;
     flex-direction: column;
-    background-color: #f8fafc; /* Fundo cinza claro igual ao resto do sistema */
+    background-color: #0f172a;
+    box-sizing: border-box;
+    overflow: hidden;
+    color: #f8fafc;
 }
 
-.kanban-header {
-    margin-bottom: 20px;
-}
-
-.kanban-header h1 {
-    margin: 0 0 5px 0;
-    color: #0f172a;
-    font-size: 1.8rem;
-}
-
-.kanban-header p {
-    color: #64748b;
-    margin: 0;
-    font-size: 0.95rem;
-}
-
-/* --- BARRA DE FERRAMENTAS (FILTROS) --- */
 .kanban-header {
     display: flex;
     flex-direction: column;
-    gap: 15px;
-    margin-bottom: 25px;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-shrink: 0;
 }
 
+.header-titles h1 {
+    margin: 0 0 4px 0;
+    color: #ffffff;
+    font-size: 1.6rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.header-titles p {
+    color: #94a3b8;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* BARRA DE FERRAMENTAS (ESTILO FLUTUANTE ALTO CONTRASTE) */
 .kanban-toolbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: white;
+    background-color: #1e293b;
     padding: 12px 20px;
     border-radius: 8px;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    border: 1px solid #334155;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
     flex-wrap: wrap;
-    gap: 15px;
+    gap: 16px;
 }
 
 .search-box {
     display: flex;
     align-items: center;
     gap: 10px;
-    background-color: #f1f5f9;
-    padding: 8px 15px;
+    background-color: #ffffff;
+    padding: 9px 16px;
     border-radius: 6px;
     flex: 1;
-    min-width: 250px;
-    border: 1px solid transparent;
-    transition: border 0.2s;
+    min-width: 280px;
+    border: 2px solid transparent;
+    transition: all 0.2s;
 }
 
 .search-box:focus-within {
-    border-color: #3b82f6;
-    background-color: white;
+    border-color: #f97316;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
 }
 
 .search-box input {
@@ -67,25 +73,33 @@
     background: transparent;
     outline: none;
     width: 100%;
-    font-size: 0.95rem;
-    color: #334155;
+    font-size: 0.9rem;
+    color: #0f172a;
+    font-weight: 500;
 }
 
 .filtros-box {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
 .filtros-box select {
-    padding: 8px 12px;
+    padding: 9px 14px;
     border: 1px solid #cbd5e1;
     border-radius: 6px;
-    background-color: white;
-    color: #334155;
-    font-size: 0.9rem;
+    background-color: #ffffff;
+    color: #0f172a;
+    font-size: 0.85rem;
+    font-weight: 600;
     outline: none;
     cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.filtros-box select:focus {
+    border-color: #f97316;
 }
 
 .checkbox-atraso {
@@ -93,179 +107,229 @@
     align-items: center;
     gap: 8px;
     cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: #475569;
-    padding: 8px 12px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    background-color: #334155;
+    padding: 9px 14px;
     border-radius: 6px;
-    transition: background 0.2s;
+    border: 1px solid #475569;
+    transition: all 0.2s;
+    user-select: none;
 }
 
-.checkbox-atraso:hover { background-color: #fee2e2; }
-
-.empty-column {
-    text-align: center;
-    padding: 20px;
-    color: #94a3b8;
-    font-size: 0.9rem;
-    border: 2px dashed #cbd5e1;
-    border-radius: 8px;
-    margin-top: 10px;
+.checkbox-atraso:hover {
+    background-color: #ef4444;
+    border-color: #dc2626;
+    color: #ffffff;
 }
 
-/* O QUADRO (FLEXBOX PARA COLUNAS) */
+/* QUADRO KANBAN */
 .kanban-board {
     display: flex;
     gap: 20px;
     overflow-x: auto;
-    padding-bottom: 15px;
-    flex: 1; /* Ocupa o resto da tela */
+    overflow-y: hidden;
+    padding-bottom: 16px;
+    flex: 1;
+    align-items: flex-start;
 }
 
-/* AS COLUNAS */
+/* COLUNAS (CONTAINER CLARO INSPIRADO NO TABELA BRANCA DA FOTO) */
 .kanban-column {
-    background-color: #e2e8f0;
+    background-color: #f8fafc;
+    border: 1px solid #cbd5e1;
     border-radius: 10px;
-    min-width: 320px;
-    width: 320px;
+    flex: 0 0 330px;
+    width: 330px;
     display: flex;
     flex-direction: column;
     height: 100%;
-    max-height: calc(100vh - 120px);
+    max-height: 100%;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
 }
 
 .column-header {
-    padding: 15px;
+    padding: 14px 16px;
     display: flex;
     align-items: center;
-    gap: 8px;
-    color: #334155;
-    border-bottom: 2px solid #cbd5e1;
+    gap: 10px;
+    color: #0f172a;
+    border-bottom: 2px solid #e2e8f0;
+    background-color: #ffffff;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
 }
 
 .column-header h2 {
     margin: 0;
-    font-size: 1.05rem;
-    font-weight: 700;
+    font-size: 0.88rem;
+    font-weight: 800;
     flex: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #1e293b;
 }
 
 .card-count {
-    background: #cbd5e1;
-    color: #334155;
-    font-size: 0.8rem;
+    background: #0f172a;
+    color: #f8fafc;
+    font-size: 0.72rem;
     font-weight: 800;
     padding: 2px 8px;
-    border-radius: 20px;
+    border-radius: 12px;
 }
 
-/* ÁREA ONDE OS CARTÕES FICAM */
 .column-body {
-    padding: 15px;
+    padding: 14px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 12px;
     flex: 1;
 }
 
-/* O CARTÃO DA O.S. */
-.kanban-card {
-    background-color: white;
+.empty-column {
+    text-align: center;
+    padding: 32px 16px;
+    color: #64748b;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: 2px dashed #cbd5e1;
     border-radius: 8px;
-    padding: 15px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    border-left: 4px solid #3b82f6; /* Azul do Denarius */
+    margin-top: 4px;
+    background-color: rgba(255, 255, 255, 0.5);
+}
+
+/* CARTÃO DA O.S. (WHITE CARD COM BORDA LARANJA E DESTAQUE ESTILO PRINT) */
+.kanban-card {
+    background-color: #ffffff !important;
+    border: 1px solid #cbd5e1;
+    border-left: 5px solid #f97316 !important; /* Laranja da marca */
+    border-radius: 8px;
+    padding: 14px 16px;
+    box-shadow: 0 2px 4px rgba(15, 23, 42, 0.06);
     cursor: grab;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.kanban-card:hover {
+    box-shadow: 0 8px 16px rgba(15, 23, 42, 0.12);
+    border-color: #f97316;
 }
 
 .kanban-card:active {
     cursor: grabbing;
-    transform: scale(0.98); /* Dá um efeito de "agarrar" o cartão */
-    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transform: scale(0.98);
 }
 
 .card-top {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 10px;
+    gap: 8px;
 }
 
+/* TAG AZUL DO ID DA O.S. (IGUAL AO PRINT DE ORÇAMENTOS "O.S. #1") */
 .os-numero {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 800;
-    color: #94a3b8;
+    color: #2563eb;
+    background-color: #eff6ff;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid #bfdbfe;
+    letter-spacing: 0.5px;
+}
+
+.card-main {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .cliente-nome {
-    margin: 0 0 4px 0;
-    font-size: 1.05rem;
-    color: #1e293b;
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #0f172a !important;
+    line-height: 1.3;
+    word-break: break-word;
 }
 
 .produto-nome {
-    margin: 0 0 15px 0;
+    margin: 0;
     font-size: 0.85rem;
-    color: #64748b;
+    color: #475569 !important;
+    line-height: 1.35;
+    word-break: break-word;
+    font-weight: 500;
 }
 
 .card-footer {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-top: 1px dashed #e2e8f0;
+    border-top: 1px solid #f1f5f9;
     padding-top: 10px;
 }
 
 .valor-os {
+    font-size: 1rem;
     font-weight: 800;
-    color: #0f172a;
+    color: #0f172a !important;
 }
 
 .prazo-os {
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: 0.8rem;
+    font-size: 0.78rem;
+    font-weight: 600;
     color: #64748b;
 }
 
-/* Alerta de atraso */
 .prazo-os.atrasado {
-    color: #ef4444;
-    font-weight: bold;
+    color: #dc2626;
+    font-weight: 700;
+    background-color: #fef2f2;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid #fecaca;
 }
 
-/* ETIQUETAS FINANCEIRAS (BADGES) */
+/* BADGES FINANCEIROS ESTILO PÍLULA */
 .badge-fin {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 3px;
-    font-size: 0.7rem;
-    font-weight: 700;
-    padding: 4px 8px;
+    gap: 4px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    padding: 3px 8px;
     border-radius: 4px;
     text-transform: uppercase;
+    letter-spacing: 0.4px;
 }
 
-.badge-pendente { background-color: #fee2e2; color: #b91c1c; }
-.badge-sinal { background-color: #fef08a; color: #854d0e; }
-.badge-pago { background-color: #dcfce7; color: #15803d; }
+.badge-pendente { background-color: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+.badge-sinal { background-color: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+.badge-pago { background-color: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
 
-/* Custom Scrollbar para as colunas */
+/* SCROLLBARS */
 .column-body::-webkit-scrollbar { width: 6px; }
 .column-body::-webkit-scrollbar-track { background: transparent; }
 .column-body::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 .kanban-board::-webkit-scrollbar { height: 8px; }
-.kanban-board::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 10px; }
+.kanban-board::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
 
-/* --- MODAL DE DETALHES DA O.S. --- */
+/* MODAL DE DETALHES (PADRÃO ESCURO/LARANJA NO TOPO E BRANCO NOS DADOS) */
 .modal-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background-color: rgba(15, 23, 42, 0.75);
+    background-color: rgba(15, 23, 42, 0.85);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -276,42 +340,43 @@
 .modal-os {
     background: #ffffff;
     width: 100%;
-    max-width: 600px;
+    max-width: 620px;
     border-radius: 12px;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     overflow: hidden;
+    border: 1px solid #334155;
 }
 
 .modal-os-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 25px;
+    padding: 20px 24px;
     border-bottom: 1px solid #e2e8f0;
-    background-color: #f8fafc;
+    background-color: #0f172a;
+    color: #ffffff;
 }
 
-.modal-os-header h2 { margin: 0 0 5px 0; color: #0f172a; font-size: 1.4rem; }
-.modal-coluna-atual { font-size: 0.9rem; color: #64748b; }
-.modal-coluna-atual strong { color: #3b82f6; }
+.modal-os-header h2 { margin: 0 0 4px 0; color: #ffffff; font-size: 1.35rem; font-weight: 800; }
+.modal-coluna-atual { font-size: 0.88rem; color: #94a3b8; }
+.modal-coluna-atual strong { color: #f97316; }
 
 .btn-close {
     background: transparent;
     border: none;
-    color: #64748b;
+    color: #94a3b8;
     cursor: pointer;
     transition: 0.2s;
 }
-.btn-close:hover { color: #ef4444; transform: scale(1.1); }
+.btn-close:hover { color: #f97316; transform: scale(1.1); }
 
-.modal-os-body { padding: 25px; }
+.modal-os-body { padding: 24px; color: #0f172a; }
 
-/* Grid de Informações */
 .os-info-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    margin-bottom: 30px;
+    gap: 16px;
+    margin-bottom: 24px;
 }
 
 .os-info-box {
@@ -319,23 +384,22 @@
     align-items: flex-start;
     gap: 12px;
     background-color: #f8fafc;
-    padding: 15px;
+    padding: 14px;
     border-radius: 8px;
     border: 1px solid #e2e8f0;
 }
 
-.os-info-box label { display: block; font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 700; margin-bottom: 4px; }
-.os-info-box p { margin: 0; color: #0f172a; font-size: 1.05rem; font-weight: 500; }
-.valor-destaque { font-weight: 800 !important; color: #16a34a !important; font-size: 1.2rem !important; }
+.os-info-box label { display: block; font-size: 0.72rem; color: #64748b; text-transform: uppercase; font-weight: 700; margin-bottom: 4px; }
+.os-info-box p { margin: 0; color: #0f172a; font-size: 1rem; font-weight: 700; }
+.valor-destaque { font-weight: 800 !important; color: #16a34a !important; font-size: 1.15rem !important; }
 
-/* Painel Financeiro */
 .os-financeiro-panel {
-    border-top: 1px dashed #cbd5e1;
+    border-top: 1px solid #e2e8f0;
     padding-top: 20px;
 }
 
-.os-financeiro-panel h3 { margin: 0 0 5px 0; color: #0f172a; font-size: 1.1rem; }
-.os-financeiro-panel p { margin: 0 0 15px 0; color: #64748b; font-size: 0.9rem; }
+.os-financeiro-panel h3 { margin: 0 0 4px 0; color: #0f172a; font-size: 1.05rem; font-weight: 800; }
+.os-financeiro-panel p { margin: 0 0 14px 0; color: #64748b; font-size: 0.88rem; }
 
 .botoes-financeiro {
     display: flex;
@@ -344,31 +408,31 @@
 
 .btn-fin {
     flex: 1;
-    padding: 12px;
-    border: 2px solid transparent;
-    border-radius: 8px;
-    background-color: #f1f5f9;
+    padding: 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background-color: #ffffff;
     color: #475569;
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 0.85rem;
     cursor: pointer;
-    transition: 0.2s;
+    transition: all 0.2s;
 }
 
-.btn-fin:hover { background-color: #e2e8f0; }
+.btn-fin:hover { background-color: #f8fafc; border-color: #94a3b8; }
 
-/* Estados Ativos dos Botões Financeiros */
-.btn-pendente.ativo { background-color: #fee2e2; border-color: #ef4444; color: #b91c1c; }
-.btn-sinal.ativo { background-color: #fef08a; border-color: #eab308; color: #854d0e; }
-.btn-pago.ativo { background-color: #dcfce7; border-color: #22c55e; color: #15803d; }
+.btn-pendente.ativo { background-color: #fef2f2; border-color: #ef4444; color: #b91c1c; }
+.btn-sinal.ativo { background-color: #fffbeb; border-color: #f59e0b; color: #92400e; }
+.btn-pago.ativo { background-color: #f0fdf4; border-color: #22c55e; color: #15803d; }
 
-/* Estilo do Botão de Imprimir */
 .btn-print-os {
-    background-color: #334155;
+    background-color: #0f172a;
     color: white;
     border: none;
-    padding: 10px 20px;
+    padding: 11px 20px;
     border-radius: 6px;
-    font-weight: bold;
+    font-weight: 700;
+    font-size: 0.9rem;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -377,24 +441,13 @@
     width: 100%;
     justify-content: center;
 }
-.btn-print-os:hover { background-color: #0f172a; }
+.btn-print-os:hover { background-color: #f97316; }
 
+/* IMPRESSÃO (PERMANECE PRETO E BRANCO PURO PARA O PAPEL A4) */
+.print-layout { display: none; }
 
-/* ========================================= */
-/* MÁGICA DE IMPRESSÃO - FICHA DE PRODUÇÃO   */
-/* ========================================= */
-
-/* 1. O layout do papel DEVE ficar invisível na tela normal do computador */
-.print-layout {
-    display: none;
-}
-
-/* Quando o botão de imprimir for clicado, o navegador entra aqui: */
 @media print {
-    /* 2. Esconde o site de fundo */
     body * { visibility: hidden; }
-
-    /* 3. Tira o modal do modo flutuante e deixa a folha branca */
     .modal-overlay {
         position: absolute !important;
         left: 0 !important; top: 0 !important;
@@ -403,39 +456,20 @@
         padding: 0 !important; margin: 0 !important;
         backdrop-filter: none !important;
     }
-
-    /* 4. Tira as bordas do modal */
     .modal-os {
         border: none !important;
         box-shadow: none !important;
         width: 100% !important; max-width: 100% !important;
         padding: 0 !important; margin: 0 !important;
     }
-
-    /* 5. O PULO DO GATO: Esconde apenas as peças antigas do sistema, deixando o recipiente vivo! */
-    .modal-os-header, 
-    .os-info-grid, 
-    .os-financeiro-panel,
-    .btn-close {
-        display: none !important;
-    }
-
-    /* 6. Acorda o Template de Papel e os pais dele! */
-    .modal-os, 
-    .modal-os-body, 
-    .print-layout, 
-    .print-layout * {
-        visibility: visible !important;
-    }
-
+    .modal-os-header, .os-info-grid, .os-financeiro-panel, .btn-close { display: none !important; }
+    .modal-os, .modal-os-body, .print-layout, .print-layout * { visibility: visible !important; }
     .print-layout {
         display: block !important;
         width: 100%;
-        padding: 10mm; /* Margem bonita na folha A4 */
-        color: #000 !important; /* Força tinta preta na impressora */
+        padding: 10mm;
+        color: #000 !important;
     }
-
-    /* Estilizando o cabeçalho do Papel */
     .print-header {
         text-align: center;
         border-bottom: 2px solid #000;
@@ -444,22 +478,13 @@
     }
     .print-header h1 { margin: 0; font-size: 22pt; font-weight: 800; letter-spacing: 2px; }
     .print-header h2 { margin: 5px 0 0 0; font-size: 14pt; color: #333; }
-
-    /* Caixas de Informação */
     .print-info-grid {
         display: grid !important;
         grid-template-columns: 1fr 1fr;
         gap: 15px;
         margin-bottom: 30px;
     }
-    .print-box {
-        border: 2px solid #000;
-        padding: 12px;
-        border-radius: 6px;
-        font-size: 11pt;
-    }
-
-    /* Seções e Linhas para escrever à mão */
+    .print-box { border: 2px solid #000; padding: 12px; border-radius: 6px; font-size: 11pt; }
     .print-section { margin-bottom: 30px; }
     .print-section h3 {
         border-bottom: 1px solid #000;
@@ -468,13 +493,7 @@
         font-size: 13pt;
         text-transform: uppercase;
     }
-    .print-lines {
-        border-bottom: 1px dashed #666;
-        height: 35px;
-        width: 100%;
-    }
-
-    /* Checklist com as caixinhas para dar 'Visto' (Caneta) */
+    .print-lines { border-bottom: 1px dashed #666; height: 35px; width: 100%; }
     .print-check-item {
         display: flex !important;
         align-items: center;
@@ -488,17 +507,12 @@
         border-radius: 4px;
         display: inline-block;
     }
-
-    /* Área de Assinatura no final da folha */
     .print-signatures {
         display: flex !important;
         justify-content: space-around;
         margin-top: 60px;
     }
-    .sig-line {
-        text-align: center;
-        width: 40%;
-    }
+    .sig-line { text-align: center; width: 40%; }
     .sig-line hr { border-top: 1px solid #000; border-bottom: none; margin-bottom: 8px; }
     .sig-line span { font-size: 10pt; font-weight: bold; }
 }

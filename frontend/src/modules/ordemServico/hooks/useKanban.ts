@@ -1,17 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { OrdemServicoService } from '../services/ordemServico.service';
 import type { OrdemServico } from '../types';
 
 export function useKanban() {
     const [ordens, setOrdens] = useState<OrdemServico[]>([]);
+    // O estado já inicia como true, evitando setState síncrono no primeiro render
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        carregarOrdens();
-    }, []);
-
-    const carregarOrdens = async () => {
-        setLoading(true);
+    const carregarOrdens = useCallback(async () => {
         try {
             const data = await OrdemServicoService.listarTodas();
             setOrdens(data);
@@ -20,26 +16,47 @@ export function useKanban() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    // Função que move o cartão e salva no banco
+    useEffect(() => {
+        let montado = true;
+
+        async function buscaInicial() {
+            try {
+                const data = await OrdemServicoService.listarTodas();
+                if (montado) {
+                    setOrdens(data);
+                }
+            } catch (error) {
+                console.error("Erro ao carregar O.S.", error);
+            } finally {
+                if (montado) {
+                    setLoading(false);
+                }
+            }
+        }
+
+        buscaInicial();
+
+        return () => {
+            montado = false;
+        };
+    }, []);
+
     const moverOrdem = async (osId: number, novaColuna: string) => {
-        // 1. Atualiza a tela instantaneamente (dá a sensação de sistema super rápido)
         setOrdens(prev => prev.map(os => 
             os.os_id === osId ? { ...os, status_producao: novaColuna as OrdemServico['status_producao'] } : os
         ));
 
-        // 2. Salva no banco de dados em segundo plano
         try {
             await OrdemServicoService.atualizarStatus(osId, novaColuna);
         } catch (error) {
             console.error("Falha ao mover a O.S:", error);
             alert('Erro de conexão ao mover o cartão. Recarregando quadro...');
-            carregarOrdens(); // Desfaz a ação caso a internet caia
+            carregarOrdens();
         }
     };
 
-    // Função que atualiza o dinheiro e salva no banco
     const atualizarPagamento = async (osId: number, novoStatus: OrdemServico['status_financeiro']) => {
         setOrdens(prev => prev.map(os => 
             os.os_id === osId ? { ...os, status_financeiro: novoStatus } : os
@@ -54,10 +71,40 @@ export function useKanban() {
         }
     };
 
+    const atualizarOrdemCompleta = async (id: number, dados: Partial<OrdemServico>) => {
+        setOrdens(prev => prev.map(os => 
+            os.os_id === id ? { ...os, ...dados } : os
+        ));
+
+        try {
+            const osAtualizada = await OrdemServicoService.atualizarDados(id, dados);
+            setOrdens(prev => prev.map(os => os.os_id === id ? osAtualizada : os));
+        } catch (error) {
+            console.error("Falha ao salvar edições:", error);
+            alert('Erro ao salvar alterações da O.S. no servidor.');
+            carregarOrdens();
+        }
+    };
+
+    const excluirOrdem = async (id: number) => {
+        setOrdens(prev => prev.filter(os => os.os_id !== id));
+
+        try {
+            await OrdemServicoService.excluir(id);
+        } catch (error) {
+            console.error("Falha ao excluir O.S:", error);
+            alert('Erro ao excluir a Ordem de Serviço no servidor.');
+            carregarOrdens();
+        }
+    };
+
     return {
         ordens,
         loading,
         moverOrdem,
-        atualizarPagamento
+        atualizarPagamento,
+        atualizarOrdemCompleta,
+        excluirOrdem,
+        carregarOrdens
     };
 }

@@ -1,57 +1,96 @@
-import { pool } from './db';
+import { pool as db } from './db';
+
+export interface IOrdemServicoEdicao {
+    data_entrega?: string | null;
+    solicitante?: string | null;
+    observacoes?: string | null;
+    laudo_tecnico?: string | null;
+    custo_extra_materiais?: number;
+    descricao_materiais_extras?: string | null;
+}
 
 export class OrdemServicoService {
-    
-    // 1. LISTAR TODAS AS O.S. (Para montar o Kanban)
     async listarTodas() {
         const query = `
             SELECT 
-                os.id as os_id,
+                os.id AS os_id,
+                os.orcamento_id,
                 os.status_producao,
                 os.status_financeiro,
                 os.data_entrega,
+                os.solicitante,
+                os.observacoes,
+                os.laudo_tecnico,
+                os.custo_extra_materiais,
+                os.descricao_materiais_extras,
                 os.criado_em,
-                orc.id as orcamento_id,
-                orc.cliente,
-                orc.nome_produto,
-                orc.preco_venda
-            FROM ordens_servico os
-            INNER JOIN orcamentos orc ON os.orcamento_id = orc.id
-            ORDER BY os.data_entrega ASC NULLS LAST, os.criado_em DESC
+                o.cliente,
+                o.nome_produto,
+                o.preco_venda
+            FROM public.ordens_servico os
+            INNER JOIN public.orcamentos o ON o.id = os.orcamento_id
+            ORDER BY os.id DESC;
         `;
-        const result = await pool.query(query);
+        const result = await db.query(query);
         return result.rows;
     }
 
-    // 2. CRIAR NOVA ORDEM (Quando o cliente aprovar o Orçamento)
     async criarDeOrcamento(orcamentoId: number, dataEntrega?: string) {
-        // Verifica se já existe uma OS para este orçamento para não duplicar
-        const check = await pool.query('SELECT id FROM ordens_servico WHERE orcamento_id = $1', [orcamentoId]);
-        if (check.rows.length > 0) {
-            throw new Error('Já existe uma Ordem de Serviço para este Orçamento.');
-        }
-
         const query = `
-            INSERT INTO ordens_servico (orcamento_id, data_entrega, status_producao, status_financeiro)
-            VALUES ($1, $2, 'fila', 'pendente')
-            RETURNING *
+            INSERT INTO public.ordens_servico (orcamento_id, status_producao, status_financeiro, data_entrega)
+            VALUES ($1, 'fila', 'pendente', $2)
+            RETURNING *;
         `;
-        const result = await pool.query(query, [orcamentoId, dataEntrega || null]);
+        const result = await db.query(query, [orcamentoId, dataEntrega || null]);
         return result.rows[0];
     }
 
-    // 3. ATUALIZAR STATUS (Quando você arrastar o cartão no Kanban ou registrar pagamento)
-    async atualizarStatus(id: number, statusProducao?: string, statusFinanceiro?: string) {
+    async atualizarStatus(id: number, status_producao?: string, status_financeiro?: string) {
         const query = `
-            UPDATE ordens_servico 
+            UPDATE public.ordens_servico
             SET 
                 status_producao = COALESCE($1, status_producao),
-                status_financeiro = COALESCE($2, status_financeiro),
-                atualizado_em = CURRENT_TIMESTAMP
+                status_financeiro = COALESCE($2, status_financeiro)
             WHERE id = $3
-            RETURNING *
+            RETURNING *;
         `;
-        const result = await pool.query(query, [statusProducao, statusFinanceiro, id]);
+        const result = await db.query(query, [status_producao || null, status_financeiro || null, id]);
+        if (result.rowCount === 0) throw new Error('Ordem de Serviço não encontrada.');
         return result.rows[0];
+    }
+
+    async atualizarDados(id: number, dados: IOrdemServicoEdicao) {
+        const query = `
+            UPDATE public.ordens_servico
+            SET 
+                data_entrega = COALESCE($1, data_entrega),
+                solicitante = $2,
+                observacoes = $3,
+                laudo_tecnico = $4,
+                custo_extra_materiais = COALESCE($5, 0),
+                descricao_materiais_extras = $6
+            WHERE id = $7
+            RETURNING *;
+        `;
+        const values = [
+            dados.data_entrega || null,
+            dados.solicitante || null,
+            dados.observacoes || null,
+            dados.laudo_tecnico || null,
+            Number(dados.custo_extra_materiais) || 0,
+            dados.descricao_materiais_extras || null,
+            id
+        ];
+
+        const result = await db.query(query, values);
+        if (result.rowCount === 0) throw new Error('Ordem de Serviço não encontrada.');
+        return result.rows[0];
+    }
+
+    async excluir(id: number): Promise<boolean> {
+        const query = 'DELETE FROM public.ordens_servico WHERE id = $1';
+        const result = await db.query(query, [id]);
+        if (result.rowCount === 0) throw new Error('Ordem de Serviço não encontrada.');
+        return true;
     }
 }

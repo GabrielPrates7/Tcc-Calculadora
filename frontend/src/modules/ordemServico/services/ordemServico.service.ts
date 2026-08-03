@@ -1,6 +1,5 @@
 import type { OrdemServico } from '../types';
 
-// CORREÇÃO: Adicionado o prefixo /api para coincidir com o Express
 const API_URL = 'http://localhost:3000/api/ordens-servico';
 
 export const OrdemServicoService = {
@@ -31,5 +30,23 @@ export const OrdemServicoService = {
         });
         if (!response.ok) throw new Error('Erro ao atualizar status');
         return response.json();
+    },
+
+    atualizarDados: async (id: number, dados: Partial<OrdemServico>) => {
+        const response = await fetch(`${API_URL}/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dados)
+        });
+        if (!response.ok) throw new Error('Erro ao atualizar dados da O.S.');
+        return response.json();
+    },
+
+    excluir: async (id: number) => {
+        const response = await fetch(`${API_URL}/${id}`, {
+            method: 'DELETE'
+        });
+        if (!response.ok) throw new Error('Erro ao excluir Ordem de Serviço');
+        return true;
     }
 };
