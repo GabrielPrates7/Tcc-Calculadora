@@ -4,7 +4,6 @@ import type { OrdemServico } from '../types';
 
 export function useKanban() {
     const [ordens, setOrdens] = useState<OrdemServico[]>([]);
-    // O estado já inicia como true, evitando setState síncrono no primeiro render
     const [loading, setLoading] = useState(true);
 
     const carregarOrdens = useCallback(async () => {
@@ -78,7 +77,9 @@ export function useKanban() {
 
         try {
             const osAtualizada = await OrdemServicoService.atualizarDados(id, dados);
-            setOrdens(prev => prev.map(os => os.os_id === id ? osAtualizada : os));
+            setOrdens(prev => prev.map(os => 
+                os.os_id === id ? { ...os, ...osAtualizada, os_id: id } : os
+            ));
         } catch (error) {
             console.error("Falha ao salvar edições:", error);
             alert('Erro ao salvar alterações da O.S. no servidor.');

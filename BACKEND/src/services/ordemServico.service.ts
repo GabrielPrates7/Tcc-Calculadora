@@ -2,7 +2,7 @@ import { pool as db } from './db';
 
 export interface IOrdemServicoEdicao {
     data_entrega?: string | null;
-    solicitante?: string | null;
+    responsaveis_execucao?: string | null;
     observacoes?: string | null;
     laudo_tecnico?: string | null;
     custo_extra_materiais?: number;
@@ -18,7 +18,7 @@ export class OrdemServicoService {
                 os.status_producao,
                 os.status_financeiro,
                 os.data_entrega,
-                os.solicitante,
+                os.responsaveis_execucao,
                 os.observacoes,
                 os.laudo_tecnico,
                 os.custo_extra_materiais,
@@ -47,12 +47,31 @@ export class OrdemServicoService {
 
     async atualizarStatus(id: number, status_producao?: string, status_financeiro?: string) {
         const query = `
-            UPDATE public.ordens_servico
-            SET 
-                status_producao = COALESCE($1, status_producao),
-                status_financeiro = COALESCE($2, status_financeiro)
-            WHERE id = $3
-            RETURNING *;
+            WITH atualizada AS (
+                UPDATE public.ordens_servico
+                SET 
+                    status_producao = COALESCE($1, status_producao),
+                    status_financeiro = COALESCE($2, status_financeiro)
+                WHERE id = $3
+                RETURNING *
+            )
+            SELECT 
+                a.id AS os_id,
+                a.orcamento_id,
+                a.status_producao,
+                a.status_financeiro,
+                a.data_entrega,
+                a.responsaveis_execucao,
+                a.observacoes,
+                a.laudo_tecnico,
+                a.custo_extra_materiais,
+                a.descricao_materiais_extras,
+                a.criado_em,
+                o.cliente,
+                o.nome_produto,
+                o.preco_venda
+            FROM atualizada a
+            INNER JOIN public.orcamentos o ON o.id = a.orcamento_id;
         `;
         const result = await db.query(query, [status_producao || null, status_financeiro || null, id]);
         if (result.rowCount === 0) throw new Error('Ordem de Serviço não encontrada.');
@@ -61,20 +80,39 @@ export class OrdemServicoService {
 
     async atualizarDados(id: number, dados: IOrdemServicoEdicao) {
         const query = `
-            UPDATE public.ordens_servico
-            SET 
-                data_entrega = COALESCE($1, data_entrega),
-                solicitante = $2,
-                observacoes = $3,
-                laudo_tecnico = $4,
-                custo_extra_materiais = COALESCE($5, 0),
-                descricao_materiais_extras = $6
-            WHERE id = $7
-            RETURNING *;
+            WITH atualizada AS (
+                UPDATE public.ordens_servico
+                SET 
+                    data_entrega = COALESCE($1, data_entrega),
+                    responsaveis_execucao = $2,
+                    observacoes = $3,
+                    laudo_tecnico = $4,
+                    custo_extra_materiais = COALESCE($5, 0),
+                    descricao_materiais_extras = $6
+                WHERE id = $7
+                RETURNING *
+            )
+            SELECT 
+                a.id AS os_id,
+                a.orcamento_id,
+                a.status_producao,
+                a.status_financeiro,
+                a.data_entrega,
+                a.responsaveis_execucao,
+                a.observacoes,
+                a.laudo_tecnico,
+                a.custo_extra_materiais,
+                a.descricao_materiais_extras,
+                a.criado_em,
+                o.cliente,
+                o.nome_produto,
+                o.preco_venda
+            FROM atualizada a
+            INNER JOIN public.orcamentos o ON o.id = a.orcamento_id;
         `;
         const values = [
             dados.data_entrega || null,
-            dados.solicitante || null,
+            dados.responsaveis_execucao || null,
             dados.observacoes || null,
             dados.laudo_tecnico || null,
             Number(dados.custo_extra_materiais) || 0,

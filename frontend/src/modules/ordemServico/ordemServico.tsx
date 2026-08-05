@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { Clock, PenTool, AlertCircle, CheckCircle, Package, DollarSign, Calendar, Search, Filter } from 'lucide-react';
+import { Clock, PenTool, AlertCircle, CheckCircle, Package, DollarSign, Calendar, Search } from 'lucide-react';
 import type { OrdemServico } from './types';
 import { formatarBRL } from '../../utils/formatters';
 import { ModalDetalhesOS } from './components/ModalDetalhesOS';
 import { useKanban } from './hooks/useKanban';
-import './ordemServico.css';
+
+import './styles/kanban.css';
+import './styles/modalOS.css';
+import './styles/printA4.css';
 
 const COLUNAS = [
     { id: 'fila', titulo: 'Fila de Espera', icone: <Clock size={18} color="#f97316" /> },
@@ -28,6 +31,8 @@ export function OrdemServicoKanban() {
     const [filtroFinanceiro, setFiltroFinanceiro] = useState('todos');
     const [mostrarAtrasados, setMostrarAtrasados] = useState(false);
     const [filtroStatus, setFiltroStatus] = useState('todos');
+    const [dataInicio, setDataInicio] = useState('');
+    const [dataFim, setDataFim] = useState('');
     const [osSelecionada, setOsSelecionada] = useState<OrdemServico | null>(null);
 
     const handleDragStart = (e: React.DragEvent, osId: number) => {
@@ -65,10 +70,24 @@ export function OrdemServicoKanban() {
             matchAtraso = dataEntrega ? dataEntrega < new Date() && os.status_producao !== 'entregue' : false;
         }
 
-        return matchBusca && matchFin && matchAtraso;
+        let matchData = true;
+        if (dataInicio && os.criado_em) {
+            const dataCriacao = os.criado_em.split('T')[0];
+            matchData = matchData && dataCriacao >= dataInicio;
+        }
+        if (dataFim && os.criado_em) {
+            const dataCriacao = os.criado_em.split('T')[0];
+            matchData = matchData && dataCriacao <= dataFim;
+        }
+
+        return matchBusca && matchFin && matchAtraso && matchData;
     });
 
-    const formatarData = (data?: string) => data ? new Date(data).toLocaleDateString('pt-BR') : 'Sem prazo';
+    const formatarData = (data?: string) => {
+        if (!data) return 'N/A';
+        const [ano, mes, dia] = data.split('T')[0].split('-');
+        return `${dia}/${mes}/${ano}`;
+    };
 
     const getBadgeFinanceiro = (status: string) => {
         switch(status) {
@@ -103,8 +122,32 @@ export function OrdemServicoKanban() {
                     </div>
                     
                     <div className="filtros-box">
-                        <Filter size={18} color="#94a3b8" />
-                        
+                        <div className="filtro-datas">
+                            <input 
+                                type="date" 
+                                value={dataInicio} 
+                                onChange={(e) => setDataInicio(e.target.value)}
+                                title="Data inicial de criação"
+                            />
+                            <span>a</span>
+                            <input 
+                                type="date" 
+                                value={dataFim} 
+                                onChange={(e) => setDataFim(e.target.value)}
+                                title="Data final de criação"
+                            />
+                            {(dataInicio || dataFim) && (
+                                <button 
+                                    type="button" 
+                                    className="btn-limpar-datas" 
+                                    onClick={() => { setDataInicio(''); setDataFim(''); }}
+                                    title="Limpar filtro de data"
+                                >
+                                    ✕
+                                </button>
+                            )}
+                        </div>
+
                         <select value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)}>
                             <option value="todos">Visão Geral (Kanban)</option>
                             <option value="fila">1. Fila de Espera</option>
@@ -182,10 +225,15 @@ export function OrdemServicoKanban() {
                                                     </div>
                                                     
                                                     <div className="card-footer">
+                                                        <div className="card-datas">
+                                                            <span className="criacao-os" title="Data de emissão/criação">
+                                                                Criado: {formatarData(os.criado_em)}
+                                                            </span>
+                                                            <span className={`prazo-os ${estaAtrasado ? 'atrasado' : ''}`}>
+                                                                <Calendar size={13}/> {formatarData(os.data_entrega)}
+                                                            </span>
+                                                        </div>
                                                         <span className="valor-os">{formatarBRL(os.preco_venda)}</span>
-                                                        <span className={`prazo-os ${estaAtrasado ? 'atrasado' : ''}`}>
-                                                            <Calendar size={13}/> {formatarData(os.data_entrega)}
-                                                        </span>
                                                     </div>
                                                 </div>
                                             );

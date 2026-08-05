@@ -12,7 +12,7 @@ export interface OrdemServico {
     preco_venda: number | string;
 
     // Campos técnicos e operacionais da oficina
-    solicitante?: string;
+    responsaveis_execucao?: string;
     observacoes?: string;
     laudo_tecnico?: string;
     custo_extra_materiais?: number;

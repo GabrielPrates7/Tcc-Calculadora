@@ -1,0 +1,800 @@
+/* CONTAINER PRINCIPAL */
+.kanban-container {
+    padding: 24px 32px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #0f172a;
+    box-sizing: border-box;
+    overflow: hidden;
+    color: #f8fafc;
+}
+
+.kanban-header {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-shrink: 0;
+}
+
+.header-titles h1 {
+    margin: 0 0 4px 0;
+    color: #ffffff;
+    font-size: 1.6rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.header-titles p {
+    color: #94a3b8;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* BARRA DE FERRAMENTAS */
+.kanban-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #1e293b;
+    padding: 12px 20px;
+    border-radius: 8px;
+    border: 1px solid #334155;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.search-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background-color: #ffffff;
+    padding: 9px 16px;
+    border-radius: 6px;
+    flex: 1;
+    min-width: 280px;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+}
+
+.search-box:focus-within {
+    border-color: #f97316;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
+}
+
+.search-box input {
+    border: none;
+    background: transparent;
+    outline: none;
+    width: 100%;
+    font-size: 0.9rem;
+    color: #0f172a;
+    font-weight: 500;
+}
+
+.filtros-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.filtros-box select {
+    padding: 9px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background-color: #ffffff;
+    color: #0f172a;
+    font-size: 0.85rem;
+    font-weight: 600;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.filtros-box select:focus {
+    border-color: #f97316;
+}
+
+.checkbox-atraso {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    background-color: #334155;
+    padding: 9px 14px;
+    border-radius: 6px;
+    border: 1px solid #475569;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.checkbox-atraso:hover {
+    background-color: #ef4444;
+    border-color: #dc2626;
+    color: #ffffff;
+}
+
+/* QUADRO KANBAN */
+.kanban-board {
+    display: flex;
+    gap: 20px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 16px;
+    flex: 1;
+    align-items: flex-start;
+}
+
+/* COLUNAS */
+.kanban-column {
+    background-color: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    flex: 0 0 330px;
+    width: 330px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-height: 100%;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+}
+
+.column-header {
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #0f172a;
+    border-bottom: 2px solid #e2e8f0;
+    background-color: #ffffff;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+}
+
+.column-header h2 {
+    margin: 0;
+    font-size: 0.88rem;
+    font-weight: 800;
+    flex: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #1e293b;
+}
+
+.card-count {
+    background: #0f172a;
+    color: #f8fafc;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.column-body {
+    padding: 14px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+}
+
+.empty-column {
+    text-align: center;
+    padding: 32px 16px;
+    color: #64748b;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: 2px dashed #cbd5e1;
+    border-radius: 8px;
+    margin-top: 4px;
+    background-color: rgba(255, 255, 255, 0.5);
+}
+
+/* CARTÃO DA O.S. */
+.kanban-card {
+    background-color: #ffffff !important;
+    border: 1px solid #cbd5e1;
+    border-left: 5px solid #f97316 !important;
+    border-radius: 8px;
+    padding: 14px 16px;
+    box-shadow: 0 2px 4px rgba(15, 23, 42, 0.06);
+    cursor: grab;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.kanban-card:hover {
+    box-shadow: 0 8px 16px rgba(15, 23, 42, 0.12);
+    border-color: #f97316;
+}
+
+.kanban-card:active {
+    cursor: grabbing;
+    transform: scale(0.98);
+}
+
+.card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.os-numero {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #2563eb;
+    background-color: #eff6ff;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid #bfdbfe;
+    letter-spacing: 0.5px;
+}
+
+.card-main {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.cliente-nome {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #0f172a !important;
+    line-height: 1.3;
+    word-break: break-word;
+}
+
+.produto-nome {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #475569 !important;
+    line-height: 1.35;
+    word-break: break-word;
+    font-weight: 500;
+}
+
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 10px;
+}
+
+.valor-os {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #0f172a !important;
+}
+
+.prazo-os {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.prazo-os.atrasado {
+    color: #dc2626;
+    font-weight: 700;
+    background-color: #fef2f2;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid #fecaca;
+}
+
+/* BADGES FINANCEIROS */
+.badge-fin {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.badge-pendente { background-color: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+.badge-sinal { background-color: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+.badge-pago { background-color: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+
+/* SCROLLBARS */
+.column-body::-webkit-scrollbar { width: 6px; }
+.column-body::-webkit-scrollbar-track { background: transparent; }
+.column-body::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+.kanban-board::-webkit-scrollbar { height: 8px; }
+.kanban-board::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+
+/* FILTRO DE INTERVALO DE DATAS NO TOPO */
+.filtro-datas {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background-color: #ffffff;
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+    color: #0f172a;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.filtro-datas input[type="date"] {
+    border: none;
+    outline: none;
+    font-size: 0.82rem;
+    color: #0f172a;
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.filtro-datas span {
+    color: #64748b;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+}
+
+.btn-limpar-datas {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 0 4px;
+    display: flex;
+    align-items: center;
+    transition: color 0.2s;
+}
+
+.btn-limpar-datas:hover {
+    color: #dc2626;
+}
+
+/* EXIBIÇÃO DE DATAS NO CARTÃO DO KANBAN */
+.card-datas {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.criacao-os {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    font-weight: 600;
+}/* CONTAINER PRINCIPAL */
+.kanban-container {
+    padding: 24px 32px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #0f172a;
+    box-sizing: border-box;
+    overflow: hidden;
+    color: #f8fafc;
+}
+
+.kanban-header {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-shrink: 0;
+}
+
+.header-titles h1 {
+    margin: 0 0 4px 0;
+    color: #ffffff;
+    font-size: 1.6rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.header-titles p {
+    color: #94a3b8;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* BARRA DE FERRAMENTAS UNIFICADA */
+.kanban-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #1e293b;
+    padding: 14px 18px;
+    border-radius: 10px;
+    border: 1px solid #334155;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.25);
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+/* CAMPO DE BUSCA (ALTURA FIXA 40PX) */
+.search-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background-color: #ffffff;
+    padding: 0 14px;
+    height: 40px;
+    border-radius: 6px;
+    flex: 1;
+    min-width: 260px;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+    box-sizing: border-box;
+}
+
+.search-box:focus-within {
+    border-color: #f97316;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
+}
+
+.search-box input {
+    border: none;
+    background: transparent;
+    outline: none;
+    width: 100%;
+    font-size: 0.88rem;
+    color: #0f172a;
+    font-weight: 600;
+    font-family: inherit;
+}
+
+/* CONTAINER DOS FILTROS (SEM FUNDO BRANCO) */
+.filtros-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    background: transparent;
+}
+
+/* SELETOR DE PERÍODO DE DATA */
+.filtro-datas {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #ffffff;
+    padding: 0 12px;
+    height: 40px;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+    color: #0f172a;
+    font-size: 0.85rem;
+    font-weight: 600;
+    box-sizing: border-box;
+}
+
+.filtro-datas input[type="date"] {
+    border: none;
+    background: transparent;
+    color: #0f172a;
+    font-size: 0.82rem;
+    font-weight: 600;
+    font-family: inherit;
+    outline: none;
+    cursor: pointer;
+    padding: 0;
+    color-scheme: light;
+}
+
+.filtro-datas span {
+    color: #64748b;
+    font-weight: 800;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+}
+
+.btn-limpar-datas {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: 0 4px;
+    display: flex;
+    align-items: center;
+    transition: color 0.2s;
+}
+
+.btn-limpar-datas:hover {
+    color: #dc2626;
+}
+
+/* SELECTS PADRONIZADOS EM 40PX */
+.filtros-box select {
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background-color: #ffffff;
+    color: #0f172a;
+    font-size: 0.85rem;
+    font-weight: 600;
+    font-family: inherit;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.filtros-box select:focus {
+    border-color: #f97316;
+}
+
+/* BOTÃO TOGGLE DE APENAS ATRASADOS */
+.checkbox-atraso {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 40px;
+    padding: 0 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    background-color: #334155;
+    border: 1px solid #475569;
+    transition: all 0.2s;
+    user-select: none;
+    box-sizing: border-box;
+    margin: 0;
+}
+
+.checkbox-atraso input[type="checkbox"] {
+    cursor: pointer;
+    accent-color: #f97316;
+    width: 15px;
+    height: 15px;
+    margin: 0;
+}
+
+.checkbox-atraso:hover {
+    background-color: #475569;
+}
+
+.checkbox-atraso:has(input:checked) {
+    background-color: #ef4444;
+    border-color: #dc2626;
+    color: #ffffff;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.25);
+}
+
+/* QUADRO KANBAN */
+.kanban-board {
+    display: flex;
+    gap: 20px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 16px;
+    flex: 1;
+    align-items: flex-start;
+}
+
+/* COLUNAS */
+.kanban-column {
+    background-color: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    flex: 0 0 330px;
+    width: 330px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-height: 100%;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+}
+
+.column-header {
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #0f172a;
+    border-bottom: 2px solid #e2e8f0;
+    background-color: #ffffff;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+}
+
+.column-header h2 {
+    margin: 0;
+    font-size: 0.88rem;
+    font-weight: 800;
+    flex: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #1e293b;
+}
+
+.card-count {
+    background: #0f172a;
+    color: #f8fafc;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.column-body {
+    padding: 14px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+}
+
+.empty-column {
+    text-align: center;
+    padding: 32px 16px;
+    color: #64748b;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: 2px dashed #cbd5e1;
+    border-radius: 8px;
+    margin-top: 4px;
+    background-color: rgba(255, 255, 255, 0.5);
+}
+
+/* CARTÃO DA O.S. */
+.kanban-card {
+    background-color: #ffffff !important;
+    border: 1px solid #cbd5e1;
+    border-left: 5px solid #f97316 !important;
+    border-radius: 8px;
+    padding: 14px 16px;
+    box-shadow: 0 2px 4px rgba(15, 23, 42, 0.06);
+    cursor: grab;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.kanban-card:hover {
+    box-shadow: 0 8px 16px rgba(15, 23, 42, 0.12);
+    border-color: #f97316;
+}
+
+.kanban-card:active {
+    cursor: grabbing;
+    transform: scale(0.98);
+}
+
+.card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.os-numero {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #2563eb;
+    background-color: #eff6ff;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid #bfdbfe;
+    letter-spacing: 0.5px;
+}
+
+.card-main {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.cliente-nome {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #0f172a !important;
+    line-height: 1.3;
+    word-break: break-word;
+}
+
+.produto-nome {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #475569 !important;
+    line-height: 1.35;
+    word-break: break-word;
+    font-weight: 500;
+}
+
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 10px;
+}
+
+.valor-os {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #0f172a !important;
+}
+
+.prazo-os {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.prazo-os.atrasado {
+    color: #dc2626;
+    font-weight: 700;
+    background-color: #fef2f2;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid #fecaca;
+}
+
+/* BADGES FINANCEIROS */
+.badge-fin {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.badge-pendente { background-color: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+.badge-sinal { background-color: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+.badge-pago { background-color: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+
+/* SCROLLBARS */
+.column-body::-webkit-scrollbar { width: 6px; }
+.column-body::-webkit-scrollbar-track { background: transparent; }
+.column-body::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+.kanban-board::-webkit-scrollbar { height: 8px; }
+.kanban-board::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+
+/* EXIBIÇÃO DE DATAS NO CARTÃO DO KANBAN */
+.card-datas {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.criacao-os {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    font-weight: 600;
+}
