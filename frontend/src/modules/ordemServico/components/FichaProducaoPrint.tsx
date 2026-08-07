@@ -13,6 +13,8 @@ export function FichaProducaoPrint({
     formatarData,
     formatarBRL
 }: Props) {
+    const estaFinalizado = osSelecionada.status_producao === 'pronto' || osSelecionada.status_producao === 'entregue';
+
     return (
         <div className="print-layout">
             <div className="print-header-banner">
@@ -27,22 +29,29 @@ export function FichaProducaoPrint({
             </div>
 
             <div className="print-info-grid">
+                {/* 1. CLIENTE */}
                 <div className="print-box">
                     <span className="print-box-label">Cliente</span>
                     <strong>{osSelecionada.cliente || 'Consumidor Final'}</strong>
                 </div>
+
+                {/* 2. PRODUTO / SERVIÇO */}
                 <div className="print-box">
                     <span className="print-box-label">Produto / Serviço Usinado</span>
                     <strong>{osSelecionada.nome_produto}</strong>
                 </div>
-                <div className="print-box">
-                    <span className="print-box-label">Data de Emissão (Criação)</span>
-                    <strong>{formatarData(osSelecionada.criado_em)}</strong>
-                </div>
-                <div className="print-box">
-                    <span className="print-box-label">Prazo de Entrega Acordado</span>
-                    <strong>{formatarData(osSelecionada.data_entrega)}</strong>
-                </div>
+
+                {/* 3. DATA DE FINALIZAÇÃO (EXIBIÇÃO CONDICIONAL COM RÓTULO LIMPO) */}
+                {estaFinalizado && (
+                    <div className="print-box" style={{ gridColumn: 'span 2', borderColor: '#16a34a', backgroundColor: '#f0fdf4' }}>
+                        <span className="print-box-label" style={{ color: '#16a34a' }}>Data de Finalização</span>
+                        <strong style={{ color: '#15803d' }}>
+                            ✓ Produção Concluída em: {formatarData(osSelecionada.data_finalizacao || osSelecionada.atualizado_em)}
+                        </strong>
+                    </div>
+                )}
+
+                {/* 4. EQUIPE EXECUTORA */}
                 <div className="print-box" style={{ gridColumn: 'span 2' }}>
                     <span className="print-box-label">Equipe Executora Alocada</span>
                     {equipeListRead.length > 0 ? (

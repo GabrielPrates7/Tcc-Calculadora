@@ -9,6 +9,8 @@ import './styles/kanban.css';
 import './styles/modalOS.css';
 import './styles/printA4.css';
 
+type TipoDataFiltro = 'criacao' | 'entrega' | 'finalizacao';
+
 const COLUNAS = [
     { id: 'fila', titulo: 'Fila de Espera', icone: <Clock size={18} color="#f97316" /> },
     { id: 'producao', titulo: 'Em Produção', icone: <PenTool size={18} color="#3b82f6" /> },
@@ -31,8 +33,11 @@ export function OrdemServicoKanban() {
     const [filtroFinanceiro, setFiltroFinanceiro] = useState('todos');
     const [mostrarAtrasados, setMostrarAtrasados] = useState(false);
     const [filtroStatus, setFiltroStatus] = useState('todos');
+    
+    const [tipoDataFiltro, setTipoDataFiltro] = useState<TipoDataFiltro>('criacao');
     const [dataInicio, setDataInicio] = useState('');
     const [dataFim, setDataFim] = useState('');
+    
     const [osSelecionada, setOsSelecionada] = useState<OrdemServico | null>(null);
 
     const handleDragStart = (e: React.DragEvent, osId: number) => {
@@ -57,27 +62,40 @@ export function OrdemServicoKanban() {
     };
 
     const ordensFiltradas = ordens.filter(os => {
-        const termo = busca.toLowerCase();
+        const termo = busca.trim().toLowerCase();
+        const idLimpo = termo.replace(/^[#nºº\s]+/, '');
+        
         const matchBusca = (os.cliente || '').toLowerCase().includes(termo) || 
                            (os.nome_produto || '').toLowerCase().includes(termo) || 
-                           os.os_id.toString().includes(termo);
+                           os.os_id.toString().includes(idLimpo);
 
         const matchFin = filtroFinanceiro === 'todos' || os.status_financeiro === filtroFinanceiro;
 
-        let matchAtraso = true;
-        if (mostrarAtrasados) {
-            const dataEntrega = os.data_entrega ? new Date(os.data_entrega) : null;
-            matchAtraso = dataEntrega ? dataEntrega < new Date() && os.status_producao !== 'entregue' : false;
-        }
+        const matchAtraso = !mostrarAtrasados || Boolean(os.esta_atrasado);
 
+        // Lógica temporal com simetria entre exibição no card e filtro
         let matchData = true;
-        if (dataInicio && os.criado_em) {
-            const dataCriacao = os.criado_em.split('T')[0];
-            matchData = matchData && dataCriacao >= dataInicio;
-        }
-        if (dataFim && os.criado_em) {
-            const dataCriacao = os.criado_em.split('T')[0];
-            matchData = matchData && dataCriacao <= dataFim;
+        if (dataInicio || dataFim) {
+            let dataAlvo: string | undefined;
+            
+            if (tipoDataFiltro === 'criacao') {
+                dataAlvo = os.criado_em;
+            } else if (tipoDataFiltro === 'entrega') {
+                dataAlvo = os.data_entrega;
+            } else if (tipoDataFiltro === 'finalizacao') {
+                // Fallback simétrico: consome data_finalizacao ou atualizado_em para itens concluídos
+                dataAlvo = ['pronto', 'entregue'].includes(os.status_producao) 
+                    ? (os.data_finalizacao || os.atualizado_em) 
+                    : undefined;
+            }
+
+            if (!dataAlvo) {
+                matchData = false;
+            } else {
+                const dataISO = dataAlvo.split('T')[0];
+                if (dataInicio && dataISO < dataInicio) matchData = false;
+                if (dataFim && dataISO > dataFim) matchData = false;
+            }
         }
 
         return matchBusca && matchFin && matchAtraso && matchData;
@@ -111,8 +129,9 @@ export function OrdemServicoKanban() {
                 </div>
 
                 <div className="kanban-toolbar">
-                    <div className="search-box">
-                        <Search size={18} color="#64748b" />
+                    {/* BARRA DE PESQUISA COMPACTA (LARGURA FIXA ALINHADA À ESQUERDA) */}
+                    <div className="search-box compacta">
+                        <Search size={17} color="#64748b" />
                         <input 
                             type="text" 
                             placeholder="Buscar cliente, produto ou #ID..." 
@@ -121,20 +140,34 @@ export function OrdemServicoKanban() {
                         />
                     </div>
                     
+                    {/* GRADE DE FILTROS ALINHADA NO MESMO EIXO VERTICAL */}
                     <div className="filtros-box">
-                        <div className="filtro-datas">
+                        <div className="filtro-datas-pill">
+                            <span className="filtro-label-inline">Período:</span>
+                            <select 
+                                value={tipoDataFiltro} 
+                                onChange={(e) => setTipoDataFiltro(e.target.value as TipoDataFiltro)}
+                                className="select-temporal"
+                            >
+                                <option value="criacao">📅 Criação</option>
+                                <option value="entrega">⏳ Prazo</option>
+                                <option value="finalizacao">✓ Conclusão</option>
+                            </select>
+
                             <input 
                                 type="date" 
+                                className="input-data-compacto"
                                 value={dataInicio} 
                                 onChange={(e) => setDataInicio(e.target.value)}
-                                title="Data inicial de criação"
+                                title="Data inicial"
                             />
-                            <span>a</span>
+                            <span className="data-separador">a</span>
                             <input 
                                 type="date" 
+                                className="input-data-compacto"
                                 value={dataFim} 
                                 onChange={(e) => setDataFim(e.target.value)}
-                                title="Data final de criação"
+                                title="Data final"
                             />
                             {(dataInicio || dataFim) && (
                                 <button 
@@ -148,7 +181,11 @@ export function OrdemServicoKanban() {
                             )}
                         </div>
 
-                        <select value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)}>
+                        <select 
+                            className="select-filtro-kanban"
+                            value={filtroStatus} 
+                            onChange={(e) => setFiltroStatus(e.target.value)}
+                        >
                             <option value="todos">Visão Geral (Kanban)</option>
                             <option value="fila">1. Fila de Espera</option>
                             <option value="producao">2. Em Produção</option>
@@ -157,7 +194,11 @@ export function OrdemServicoKanban() {
                             <option value="entregue">5. Entregues</option>
                         </select>
 
-                        <select value={filtroFinanceiro} onChange={(e) => setFiltroFinanceiro(e.target.value)}>
+                        <select 
+                            className="select-filtro-kanban"
+                            value={filtroFinanceiro} 
+                            onChange={(e) => setFiltroFinanceiro(e.target.value)}
+                        >
                             <option value="todos">Todos os Pagamentos</option>
                             <option value="pendente">Apenas Pendentes</option>
                             <option value="sinal_pago">Sinal Pago (50%)</option>
@@ -199,11 +240,7 @@ export function OrdemServicoKanban() {
                                         <div className="empty-column">Nenhuma O.S. aqui</div>
                                     ) : (
                                         ordensDaColuna.map(os => {
-                                            const estaAtrasado = Boolean(
-                                                os.data_entrega && 
-                                                new Date(os.data_entrega) < new Date() && 
-                                                os.status_producao !== 'entregue'
-                                            );
+                                            const estaAtrasado = Boolean(os.esta_atrasado);
 
                                             return (
                                                 <div 
@@ -232,6 +269,11 @@ export function OrdemServicoKanban() {
                                                             <span className={`prazo-os ${estaAtrasado ? 'atrasado' : ''}`}>
                                                                 <Calendar size={13}/> {formatarData(os.data_entrega)}
                                                             </span>
+                                                            {['pronto', 'entregue'].includes(os.status_producao) && (
+                                                                <span className="finalizado-os">
+                                                                    ✓ Finalizado: {formatarData(os.data_finalizacao || os.atualizado_em)}
+                                                                </span>
+                                                            )}
                                                         </div>
                                                         <span className="valor-os">{formatarBRL(os.preco_venda)}</span>
                                                     </div>

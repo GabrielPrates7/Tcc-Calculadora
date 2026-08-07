@@ -1,4 +1,4 @@
-import { User, Tag, DollarSign, Calendar, Printer, Wrench, FileText, AlertTriangle, Users } from 'lucide-react';
+import { User, Tag, DollarSign, Calendar, Printer, Wrench, FileText, AlertTriangle, Users, CheckCircle } from 'lucide-react';
 import type { OrdemServico } from '../types';
 
 interface Props {
@@ -16,6 +16,9 @@ export function VisaoLeituraOS({
     formatarBRL,
     onAtualizarFinanceiro
 }: Props) {
+    const estaFinalizado = ['pronto', 'entregue'].includes(osSelecionada.status_producao);
+    const estaAtrasado = Boolean(osSelecionada.esta_atrasado);
+
     return (
         <>
             <div className="os-info-grid">
@@ -51,13 +54,34 @@ export function VisaoLeituraOS({
                     </div>
                 </div>
 
-                <div className="os-info-box">
-                    <Calendar size={18} color="#3b82f6"/>
+                {/* PRAZO DE ENTREGA COM DESTAQUE VISUAL DE ATRASO VIA SQL */}
+                <div 
+                    className="os-info-box" 
+                    style={estaAtrasado ? { borderColor: '#ef4444', backgroundColor: '#fef2f2' } : undefined}
+                >
+                    <Calendar size={18} color={estaAtrasado ? '#dc2626' : '#3b82f6'}/>
                     <div>
-                        <label>Prazo de Entrega Acordado</label>
-                        <p>{formatarData(osSelecionada.data_entrega)}</p>
+                        <label style={estaAtrasado ? { color: '#dc2626', fontWeight: 700 } : undefined}>
+                            Prazo de Entrega {estaAtrasado && '⚠️ (Atrasado)'}
+                        </label>
+                        <p style={estaAtrasado ? { color: '#b91c1c', fontWeight: 700 } : undefined}>
+                            {formatarData(osSelecionada.data_entrega)}
+                        </p>
                     </div>
                 </div>
+
+                {/* EXIBIÇÃO CONDICIONAL DA DATA DE FINALIZAÇÃO */}
+                {estaFinalizado && (
+                    <div className="os-info-box" style={{ borderColor: '#22c55e', backgroundColor: '#f0fdf4' }}>
+                        <CheckCircle size={18} color="#16a34a"/>
+                        <div>
+                            <label style={{ color: '#16a34a', fontWeight: 700 }}>Data de Finalização</label>
+                            <p style={{ color: '#15803d', fontWeight: 700 }}>
+                                {formatarData(osSelecionada.data_finalizacao || osSelecionada.atualizado_em)}
+                            </p>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {(equipeListRead.length > 0 || osSelecionada.laudo_tecnico || osSelecionada.observacoes || Number(osSelecionada.custo_extra_materiais) > 0) && (

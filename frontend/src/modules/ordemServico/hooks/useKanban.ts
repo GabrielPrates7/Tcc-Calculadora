@@ -6,14 +6,15 @@ export function useKanban() {
     const [ordens, setOrdens] = useState<OrdemServico[]>([]);
     const [loading, setLoading] = useState(true);
 
-    const carregarOrdens = useCallback(async () => {
+    const carregarOrdens = useCallback(async (silencioso = false) => {
+        if (!silencioso) setLoading(true);
         try {
             const data = await OrdemServicoService.listarTodas();
             setOrdens(data);
         } catch (error) {
-            console.error("Erro ao carregar O.S.", error);
+            console.error("Erro ao carregar Ordens de Serviço:", error);
         } finally {
-            setLoading(false);
+            if (!silencioso) setLoading(false);
         }
     }, []);
 
@@ -43,16 +44,23 @@ export function useKanban() {
     }, []);
 
     const moverOrdem = async (osId: number, novaColuna: string) => {
+        // 1. Atualização Otimista na UI para resposta visual instantânea
         setOrdens(prev => prev.map(os => 
             os.os_id === osId ? { ...os, status_producao: novaColuna as OrdemServico['status_producao'] } : os
         ));
 
         try {
-            await OrdemServicoService.atualizarStatus(osId, novaColuna);
+            // 2. Persistência no servidor e recebimento das variáveis calculadas (data_finalizacao, esta_atrasado)
+            const osAtualizada = await OrdemServicoService.atualizarStatus(osId, novaColuna);
+            
+            // 3. Sincronização do estado local com a verdade do banco de dados
+            setOrdens(prev => prev.map(os => 
+                os.os_id === osId ? { ...os, ...osAtualizada } : os
+            ));
         } catch (error) {
-            console.error("Falha ao mover a O.S:", error);
+            console.error("Falha ao mover a Ordem de Serviço:", error);
             alert('Erro de conexão ao mover o cartão. Recarregando quadro...');
-            carregarOrdens();
+            carregarOrdens(true);
         }
     };
 
@@ -62,15 +70,19 @@ export function useKanban() {
         ));
 
         try {
-            await OrdemServicoService.atualizarStatus(osId, undefined, novoStatus);
+            const osAtualizada = await OrdemServicoService.atualizarStatus(osId, undefined, novoStatus);
+            setOrdens(prev => prev.map(os => 
+                os.os_id === osId ? { ...os, ...osAtualizada } : os
+            ));
         } catch (error) {
-            console.error("Falha ao atualizar financeiro:", error);
+            console.error("Falha ao atualizar status financeiro:", error);
             alert('Erro de conexão ao atualizar pagamento. Recarregando...');
-            carregarOrdens();
+            carregarOrdens(true);
         }
     };
 
     const atualizarOrdemCompleta = async (id: number, dados: Partial<OrdemServico>) => {
+        // Atualização otimista
         setOrdens(prev => prev.map(os => 
             os.os_id === id ? { ...os, ...dados } : os
         ));
@@ -81,9 +93,9 @@ export function useKanban() {
                 os.os_id === id ? { ...os, ...osAtualizada, os_id: id } : os
             ));
         } catch (error) {
-            console.error("Falha ao salvar edições:", error);
+            console.error("Falha ao salvar edições da O.S.:", error);
             alert('Erro ao salvar alterações da O.S. no servidor.');
-            carregarOrdens();
+            carregarOrdens(true);
         }
     };
 
@@ -93,9 +105,9 @@ export function useKanban() {
         try {
             await OrdemServicoService.excluir(id);
         } catch (error) {
-            console.error("Falha ao excluir O.S:", error);
+            console.error("Falha ao excluir Ordem de Serviço:", error);
             alert('Erro ao excluir a Ordem de Serviço no servidor.');
-            carregarOrdens();
+            carregarOrdens(true);
         }
     };
 

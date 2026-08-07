@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Edit3, Trash2 } from 'lucide-react';
+import { X, Edit3, Trash2, CheckCircle2 } from 'lucide-react';
 import type { OrdemServico } from '../types';
 import { formatarBRL } from '../../../utils/formatters';
 import { FormEdicaoOS } from './FormEdicaoOS';
@@ -43,16 +43,41 @@ export function ModalDetalhesOS({
         ? osSelecionada.responsaveis_execucao.split(',').map(item => item.trim()).filter(Boolean)
         : [];
 
+    const estaFinalizado = osSelecionada.status_producao === 'pronto' || osSelecionada.status_producao === 'entregue';
+    const dataFimReal = osSelecionada.data_finalizacao || osSelecionada.atualizado_em;
+
     return (
         <div className="modal-overlay">
             <div className="modal-os">
                 <div className="modal-os-header">
                     <div>
                         <h2>Ordem de Serviço #{osSelecionada.os_id}</h2>
-                        <span className="modal-coluna-atual no-print">
-                            Status de Produção: <strong>{tituloColunaAtual}</strong>
-                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginTop: '4px' }}>
+                            <span className="modal-coluna-atual no-print">
+                                Status de Produção: <strong>{tituloColunaAtual}</strong>
+                            </span>
+                            
+                            {/* INDICADOR VISUAL DO TÉRMINO DA PRODUÇÃO NO CABEÇALHO */}
+                            {estaFinalizado && dataFimReal && (
+                                <span className="no-print" style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 700,
+                                    color: '#16a34a',
+                                    backgroundColor: '#f0fdf4',
+                                    padding: '2px 8px',
+                                    borderRadius: '4px',
+                                    border: '1px solid #bbf7d0'
+                                }}>
+                                    <CheckCircle2 size={14} />
+                                    Concluído em: {formatarData(dataFimReal)}
+                                </span>
+                            )}
+                        </div>
                     </div>
+                    
                     <div className="modal-header-actions no-print">
                         {!modoEdicao && (
                             <>

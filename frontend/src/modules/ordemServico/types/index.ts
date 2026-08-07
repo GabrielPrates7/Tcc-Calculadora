@@ -6,6 +6,9 @@ export interface OrdemServico {
     data_entrega?: string;
     criado_em: string;
     
+    // Campo computado no PostgreSQL (identifica se o prazo venceu sem entrega)
+    esta_atrasado?: boolean;
+    
     // Dados que vêm do JOIN ou edição manual na O.S.
     cliente: string;
     nome_produto: string;
@@ -17,4 +20,6 @@ export interface OrdemServico {
     laudo_tecnico?: string;
     custo_extra_materiais?: number;
     descricao_materiais_extras?: string;
+    data_finalizacao?: string;
+    atualizado_em?: string;
 }

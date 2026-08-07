@@ -7,6 +7,7 @@ export interface IOrdemServicoEdicao {
     laudo_tecnico?: string | null;
     custo_extra_materiais?: number;
     descricao_materiais_extras?: string | null;
+    data_finalizacao?: string | null;
 }
 
 export class OrdemServicoService {
@@ -23,7 +24,14 @@ export class OrdemServicoService {
                 os.laudo_tecnico,
                 os.custo_extra_materiais,
                 os.descricao_materiais_extras,
+                os.data_finalizacao,
+                os.atualizado_em,
                 os.criado_em,
+                (CASE 
+                    WHEN os.data_entrega < CURRENT_DATE AND os.status_producao NOT IN ('pronto', 'entregue') 
+                    THEN true 
+                    ELSE false 
+                END) AS esta_atrasado,
                 o.cliente,
                 o.nome_produto,
                 o.preco_venda
@@ -37,8 +45,14 @@ export class OrdemServicoService {
 
     async criarDeOrcamento(orcamentoId: number, dataEntrega?: string) {
         const query = `
-            INSERT INTO public.ordens_servico (orcamento_id, status_producao, status_financeiro, data_entrega)
-            VALUES ($1, 'fila', 'pendente', $2)
+            INSERT INTO public.ordens_servico (
+                orcamento_id, 
+                status_producao, 
+                status_financeiro, 
+                data_entrega,
+                atualizado_em
+            )
+            VALUES ($1, 'fila', 'pendente', $2, NOW())
             RETURNING *;
         `;
         const result = await db.query(query, [orcamentoId, dataEntrega || null]);
@@ -51,7 +65,13 @@ export class OrdemServicoService {
                 UPDATE public.ordens_servico
                 SET 
                     status_producao = COALESCE($1, status_producao),
-                    status_financeiro = COALESCE($2, status_financeiro)
+                    status_financeiro = COALESCE($2, status_financeiro),
+                    data_finalizacao = CASE 
+                        WHEN COALESCE($1, status_producao) IN ('pronto', 'entregue') 
+                            THEN COALESCE(data_finalizacao, CURRENT_DATE)
+                        ELSE NULL 
+                    END,
+                    atualizado_em = NOW()
                 WHERE id = $3
                 RETURNING *
             )
@@ -66,7 +86,14 @@ export class OrdemServicoService {
                 a.laudo_tecnico,
                 a.custo_extra_materiais,
                 a.descricao_materiais_extras,
+                a.data_finalizacao,
+                a.atualizado_em,
                 a.criado_em,
+                (CASE 
+                    WHEN a.data_entrega < CURRENT_DATE AND a.status_producao NOT IN ('pronto', 'entregue') 
+                    THEN true 
+                    ELSE false 
+                END) AS esta_atrasado,
                 o.cliente,
                 o.nome_produto,
                 o.preco_venda
@@ -88,8 +115,10 @@ export class OrdemServicoService {
                     observacoes = $3,
                     laudo_tecnico = $4,
                     custo_extra_materiais = COALESCE($5, 0),
-                    descricao_materiais_extras = $6
-                WHERE id = $7
+                    descricao_materiais_extras = $6,
+                    data_finalizacao = $7,
+                    atualizado_em = NOW()
+                WHERE id = $8
                 RETURNING *
             )
             SELECT 
@@ -103,7 +132,14 @@ export class OrdemServicoService {
                 a.laudo_tecnico,
                 a.custo_extra_materiais,
                 a.descricao_materiais_extras,
+                a.data_finalizacao,
+                a.atualizado_em,
                 a.criado_em,
+                (CASE 
+                    WHEN a.data_entrega < CURRENT_DATE AND a.status_producao NOT IN ('pronto', 'entregue') 
+                    THEN true 
+                    ELSE false 
+                END) AS esta_atrasado,
                 o.cliente,
                 o.nome_produto,
                 o.preco_venda
@@ -117,6 +153,7 @@ export class OrdemServicoService {
             dados.laudo_tecnico || null,
             Number(dados.custo_extra_materiais) || 0,
             dados.descricao_materiais_extras || null,
+            dados.data_finalizacao || null,
             id
         ];
 
