@@ -1,23 +1,24 @@
 import React from 'react';
-import './IndicadorCard.css';
 
 interface Props {
     titulo: string;
-    valor: string | number;
+    valor: string;
     icone: React.ReactNode;
     cor: string;
+    sub?: string;
 }
 
-export function IndicadorCard({ titulo, valor, icone, cor }: Props) {
+export function IndicadorCard({ titulo, valor, icone, cor, sub }: Props) {
     return (
-        <div className="indicador-card" style={{ borderLeft: `4px solid ${cor}` }}>
-            <div className="card-corpo">
-                <h3>{titulo}</h3>
-                <p>{valor}</p>
+        <div className="ind-card" style={{ borderBottom: `3px solid ${cor}` }}>
+            <div className="ind-card-topo">
+                <span className="ind-titulo">{titulo}</span>
+                <div className="ind-icone" style={{ background: `${cor}22`, color: cor }}>
+                    {icone}
+                </div>
             </div>
-            <div className="card-icone" style={{ color: cor }}>
-                {icone}
-            </div>
+            <p className="ind-valor">{valor}</p>
+            {sub && <span className="ind-sub">{sub}</span>}
         </div>
     );
 }

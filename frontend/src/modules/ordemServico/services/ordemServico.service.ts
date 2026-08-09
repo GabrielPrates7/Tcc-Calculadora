@@ -37,15 +37,11 @@ export const OrdemServicoService = {
         return response.json();
     },
 
-    atualizarStatus: async (
-        id: number, 
-        status_producao?: string, 
-        status_financeiro?: string
-    ): Promise<OrdemServico> => {
+    atualizarStatus: async (id: number, status_producao?: string): Promise<OrdemServico> => {
         const response = await fetch(`${API_URL}/${id}/status`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status_producao, status_financeiro })
+            body: JSON.stringify({ status_producao })
         });
         
         if (!response.ok) {
@@ -76,5 +72,30 @@ export const OrdemServicoService = {
             await extrairErroAPI(response, 'Erro ao excluir Ordem de Serviço no servidor.');
         }
         return true;
+    },
+
+    // --- MÓDULO FINANCEIRO (TRANSAÇÕES) ---
+    registrarPagamento: async (osId: number, dados: { valor: number, forma_pagamento: string, data_pagamento: string }): Promise<OrdemServico> => {
+        const response = await fetch(`${API_URL}/${osId}/pagamentos`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dados)
+        });
+        
+        if (!response.ok) {
+            await extrairErroAPI(response, 'Erro ao registrar pagamento.');
+        }
+        return response.json(); // Retorna a O.S. com a lista de pagamentos e totalizados atualizados
+    },
+
+    excluirPagamento: async (pagamentoId: number): Promise<OrdemServico> => {
+        const response = await fetch(`${API_URL}/pagamentos/${pagamentoId}`, {
+            method: 'DELETE'
+        });
+        
+        if (!response.ok) {
+            await extrairErroAPI(response, 'Erro ao excluir pagamento.');
+        }
+        return response.json(); // Retorna a O.S. atualizada
     }
 };

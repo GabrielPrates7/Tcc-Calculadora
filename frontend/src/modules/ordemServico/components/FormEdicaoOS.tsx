@@ -191,62 +191,48 @@ export function FormEdicaoOS({ osSelecionada, onSalvarEdicao, onCancelar }: Prop
                 />
             </div>
 
-            <div className="form-group" style={{ marginTop: '16px' }}>
-                <label style={{ color: '#475569', fontSize: '0.85rem' }}>DESPESAS E MATERIAIS ADICIONAIS (PÓS-ORÇAMENTO)</label>
-                <hr style={{ border: 'none', borderTop: '1px solid #e2e8f0', margin: '6px 0 12px 0' }} />
-                
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '16px' }}>
-                    <div>
-                        <label style={{ fontSize: '0.78rem' }}>CUSTO EXTRA MANUAL (R$)</label>
-                        <input 
-                            type="number" 
-                            step="0.01"
-                            className="form-input"
-                            placeholder="0,00"
-                            value={formData.custo_extra_materiais}
-                            onChange={(e) => setFormData({ ...formData, custo_extra_materiais: e.target.value })}
-                        />
-                    </div>
-                    <div>
-                        <label style={{ fontSize: '0.78rem' }}>DESCRIÇÃO DO MATERIAL GASTO</label>
-                        <input 
-                            type="text" 
-                            className="form-input"
-                            placeholder="Ex: 2 dobradiças extras + cola instantânea"
-                            value={formData.descricao_materiais_extras}
-                            onChange={(e) => setFormData({ ...formData, descricao_materiais_extras: e.target.value })}
-                        />
-                    </div>
+            {/* SEÇÃO DIVISORA DE CUSTOS E MATERIAIS */}
+            <div className="form-section-divider" style={{ marginTop: '20px' }}>
+                <h4>Despesas e Materiais Adicionais (Pós-Orçamento)</h4>
+            </div>
+            
+            {/* GRID DE DUAS COLUNAS PARA CUSTO E DESCRIÇÃO LADO A LADO */}
+            <div className="form-grid-2">
+                <div className="form-group">
+                    <label>Custo Extra Manual (R$)</label>
+                    <input 
+                        type="number" 
+                        step="0.01"
+                        min="0"
+                        className="form-input"
+                        placeholder="Ex: 150.00"
+                        value={formData.custo_extra_materiais}
+                        onChange={(e) => setFormData({ ...formData, custo_extra_materiais: e.target.value })}
+                    />
+                </div>
+                <div className="form-group">
+                    <label>Descrição do Material Gasto</label>
+                    <input 
+                        type="text" 
+                        className="form-input"
+                        placeholder="Ex: 2 dobradiças extras + cola instantânea"
+                        value={formData.descricao_materiais_extras}
+                        onChange={(e) => setFormData({ ...formData, descricao_materiais_extras: e.target.value })}
+                    />
                 </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px' }}>
+            <div className="form-actions-footer">
                 <button 
                     type="button" 
+                    className="btn-cancelar"
                     onClick={onCancelar}
-                    style={{
-                        padding: '8px 16px',
-                        borderRadius: '6px',
-                        border: '1px solid #cbd5e1',
-                        backgroundColor: '#f8fafc',
-                        color: '#475569',
-                        fontWeight: 600,
-                        cursor: 'pointer'
-                    }}
                 >
                     Cancelar
                 </button>
                 <button 
                     type="submit"
-                    style={{
-                        padding: '8px 20px',
-                        borderRadius: '6px',
-                        border: 'none',
-                        backgroundColor: '#f97316',
-                        color: '#ffffff',
-                        fontWeight: 700,
-                        cursor: 'pointer'
-                    }}
+                    className="btn-salvar-os"
                 >
                     Salvar Alterações
                 </button>

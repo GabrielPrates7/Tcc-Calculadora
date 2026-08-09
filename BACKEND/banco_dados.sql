@@ -2,12 +2,12 @@
 -- PostgreSQL database dump
 --
 
-\restrict Lc69SSt7z8qniec7eMKoiHBoywBfJ9nZliL0oxCV82d5iqwp830hmnPVidofnJk
+\restrict aYlpuQ7wcxc7t50cTHauhHK4FMzNSjBtShXK08D77EALNguXKsbBEEwRp2P69Fv
 
 -- Dumped from database version 18.1
 -- Dumped by pg_dump version 18.1
 
--- Started on 2026-08-02 22:58:43
+-- Started on 2026-08-09 00:24:54
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -60,7 +60,7 @@ CREATE SEQUENCE public.configuracao_producao_id_seq
 ALTER SEQUENCE public.configuracao_producao_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5171 (class 0 OID 0)
+-- TOC entry 5188 (class 0 OID 0)
 -- Dependencies: 227
 -- Name: configuracao_producao_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -105,7 +105,7 @@ CREATE SEQUENCE public.despesas_fixas_id_seq
 ALTER SEQUENCE public.despesas_fixas_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5172 (class 0 OID 0)
+-- TOC entry 5189 (class 0 OID 0)
 -- Dependencies: 221
 -- Name: despesas_fixas_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -145,7 +145,7 @@ CREATE SEQUENCE public.faturamentos_id_seq
 ALTER SEQUENCE public.faturamentos_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5173 (class 0 OID 0)
+-- TOC entry 5190 (class 0 OID 0)
 -- Dependencies: 229
 -- Name: faturamentos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -199,7 +199,7 @@ CREATE SEQUENCE public.funcionarios_id_seq
 ALTER SEQUENCE public.funcionarios_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5174 (class 0 OID 0)
+-- TOC entry 5191 (class 0 OID 0)
 -- Dependencies: 219
 -- Name: funcionarios_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -239,7 +239,7 @@ CREATE SEQUENCE public.funcoes_id_seq
 ALTER SEQUENCE public.funcoes_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5175 (class 0 OID 0)
+-- TOC entry 5192 (class 0 OID 0)
 -- Dependencies: 237
 -- Name: funcoes_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -281,7 +281,7 @@ CREATE SEQUENCE public.historico_custo_obra_id_seq
 ALTER SEQUENCE public.historico_custo_obra_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5176 (class 0 OID 0)
+-- TOC entry 5193 (class 0 OID 0)
 -- Dependencies: 233
 -- Name: historico_custo_obra_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -325,7 +325,7 @@ CREATE SEQUENCE public.investimentos_id_seq
 ALTER SEQUENCE public.investimentos_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5177 (class 0 OID 0)
+-- TOC entry 5194 (class 0 OID 0)
 -- Dependencies: 223
 -- Name: investimentos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -367,7 +367,7 @@ CREATE SEQUENCE public.obra_recursos_humanos_id_seq
 ALTER SEQUENCE public.obra_recursos_humanos_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5178 (class 0 OID 0)
+-- TOC entry 5195 (class 0 OID 0)
 -- Dependencies: 241
 -- Name: obra_recursos_humanos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -412,7 +412,7 @@ CREATE SEQUENCE public.obras_id_seq
 ALTER SEQUENCE public.obras_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5179 (class 0 OID 0)
+-- TOC entry 5196 (class 0 OID 0)
 -- Dependencies: 239
 -- Name: obras_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -461,7 +461,7 @@ CREATE SEQUENCE public.orcamentos_id_seq
 ALTER SEQUENCE public.orcamentos_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5180 (class 0 OID 0)
+-- TOC entry 5197 (class 0 OID 0)
 -- Dependencies: 225
 -- Name: orcamentos_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -482,11 +482,12 @@ CREATE TABLE public.ordens_servico (
     data_entrega date,
     criado_em timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     atualizado_em timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-    solicitante character varying(255),
+    responsaveis_execucao character varying(255),
     observacoes text,
     laudo_tecnico text,
     custo_extra_materiais numeric(10,2) DEFAULT 0.00,
-    descricao_materiais_extras text
+    descricao_materiais_extras text,
+    data_finalizacao date
 );
 
 
@@ -509,12 +510,54 @@ CREATE SEQUENCE public.ordens_servico_id_seq
 ALTER SEQUENCE public.ordens_servico_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5181 (class 0 OID 0)
+-- TOC entry 5198 (class 0 OID 0)
 -- Dependencies: 235
 -- Name: ordens_servico_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
 ALTER SEQUENCE public.ordens_servico_id_seq OWNED BY public.ordens_servico.id;
+
+
+--
+-- TOC entry 244 (class 1259 OID 17031)
+-- Name: pagamentos_os; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.pagamentos_os (
+    id integer NOT NULL,
+    os_id integer,
+    valor numeric(10,2) NOT NULL,
+    forma_pagamento character varying(50) NOT NULL,
+    data_pagamento date DEFAULT CURRENT_DATE NOT NULL,
+    registrado_em timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+
+
+ALTER TABLE public.pagamentos_os OWNER TO postgres;
+
+--
+-- TOC entry 243 (class 1259 OID 17030)
+-- Name: pagamentos_os_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE public.pagamentos_os_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER SEQUENCE public.pagamentos_os_id_seq OWNER TO postgres;
+
+--
+-- TOC entry 5199 (class 0 OID 0)
+-- Dependencies: 243
+-- Name: pagamentos_os_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE public.pagamentos_os_id_seq OWNED BY public.pagamentos_os.id;
 
 
 --
@@ -553,7 +596,7 @@ CREATE SEQUENCE public.snapshots_financeiros_id_seq
 ALTER SEQUENCE public.snapshots_financeiros_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5182 (class 0 OID 0)
+-- TOC entry 5200 (class 0 OID 0)
 -- Dependencies: 231
 -- Name: snapshots_financeiros_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -562,7 +605,7 @@ ALTER SEQUENCE public.snapshots_financeiros_id_seq OWNED BY public.snapshots_fin
 
 
 --
--- TOC entry 4933 (class 2604 OID 16490)
+-- TOC entry 4938 (class 2604 OID 16490)
 -- Name: configuracao_producao id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -570,7 +613,7 @@ ALTER TABLE ONLY public.configuracao_producao ALTER COLUMN id SET DEFAULT nextva
 
 
 --
--- TOC entry 4923 (class 2604 OID 16438)
+-- TOC entry 4928 (class 2604 OID 16438)
 -- Name: despesas_fixas id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -578,7 +621,7 @@ ALTER TABLE ONLY public.despesas_fixas ALTER COLUMN id SET DEFAULT nextval('publ
 
 
 --
--- TOC entry 4940 (class 2604 OID 16528)
+-- TOC entry 4945 (class 2604 OID 16528)
 -- Name: faturamentos_mensais id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -586,7 +629,7 @@ ALTER TABLE ONLY public.faturamentos_mensais ALTER COLUMN id SET DEFAULT nextval
 
 
 --
--- TOC entry 4911 (class 2604 OID 16410)
+-- TOC entry 4916 (class 2604 OID 16410)
 -- Name: funcionarios id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -594,7 +637,7 @@ ALTER TABLE ONLY public.funcionarios ALTER COLUMN id SET DEFAULT nextval('public
 
 
 --
--- TOC entry 4951 (class 2604 OID 16612)
+-- TOC entry 4956 (class 2604 OID 16612)
 -- Name: funcoes id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -602,7 +645,7 @@ ALTER TABLE ONLY public.funcoes ALTER COLUMN id SET DEFAULT nextval('public.func
 
 
 --
--- TOC entry 4943 (class 2604 OID 16581)
+-- TOC entry 4948 (class 2604 OID 16581)
 -- Name: historico_custo_obra id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -610,7 +653,7 @@ ALTER TABLE ONLY public.historico_custo_obra ALTER COLUMN id SET DEFAULT nextval
 
 
 --
--- TOC entry 4927 (class 2604 OID 16449)
+-- TOC entry 4932 (class 2604 OID 16449)
 -- Name: investimentos id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -618,7 +661,7 @@ ALTER TABLE ONLY public.investimentos ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
--- TOC entry 4959 (class 2604 OID 16974)
+-- TOC entry 4964 (class 2604 OID 16974)
 -- Name: obra_recursos_humanos id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -626,7 +669,7 @@ ALTER TABLE ONLY public.obra_recursos_humanos ALTER COLUMN id SET DEFAULT nextva
 
 
 --
--- TOC entry 4954 (class 2604 OID 16959)
+-- TOC entry 4959 (class 2604 OID 16959)
 -- Name: obras id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -634,7 +677,7 @@ ALTER TABLE ONLY public.obras ALTER COLUMN id SET DEFAULT nextval('public.obras_
 
 
 --
--- TOC entry 4931 (class 2604 OID 16473)
+-- TOC entry 4936 (class 2604 OID 16473)
 -- Name: orcamentos id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -642,7 +685,7 @@ ALTER TABLE ONLY public.orcamentos ALTER COLUMN id SET DEFAULT nextval('public.o
 
 
 --
--- TOC entry 4945 (class 2604 OID 16594)
+-- TOC entry 4950 (class 2604 OID 16594)
 -- Name: ordens_servico id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -650,7 +693,15 @@ ALTER TABLE ONLY public.ordens_servico ALTER COLUMN id SET DEFAULT nextval('publ
 
 
 --
--- TOC entry 4941 (class 2604 OID 16570)
+-- TOC entry 4966 (class 2604 OID 17034)
+-- Name: pagamentos_os id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.pagamentos_os ALTER COLUMN id SET DEFAULT nextval('public.pagamentos_os_id_seq'::regclass);
+
+
+--
+-- TOC entry 4946 (class 2604 OID 16570)
 -- Name: snapshots_financeiros id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -658,7 +709,7 @@ ALTER TABLE ONLY public.snapshots_financeiros ALTER COLUMN id SET DEFAULT nextva
 
 
 --
--- TOC entry 5151 (class 0 OID 16487)
+-- TOC entry 5166 (class 0 OID 16487)
 -- Dependencies: 228
 -- Data for Name: configuracao_producao; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -667,7 +718,7 @@ INSERT INTO public.configuracao_producao VALUES (1, 20, 0, 5, 'dias', 'grupo', 2
 
 
 --
--- TOC entry 5145 (class 0 OID 16435)
+-- TOC entry 5160 (class 0 OID 16435)
 -- Dependencies: 222
 -- Data for Name: despesas_fixas; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -690,7 +741,7 @@ INSERT INTO public.despesas_fixas VALUES (87, 'Caçamba - Agosto', 960.00, '2026
 
 
 --
--- TOC entry 5153 (class 0 OID 16525)
+-- TOC entry 5168 (class 0 OID 16525)
 -- Dependencies: 230
 -- Data for Name: faturamentos_mensais; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -704,7 +755,7 @@ INSERT INTO public.faturamentos_mensais VALUES (13, 8, 2026, 200000.00);
 
 
 --
--- TOC entry 5143 (class 0 OID 16407)
+-- TOC entry 5158 (class 0 OID 16407)
 -- Dependencies: 220
 -- Data for Name: funcionarios; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -760,7 +811,7 @@ INSERT INTO public.funcionarios VALUES (33, 'João Fulano', 100.00, 8.33, 2.78, 
 
 
 --
--- TOC entry 5161 (class 0 OID 16609)
+-- TOC entry 5176 (class 0 OID 16609)
 -- Dependencies: 238
 -- Data for Name: funcoes; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -781,7 +832,7 @@ INSERT INTO public.funcoes VALUES (60, 'Marceneiro', 176.00, 0.00);
 
 
 --
--- TOC entry 5157 (class 0 OID 16578)
+-- TOC entry 5172 (class 0 OID 16578)
 -- Dependencies: 234
 -- Data for Name: historico_custo_obra; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -791,7 +842,7 @@ INSERT INTO public.historico_custo_obra VALUES (3, '2026-07-29 19:36:03.447011',
 
 
 --
--- TOC entry 5147 (class 0 OID 16446)
+-- TOC entry 5162 (class 0 OID 16446)
 -- Dependencies: 224
 -- Data for Name: investimentos; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -805,7 +856,7 @@ INSERT INTO public.investimentos VALUES (21, 'Saveiro - Agosto', 1100.00, '2026-
 
 
 --
--- TOC entry 5165 (class 0 OID 16971)
+-- TOC entry 5180 (class 0 OID 16971)
 -- Dependencies: 242
 -- Data for Name: obra_recursos_humanos; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -844,7 +895,7 @@ INSERT INTO public.obra_recursos_humanos VALUES (141, 20, 21, 16.00, 26.46, 1);
 
 
 --
--- TOC entry 5163 (class 0 OID 16956)
+-- TOC entry 5178 (class 0 OID 16956)
 -- Dependencies: 240
 -- Data for Name: obras; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -867,7 +918,7 @@ INSERT INTO public.obras VALUES (23, '08-Reparo em Tambor Transportador', 'Miner
 
 
 --
--- TOC entry 5149 (class 0 OID 16470)
+-- TOC entry 5164 (class 0 OID 16470)
 -- Dependencies: 226
 -- Data for Name: orcamentos; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -886,17 +937,44 @@ INSERT INTO public.orcamentos VALUES (15, 'Fabricação de Cavaletes Industriais
 
 
 --
--- TOC entry 5159 (class 0 OID 16591)
+-- TOC entry 5174 (class 0 OID 16591)
 -- Dependencies: 236
 -- Data for Name: ordens_servico; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public.ordens_servico VALUES (1, 15, 'fila', 'pendente', '2026-08-12', '2026-08-02 17:06:35.776846', '2026-08-02 17:06:35.776846', NULL, NULL, NULL, 0.00, NULL);
-INSERT INTO public.ordens_servico VALUES (2, 14, 'fila', 'pendente', '2026-08-11', '2026-08-02 22:18:13.900997', '2026-08-02 22:43:04.185137', NULL, NULL, NULL, 0.00, NULL);
+INSERT INTO public.ordens_servico VALUES (10, 13, 'pronto', 'pendente', '2026-08-14', '2026-08-04 19:50:03.269607', '2026-08-04 19:50:03.269607', NULL, NULL, NULL, 0.00, NULL, '2026-08-04');
+INSERT INTO public.ordens_servico VALUES (1, 15, 'fila', 'pendente', '2026-08-12', '2026-08-02 17:06:35.776846', '2026-08-02 17:06:35.776846', NULL, NULL, NULL, 0.00, NULL, NULL);
+INSERT INTO public.ordens_servico VALUES (3, 12, 'fila', 'pendente', '2026-08-14', '2026-08-04 19:48:14.661332', '2026-08-04 19:48:14.661332', NULL, NULL, NULL, 0.00, NULL, NULL);
+INSERT INTO public.ordens_servico VALUES (4, 6, 'fila', 'pendente', '2026-08-14', '2026-08-04 19:48:28.71867', '2026-08-04 19:48:28.71867', NULL, NULL, NULL, 0.00, NULL, NULL);
+INSERT INTO public.ordens_servico VALUES (5, 7, 'fila', 'pendente', '2026-08-14', '2026-08-04 19:48:40.068797', '2026-08-04 19:48:40.068797', NULL, NULL, NULL, 0.00, NULL, NULL);
+INSERT INTO public.ordens_servico VALUES (6, 8, 'fila', 'pendente', '2026-08-14', '2026-08-04 19:48:52.071691', '2026-08-04 19:48:52.071691', NULL, NULL, NULL, 0.00, NULL, NULL);
+INSERT INTO public.ordens_servico VALUES (7, 9, 'fila', 'pendente', '2026-08-14', '2026-08-04 19:49:14.515331', '2026-08-04 19:49:14.515331', NULL, NULL, NULL, 0.00, NULL, NULL);
+INSERT INTO public.ordens_servico VALUES (8, 10, 'fila', 'pendente', '2026-08-14', '2026-08-04 19:49:25.657996', '2026-08-04 19:49:25.657996', NULL, NULL, NULL, 0.00, NULL, NULL);
+INSERT INTO public.ordens_servico VALUES (2, 14, 'pronto', 'pago', '2026-08-11', '2026-08-02 22:18:13.900997', '2026-08-02 22:43:04.185137', 'Fulano, Teste, Ciclano-Mecanico, teste2, teste3, teste4, teste 5, teste 6, teste 7, teste 8, teste 9, teste10, teste11, teste12, teste13, teste14, teste15, teste16', 'rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv', 'teste 123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrtteste vasrdfbgerhbethbtrhnrthwrgtw123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrttesteteste rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrt 123456789wergwerghetwhtrhwhtrhwrtteste teste 123456789wergwerghetwhtrhwhtrhwrt123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrtwergwergwergwergwerwergwergwergwergwergwergweeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee teste 123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrtteste vasrdfbgerhbethbtrhnrthwrgtw123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrttesteteste rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrt 123456789wergwerghetwhtrhwhtrhwrtteste teste 123456789wergwerghetwhtrhwhtrhwrt123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrtwergwergwergwergwerwergwergwergwergwergwergweeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee teste 123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrtteste vasrdfbgerhbethbtrhnrthwrgtw123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrttesteteste rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrt 123456789wergwerghetwhtrhwhtrhwrtteste teste 123456789wergwerghetwhtrhwhtrhwrt123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrtwergwergwergwergwerwergwergwergwergwergwergweeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee teste 123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrtteste vasrdfbgerhbethbtrhnrthwrgtw123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrttesteteste rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrt 123456789wergwerghetwhtrhwhtrhwrtteste teste 123456789wergwerghetwhtrhwhtrhwrt123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrtwergwergwergwergwerwergwergwergwergwergwergweeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee teste 123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrtteste vasrdfbgerhbethbtrhnrthwrgtw123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrttesteteste rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrt 123456789wergwerghetwhtrhwhtrhwrtteste teste 123456789wergwerghetwhtrhwhtrhwrt123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrtwergwergwergwergwerwergwergwergwergwergwergweeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee teste 123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrtteste vasrdfbgerhbethbtrhnrthwrgtw123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrttesteteste rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrt 123456789wergwerghetwhtrhwhtrhwrtteste teste 123456789wergwerghetwhtrhwhtrhwrt123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrtwergwergwergwergwerwergwergwergwergwergwergweeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee tteste 123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrtteste vasrdfbgerhbethbtrhnrthwrgtw123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrttesteteste rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrt 123456789wergwerghetwhtrhwhtrhwrtteste teste 123456789wergwerghetwhtrhwhtrhwrt123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrtwergwergwergwergwerwergwergwergwergwergwergweeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee tteste 123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrtteste vasrdfbgerhbethbtrhnrthwrgtw123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrttesteteste rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrt 123456789wergwerghetwhtrhwhtrhwrtteste teste 123456789wergwerghetwhtrhwhtrhwrt123456789wergwerghetwhtrhwhtrhwrtteste 123456789wergwerghetwhtrhwhtrhwrtwergwergwergwergwerwergwergwergwergwergwergweeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv', 10.00, 'chapa de açorrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr', '2026-08-02');
+INSERT INTO public.ordens_servico VALUES (11, 11, 'fila', 'pago', '2026-08-12', '2026-08-08 21:29:12.875249', '2026-08-08 21:41:41.527288', NULL, NULL, NULL, 0.00, NULL, NULL);
 
 
 --
--- TOC entry 5155 (class 0 OID 16567)
+-- TOC entry 5182 (class 0 OID 17031)
+-- Dependencies: 244
+-- Data for Name: pagamentos_os; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+INSERT INTO public.pagamentos_os VALUES (4, 11, 10564.26, 'PIX', '2026-08-09', '2026-08-09 00:01:38.081692');
+INSERT INTO public.pagamentos_os VALUES (5, 8, 5000.00, 'PIX', '2026-08-09', '2026-08-09 00:02:04.896137');
+INSERT INTO public.pagamentos_os VALUES (7, 8, 1.00, 'PIX', '2026-08-09', '2026-08-09 00:19:32.325214');
+INSERT INTO public.pagamentos_os VALUES (8, 8, 1.00, 'PIX', '2026-08-09', '2026-08-09 00:19:35.128952');
+INSERT INTO public.pagamentos_os VALUES (9, 8, 1.00, 'PIX', '2026-08-09', '2026-08-09 00:19:38.182678');
+INSERT INTO public.pagamentos_os VALUES (10, 8, 1.00, 'PIX', '2026-08-09', '2026-08-09 00:19:40.932846');
+INSERT INTO public.pagamentos_os VALUES (11, 8, 1.00, 'PIX', '2026-08-09', '2026-08-09 00:19:43.572686');
+INSERT INTO public.pagamentos_os VALUES (12, 8, 1.00, 'PIX', '2026-08-09', '2026-08-09 00:19:46.224667');
+INSERT INTO public.pagamentos_os VALUES (13, 8, 1.00, 'PIX', '2026-08-09', '2026-08-09 00:19:49.128303');
+INSERT INTO public.pagamentos_os VALUES (14, 8, 1.00, 'PIX', '2026-08-09', '2026-08-09 00:19:52.484612');
+INSERT INTO public.pagamentos_os VALUES (15, 8, 1.00, 'PIX', '2026-08-09', '2026-08-09 00:19:55.501076');
+
+
+--
+-- TOC entry 5170 (class 0 OID 16567)
 -- Dependencies: 232
 -- Data for Name: snapshots_financeiros; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -915,7 +993,7 @@ INSERT INTO public.snapshots_financeiros VALUES (14, '2026-07-26 12:34:56.920171
 
 
 --
--- TOC entry 5183 (class 0 OID 0)
+-- TOC entry 5201 (class 0 OID 0)
 -- Dependencies: 227
 -- Name: configuracao_producao_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
@@ -924,7 +1002,7 @@ SELECT pg_catalog.setval('public.configuracao_producao_id_seq', 1, false);
 
 
 --
--- TOC entry 5184 (class 0 OID 0)
+-- TOC entry 5202 (class 0 OID 0)
 -- Dependencies: 221
 -- Name: despesas_fixas_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
@@ -933,7 +1011,7 @@ SELECT pg_catalog.setval('public.despesas_fixas_id_seq', 94, true);
 
 
 --
--- TOC entry 5185 (class 0 OID 0)
+-- TOC entry 5203 (class 0 OID 0)
 -- Dependencies: 229
 -- Name: faturamentos_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
@@ -942,7 +1020,7 @@ SELECT pg_catalog.setval('public.faturamentos_id_seq', 17, true);
 
 
 --
--- TOC entry 5186 (class 0 OID 0)
+-- TOC entry 5204 (class 0 OID 0)
 -- Dependencies: 219
 -- Name: funcionarios_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
@@ -951,7 +1029,7 @@ SELECT pg_catalog.setval('public.funcionarios_id_seq', 101, true);
 
 
 --
--- TOC entry 5187 (class 0 OID 0)
+-- TOC entry 5205 (class 0 OID 0)
 -- Dependencies: 237
 -- Name: funcoes_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
@@ -960,7 +1038,7 @@ SELECT pg_catalog.setval('public.funcoes_id_seq', 61, true);
 
 
 --
--- TOC entry 5188 (class 0 OID 0)
+-- TOC entry 5206 (class 0 OID 0)
 -- Dependencies: 233
 -- Name: historico_custo_obra_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
@@ -969,7 +1047,7 @@ SELECT pg_catalog.setval('public.historico_custo_obra_id_seq', 3, true);
 
 
 --
--- TOC entry 5189 (class 0 OID 0)
+-- TOC entry 5207 (class 0 OID 0)
 -- Dependencies: 223
 -- Name: investimentos_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
@@ -978,7 +1056,7 @@ SELECT pg_catalog.setval('public.investimentos_id_seq', 21, true);
 
 
 --
--- TOC entry 5190 (class 0 OID 0)
+-- TOC entry 5208 (class 0 OID 0)
 -- Dependencies: 241
 -- Name: obra_recursos_humanos_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
@@ -987,7 +1065,7 @@ SELECT pg_catalog.setval('public.obra_recursos_humanos_id_seq', 145, true);
 
 
 --
--- TOC entry 5191 (class 0 OID 0)
+-- TOC entry 5209 (class 0 OID 0)
 -- Dependencies: 239
 -- Name: obras_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
@@ -996,7 +1074,7 @@ SELECT pg_catalog.setval('public.obras_id_seq', 27, true);
 
 
 --
--- TOC entry 5192 (class 0 OID 0)
+-- TOC entry 5210 (class 0 OID 0)
 -- Dependencies: 225
 -- Name: orcamentos_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
@@ -1005,16 +1083,25 @@ SELECT pg_catalog.setval('public.orcamentos_id_seq', 16, true);
 
 
 --
--- TOC entry 5193 (class 0 OID 0)
+-- TOC entry 5211 (class 0 OID 0)
 -- Dependencies: 235
 -- Name: ordens_servico_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.ordens_servico_id_seq', 2, true);
+SELECT pg_catalog.setval('public.ordens_servico_id_seq', 11, true);
 
 
 --
--- TOC entry 5194 (class 0 OID 0)
+-- TOC entry 5212 (class 0 OID 0)
+-- Dependencies: 243
+-- Name: pagamentos_os_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('public.pagamentos_os_id_seq', 15, true);
+
+
+--
+-- TOC entry 5213 (class 0 OID 0)
 -- Dependencies: 231
 -- Name: snapshots_financeiros_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
@@ -1023,7 +1110,7 @@ SELECT pg_catalog.setval('public.snapshots_financeiros_id_seq', 14, true);
 
 
 --
--- TOC entry 4970 (class 2606 OID 16499)
+-- TOC entry 4978 (class 2606 OID 16499)
 -- Name: configuracao_producao configuracao_producao_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1032,7 +1119,7 @@ ALTER TABLE ONLY public.configuracao_producao
 
 
 --
--- TOC entry 4964 (class 2606 OID 16444)
+-- TOC entry 4972 (class 2606 OID 16444)
 -- Name: despesas_fixas despesas_fixas_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1041,7 +1128,7 @@ ALTER TABLE ONLY public.despesas_fixas
 
 
 --
--- TOC entry 4972 (class 2606 OID 16534)
+-- TOC entry 4980 (class 2606 OID 16534)
 -- Name: faturamentos_mensais faturamentos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1050,7 +1137,7 @@ ALTER TABLE ONLY public.faturamentos_mensais
 
 
 --
--- TOC entry 4962 (class 2606 OID 16423)
+-- TOC entry 4970 (class 2606 OID 16423)
 -- Name: funcionarios funcionarios_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1059,7 +1146,7 @@ ALTER TABLE ONLY public.funcionarios
 
 
 --
--- TOC entry 4982 (class 2606 OID 16618)
+-- TOC entry 4993 (class 2606 OID 16618)
 -- Name: funcoes funcoes_nome_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1068,7 +1155,7 @@ ALTER TABLE ONLY public.funcoes
 
 
 --
--- TOC entry 4984 (class 2606 OID 16616)
+-- TOC entry 4995 (class 2606 OID 16616)
 -- Name: funcoes funcoes_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1077,7 +1164,7 @@ ALTER TABLE ONLY public.funcoes
 
 
 --
--- TOC entry 4978 (class 2606 OID 16587)
+-- TOC entry 4986 (class 2606 OID 16587)
 -- Name: historico_custo_obra historico_custo_obra_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1086,7 +1173,7 @@ ALTER TABLE ONLY public.historico_custo_obra
 
 
 --
--- TOC entry 4966 (class 2606 OID 16455)
+-- TOC entry 4974 (class 2606 OID 16455)
 -- Name: investimentos investimentos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1095,7 +1182,7 @@ ALTER TABLE ONLY public.investimentos
 
 
 --
--- TOC entry 4988 (class 2606 OID 16981)
+-- TOC entry 4999 (class 2606 OID 16981)
 -- Name: obra_recursos_humanos obra_recursos_humanos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1104,7 +1191,7 @@ ALTER TABLE ONLY public.obra_recursos_humanos
 
 
 --
--- TOC entry 4986 (class 2606 OID 16969)
+-- TOC entry 4997 (class 2606 OID 16969)
 -- Name: obras obras_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1113,7 +1200,7 @@ ALTER TABLE ONLY public.obras
 
 
 --
--- TOC entry 4968 (class 2606 OID 16482)
+-- TOC entry 4976 (class 2606 OID 16482)
 -- Name: orcamentos orcamentos_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1122,7 +1209,7 @@ ALTER TABLE ONLY public.orcamentos
 
 
 --
--- TOC entry 4980 (class 2606 OID 16602)
+-- TOC entry 4991 (class 2606 OID 16602)
 -- Name: ordens_servico ordens_servico_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1131,7 +1218,16 @@ ALTER TABLE ONLY public.ordens_servico
 
 
 --
--- TOC entry 4976 (class 2606 OID 16576)
+-- TOC entry 5002 (class 2606 OID 17042)
+-- Name: pagamentos_os pagamentos_os_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.pagamentos_os
+    ADD CONSTRAINT pagamentos_os_pkey PRIMARY KEY (id);
+
+
+--
+-- TOC entry 4984 (class 2606 OID 16576)
 -- Name: snapshots_financeiros snapshots_financeiros_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1140,7 +1236,7 @@ ALTER TABLE ONLY public.snapshots_financeiros
 
 
 --
--- TOC entry 4974 (class 2606 OID 16536)
+-- TOC entry 4982 (class 2606 OID 16536)
 -- Name: faturamentos_mensais uq_faturamento_mes_ano; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1149,7 +1245,39 @@ ALTER TABLE ONLY public.faturamentos_mensais
 
 
 --
--- TOC entry 4993 (class 2606 OID 16987)
+-- TOC entry 4987 (class 1259 OID 17027)
+-- Name: idx_os_criado_em; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_os_criado_em ON public.ordens_servico USING btree (criado_em);
+
+
+--
+-- TOC entry 4988 (class 1259 OID 17028)
+-- Name: idx_os_data_entrega; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_os_data_entrega ON public.ordens_servico USING btree (data_entrega);
+
+
+--
+-- TOC entry 4989 (class 1259 OID 17029)
+-- Name: idx_os_data_finalizacao; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_os_data_finalizacao ON public.ordens_servico USING btree (data_finalizacao);
+
+
+--
+-- TOC entry 5000 (class 1259 OID 17048)
+-- Name: idx_pagamentos_os_id; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX idx_pagamentos_os_id ON public.pagamentos_os USING btree (os_id);
+
+
+--
+-- TOC entry 5007 (class 2606 OID 16987)
 -- Name: obra_recursos_humanos fk_funcao; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1158,7 +1286,7 @@ ALTER TABLE ONLY public.obra_recursos_humanos
 
 
 --
--- TOC entry 4989 (class 2606 OID 16619)
+-- TOC entry 5003 (class 2606 OID 16619)
 -- Name: funcionarios fk_funcionario_funcao; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1167,7 +1295,7 @@ ALTER TABLE ONLY public.funcionarios
 
 
 --
--- TOC entry 4994 (class 2606 OID 16982)
+-- TOC entry 5008 (class 2606 OID 16982)
 -- Name: obra_recursos_humanos fk_obra; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1176,7 +1304,7 @@ ALTER TABLE ONLY public.obra_recursos_humanos
 
 
 --
--- TOC entry 4990 (class 2606 OID 17014)
+-- TOC entry 5004 (class 2606 OID 17014)
 -- Name: orcamentos fk_orcamento_cenario_mo; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1185,7 +1313,7 @@ ALTER TABLE ONLY public.orcamentos
 
 
 --
--- TOC entry 4991 (class 2606 OID 17019)
+-- TOC entry 5005 (class 2606 OID 17019)
 -- Name: ordens_servico fk_os_orcamento; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1194,7 +1322,7 @@ ALTER TABLE ONLY public.ordens_servico
 
 
 --
--- TOC entry 4992 (class 2606 OID 16603)
+-- TOC entry 5006 (class 2606 OID 16603)
 -- Name: ordens_servico ordens_servico_orcamento_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1202,11 +1330,20 @@ ALTER TABLE ONLY public.ordens_servico
     ADD CONSTRAINT ordens_servico_orcamento_id_fkey FOREIGN KEY (orcamento_id) REFERENCES public.orcamentos(id) ON DELETE CASCADE;
 
 
--- Completed on 2026-08-02 22:58:43
+--
+-- TOC entry 5009 (class 2606 OID 17043)
+-- Name: pagamentos_os pagamentos_os_os_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.pagamentos_os
+    ADD CONSTRAINT pagamentos_os_os_id_fkey FOREIGN KEY (os_id) REFERENCES public.ordens_servico(id) ON DELETE CASCADE;
+
+
+-- Completed on 2026-08-09 00:24:55
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict Lc69SSt7z8qniec7eMKoiHBoywBfJ9nZliL0oxCV82d5iqwp830hmnPVidofnJk
+\unrestrict aYlpuQ7wcxc7t50cTHauhHK4FMzNSjBtShXK08D77EALNguXKsbBEEwRp2P69Fv
 

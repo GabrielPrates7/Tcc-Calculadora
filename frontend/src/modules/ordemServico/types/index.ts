@@ -1,20 +1,25 @@
+export interface PagamentoOS {
+    id: number;
+    os_id: number;
+    valor: number | string;
+    forma_pagamento: string;
+    data_pagamento: string;
+}
+
 export interface OrdemServico {
     os_id: number;
     orcamento_id: number;
     status_producao: 'fila' | 'producao' | 'pausado' | 'pronto' | 'entregue';
-    status_financeiro: 'pendente' | 'sinal_pago' | 'pago';
+    status_financeiro: string; // Será calculado dinamicamente no backend
     data_entrega?: string;
     criado_em: string;
     
-    // Campo computado no PostgreSQL (identifica se o prazo venceu sem entrega)
     esta_atrasado?: boolean;
     
-    // Dados que vêm do JOIN ou edição manual na O.S.
     cliente: string;
     nome_produto: string;
     preco_venda: number | string;
 
-    // Campos técnicos e operacionais da oficina
     responsaveis_execucao?: string;
     observacoes?: string;
     laudo_tecnico?: string;
@@ -22,4 +27,8 @@ export interface OrdemServico {
     descricao_materiais_extras?: string;
     data_finalizacao?: string;
     atualizado_em?: string;
+
+    // Novos campos computados via JOIN na API
+    total_pago?: number;
+    pagamentos?: PagamentoOS[];
 }

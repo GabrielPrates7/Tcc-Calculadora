@@ -20,43 +20,27 @@ export function useKanban() {
 
     useEffect(() => {
         let montado = true;
-
         async function buscaInicial() {
             try {
                 const data = await OrdemServicoService.listarTodas();
-                if (montado) {
-                    setOrdens(data);
-                }
+                if (montado) setOrdens(data);
             } catch (error) {
                 console.error("Erro ao carregar O.S.", error);
             } finally {
-                if (montado) {
-                    setLoading(false);
-                }
+                if (montado) setLoading(false);
             }
         }
-
         buscaInicial();
-
-        return () => {
-            montado = false;
-        };
+        return () => { montado = false; };
     }, []);
 
     const moverOrdem = async (osId: number, novaColuna: string) => {
-        // 1. Atualização Otimista na UI para resposta visual instantânea
         setOrdens(prev => prev.map(os => 
             os.os_id === osId ? { ...os, status_producao: novaColuna as OrdemServico['status_producao'] } : os
         ));
-
         try {
-            // 2. Persistência no servidor e recebimento das variáveis calculadas (data_finalizacao, esta_atrasado)
             const osAtualizada = await OrdemServicoService.atualizarStatus(osId, novaColuna);
-            
-            // 3. Sincronização do estado local com a verdade do banco de dados
-            setOrdens(prev => prev.map(os => 
-                os.os_id === osId ? { ...os, ...osAtualizada } : os
-            ));
+            setOrdens(prev => prev.map(os => os.os_id === osId ? { ...os, ...osAtualizada } : os));
         } catch (error) {
             console.error("Falha ao mover a Ordem de Serviço:", error);
             alert('Erro de conexão ao mover o cartão. Recarregando quadro...');
@@ -64,34 +48,11 @@ export function useKanban() {
         }
     };
 
-    const atualizarPagamento = async (osId: number, novoStatus: OrdemServico['status_financeiro']) => {
-        setOrdens(prev => prev.map(os => 
-            os.os_id === osId ? { ...os, status_financeiro: novoStatus } : os
-        ));
-
-        try {
-            const osAtualizada = await OrdemServicoService.atualizarStatus(osId, undefined, novoStatus);
-            setOrdens(prev => prev.map(os => 
-                os.os_id === osId ? { ...os, ...osAtualizada } : os
-            ));
-        } catch (error) {
-            console.error("Falha ao atualizar status financeiro:", error);
-            alert('Erro de conexão ao atualizar pagamento. Recarregando...');
-            carregarOrdens(true);
-        }
-    };
-
     const atualizarOrdemCompleta = async (id: number, dados: Partial<OrdemServico>) => {
-        // Atualização otimista
-        setOrdens(prev => prev.map(os => 
-            os.os_id === id ? { ...os, ...dados } : os
-        ));
-
+        setOrdens(prev => prev.map(os => os.os_id === id ? { ...os, ...dados } : os));
         try {
             const osAtualizada = await OrdemServicoService.atualizarDados(id, dados);
-            setOrdens(prev => prev.map(os => 
-                os.os_id === id ? { ...os, ...osAtualizada, os_id: id } : os
-            ));
+            setOrdens(prev => prev.map(os => os.os_id === id ? { ...os, ...osAtualizada, os_id: id } : os));
         } catch (error) {
             console.error("Falha ao salvar edições da O.S.:", error);
             alert('Erro ao salvar alterações da O.S. no servidor.');
@@ -101,7 +62,6 @@ export function useKanban() {
 
     const excluirOrdem = async (id: number) => {
         setOrdens(prev => prev.filter(os => os.os_id !== id));
-
         try {
             await OrdemServicoService.excluir(id);
         } catch (error) {
@@ -111,13 +71,34 @@ export function useKanban() {
         }
     };
 
+    const registrarPagamento = async (osId: number, dados: { valor: number, forma_pagamento: string, data_pagamento: string }) => {
+        try {
+            const osAtualizada = await OrdemServicoService.registrarPagamento(osId, dados);
+            setOrdens(prev => prev.map(os => os.os_id === osId ? { ...os, ...osAtualizada } : os));
+        } catch (error) {
+            console.error("Falha ao registrar pagamento:", error);
+            throw error;
+        }
+    };
+
+    const excluirPagamento = async (osId: number, pagamentoId: number) => {
+        try {
+            const osAtualizada = await OrdemServicoService.excluirPagamento(pagamentoId);
+            setOrdens(prev => prev.map(os => os.os_id === osId ? { ...os, ...osAtualizada } : os));
+        } catch (error) {
+            console.error("Falha ao estornar pagamento:", error);
+            throw error; 
+        }
+    };
+
     return {
         ordens,
         loading,
         moverOrdem,
-        atualizarPagamento,
         atualizarOrdemCompleta,
         excluirOrdem,
-        carregarOrdens
+        carregarOrdens,
+        registrarPagamento,
+        excluirPagamento
     };
 }

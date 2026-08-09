@@ -2,12 +2,10 @@ import { pool } from './db';
 
 export class DashboardService {
     async getResumo() {
-        // 1. Taxa de Custo Fixo (cf%)
         const fatRes = await pool.query(
-            "SELECT valor, mes, ano FROM faturamentos_mensais ORDER BY ano DESC, mes DESC LIMIT 1"
+            "SELECT valor FROM faturamentos_mensais ORDER BY ano DESC, mes DESC LIMIT 1"
         );
-        const faturamentoData = fatRes.rows[0];
-        const faturamento = Number(faturamentoData?.valor) || 1;
+        const faturamento = Number(fatRes.rows[0]?.valor) || 1;
 
         const mesAtual = new Date().getMonth() + 1;
         const anoAtual = new Date().getFullYear();
@@ -20,13 +18,6 @@ export class DashboardService {
         const totalDespesas = Number(despesasRes.rows[0]?.total) || 0;
         const taxaCustoFixo = (totalDespesas / faturamento) * 100;
 
-        // 2. Valor da Unidade Produtiva Atual
-        const moRes = await pool.query(
-            "SELECT valor_unitario_final FROM historico_custo_obra ORDER BY id DESC LIMIT 1"
-        );
-        const valorMaoObra = Number(moRes.rows[0]?.valor_unitario_final) || 0;
-
-        // 3. Receita Prevista e Lucro (Mês Atual)
         const receitaRes = await pool.query(`
             SELECT 
                 SUM(orc.preco_venda) as receita_total,
@@ -41,7 +32,6 @@ export class DashboardService {
         const receitaMes = Number(receitaRes.rows[0]?.receita_total) || 0;
         const lucroMes = Number(receitaRes.rows[0]?.lucro_projetado) || 0;
 
-        // 4. Funil de Produção
         const funilRes = await pool.query(`
             SELECT status_producao, COUNT(*) as quantidade 
             FROM ordens_servico 
@@ -49,22 +39,37 @@ export class DashboardService {
         `);
 
         const funil = { fila: 0, andamento: 0, concluido: 0 };
-        funilRes.rows.forEach(row => {
+        funilRes.rows.forEach((row: any) => {
             if (row.status_producao === 'fila') funil.fila = Number(row.quantidade);
             if (row.status_producao === 'andamento') funil.andamento = Number(row.quantidade);
             if (row.status_producao === 'concluido') funil.concluido = Number(row.quantidade);
         });
+
+        // NOVO: Funções que mais consomem orçamento
+        const topCustosRes = await pool.query(`
+            SELECT f.nome as funcao, SUM(orh.horas_estimadas * orh.custo_hora_aplicado * orh.qtd_profissionais) as custo_total
+            FROM obra_recursos_humanos orh
+            INNER JOIN funcoes f ON orh.funcao_id = f.id
+            GROUP BY f.nome
+            ORDER BY custo_total DESC
+            LIMIT 4
+        `);
+
+        const topCustos = topCustosRes.rows.map((row: any) => ({
+            funcao: row.funcao,
+            custo_total: Number(row.custo_total) || 0
+        }));
 
         return {
             indicadores: {
                 taxaCustoFixo,
                 faturamentoBase: faturamento,
                 totalDespesas,
-                valorMaoObra,
                 receitaMes,
                 lucroMes
             },
-            funilProducao: funil
+            funilProducao: funil,
+            topCustos
         };
     }
 }

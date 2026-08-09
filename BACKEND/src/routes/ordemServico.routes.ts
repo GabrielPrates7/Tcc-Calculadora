@@ -5,7 +5,6 @@ const router = Router();
 const osService = new OrdemServicoService();
 
 const STATUS_PRODUCAO_VALIDOS = ['fila', 'producao', 'pausado', 'pronto', 'entregue'];
-const STATUS_FINANCEIRO_VALIDOS = ['pendente', 'sinal_pago', 'pago'];
 
 // GET: Buscar todas as O.S. (com cálculo de atraso processado no SQL)
 router.get('/', async (req: Request, res: Response) => {
@@ -45,7 +44,7 @@ router.post('/', async (req: Request, res: Response) => {
     }
 });
 
-// PATCH: Atualizar status do Kanban ou Financeiro (com validação de Whitelist)
+// PATCH: Atualizar status do Kanban
 router.patch('/:id/status', async (req: Request, res: Response) => {
     try {
         const id = Number(req.params.id);
@@ -53,17 +52,14 @@ router.patch('/:id/status', async (req: Request, res: Response) => {
             return res.status(400).json({ error: 'ID da Ordem de Serviço inválido.' });
         }
 
-        const { status_producao, status_financeiro } = req.body;
+        const { status_producao } = req.body;
 
         if (status_producao && !STATUS_PRODUCAO_VALIDOS.includes(status_producao)) {
             return res.status(400).json({ error: `Status de produção inválido. Permitidos: ${STATUS_PRODUCAO_VALIDOS.join(', ')}` });
         }
 
-        if (status_financeiro && !STATUS_FINANCEIRO_VALIDOS.includes(status_financeiro)) {
-            return res.status(400).json({ error: `Status financeiro inválido. Permitidos: ${STATUS_FINANCEIRO_VALIDOS.join(', ')}` });
-        }
-
-        const osAtualizada = await osService.atualizarStatus(id, status_producao, status_financeiro);
+        // CORREÇÃO: Removido o envio do status_financeiro, pois a API agora calcula via banco de dados
+        const osAtualizada = await osService.atualizarStatus(id, status_producao);
         res.status(200).json(osAtualizada);
     } catch (error: unknown) {
         const err = error instanceof Error ? error : new Error('Erro ao atualizar status');
@@ -116,6 +112,40 @@ router.delete('/:id', async (req: Request, res: Response) => {
         console.error("Erro no DELETE /ordens-servico:", err.message);
         const statusCode = err.message.includes('não encontrada') ? 404 : 500;
         res.status(statusCode).json({ error: err.message });
+    }
+});
+
+// POST: Registrar novo pagamento na O.S.
+router.post('/:id/pagamentos', async (req: Request, res: Response) => {
+    try {
+        const os_id = Number(req.params.id);
+        const { valor, forma_pagamento, data_pagamento } = req.body;
+
+        if (isNaN(os_id) || os_id <= 0) return res.status(400).json({ error: 'ID da O.S. inválido.' });
+        if (!valor || isNaN(Number(valor)) || Number(valor) <= 0) return res.status(400).json({ error: 'Valor inválido.' });
+        if (!forma_pagamento) return res.status(400).json({ error: 'Forma de pagamento obrigatória.' });
+
+        const osAtualizada = await osService.registrarPagamento(os_id, Number(valor), forma_pagamento, data_pagamento);
+        res.status(201).json(osAtualizada);
+    } catch (error: unknown) {
+        const err = error instanceof Error ? error : new Error('Erro ao registrar pagamento');
+        console.error("Erro no POST pagamentos:", err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// DELETE: Excluir um pagamento específico
+router.delete('/pagamentos/:pagamentoId', async (req: Request, res: Response) => {
+    try {
+        const pagamentoId = Number(req.params.pagamentoId);
+        if (isNaN(pagamentoId) || pagamentoId <= 0) return res.status(400).json({ error: 'ID de pagamento inválido.' });
+
+        const osAtualizada = await osService.excluirPagamento(pagamentoId);
+        res.status(200).json(osAtualizada);
+    } catch (error: unknown) {
+        const err = error instanceof Error ? error : new Error('Erro ao excluir pagamento');
+        console.error("Erro no DELETE pagamentos:", err.message);
+        res.status(500).json({ error: err.message });
     }
 });
 

@@ -50,40 +50,44 @@
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.25);
 }
 
-/* CAMPO DE BUSCA FLEXÍVEL E AMPLIADO (40PX) */
-.search-box.compacta {
+/* ======================================================== */
+/* BARRA DE PESQUISA (DESTAQUE LARANJA)                     */
+/* ======================================================== */
+.search-box {
     display: flex;
     align-items: center;
     gap: 10px;
-    background-color: #1e293b;
-    border: 1px solid #334155;
-    border-radius: 6px;
-    padding: 0 14px;
-    height: 40px;
-    flex: 1;
-    min-width: 280px;
-    box-sizing: border-box;
-    transition: all 0.2s;
+    background-color: #1e293b; /* Mantém o fundo que combina com o header */
+    border: 1px solid #f97316; /* Contorno laranja constante */
+    padding: 10px 16px;
+    border-radius: 8px;
+    width: 100%;
+    transition: all 0.2s ease;
+    box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.15); /* Leve brilho laranja externo */
 }
 
-.search-box.compacta:focus-within {
+/* Efeito ao clicar dentro da barra de pesquisa */
+.search-box:focus-within {
     border-color: #f97316;
-    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.35);
+    background-color: #0f172a; /* Escurece o fundo ligeiramente ao focar */
 }
 
-.search-box.compacta input {
+.search-box input {
     background: transparent;
     border: none;
-    outline: none;
-    color: #f8fafc;
-    font-size: 0.88rem;
-    font-weight: 600;
+    color: #f97316; /* Texto digitado na cor laranja */
+    font-size: 0.95rem;
+    font-weight: 700; /* Mais espesso para melhorar a leitura do laranja */
     width: 100%;
+    outline: none;
     font-family: inherit;
 }
 
-.search-box.compacta input::placeholder {
-    color: #64748b;
+/* Cor do texto de instrução (Buscar cliente...) */
+.search-box input::placeholder {
+    color: #64748b; 
+    font-weight: 500;
 }
 
 /* CONTAINER DOS FILTROS */

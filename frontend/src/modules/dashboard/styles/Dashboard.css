@@ -67,9 +67,7 @@
     letter-spacing: 0.05em;
 }
 
-/* ===========================
-   CARDS INDICADORES
-   =========================== */
+/* Cards Superiores */
 .indicadores-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -127,18 +125,20 @@
     color: #475569;
 }
 
-/* ===========================
-   LINHA INFERIOR
-   =========================== */
+/* Layout Inferior (Gráfico e Módulos) */
 .dashboard-linha {
     display: grid;
     grid-template-columns: 1fr 380px;
     gap: 16px;
 }
 
-/* Card genérico */
-.grafico-card,
-.funil-card {
+.coluna-lateral {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.grafico-card, .card-modulo {
     background: #1e293b;
     border-radius: 12px;
     padding: 24px;
@@ -170,7 +170,101 @@
     font-weight: 500;
 }
 
-/* Tooltip gráfico */
+/* Lista Top Custos */
+.lista-top-custos {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.item-custo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: #0f172a;
+    border-radius: 8px;
+}
+
+.item-custo-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.rank-badge {
+    background: #334155;
+    color: #94a3b8;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.nome-funcao {
+    font-size: 0.85rem;
+    color: #e2e8f0;
+    font-weight: 500;
+}
+
+.valor-funcao {
+    font-size: 0.9rem;
+    color: #ef4444;
+    font-weight: 600;
+}
+
+/* Status Grid (Substituto do Kanban grande) */
+.status-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.status-box {
+    background: #0f172a;
+    border-radius: 8px;
+    padding: 16px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.status-box strong {
+    font-size: 1.2rem;
+    color: #f1f5f9;
+}
+
+.status-box span {
+    font-size: 0.75rem;
+    color: #94a3b8;
+}
+
+/* Botão Ação */
+.btn-ver-todas {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: transparent;
+    border: 1px solid #334155;
+    color: #94a3b8;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: auto;
+}
+
+.btn-ver-todas:hover {
+    border-color: #f97316;
+    color: #f97316;
+    background: #f9731610;
+}
+
+/* Tooltip Customizado */
 .tooltip-custom {
     background: #0f172a;
     border: 1px solid #334155;
@@ -186,102 +280,7 @@
     font-weight: 600;
 }
 
-/* ===========================
-   KANBAN / FUNIL
-   =========================== */
-.kanban-lista {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.kanban-card {
-    background: #0f172a;
-    border-radius: 8px;
-    padding: 14px 16px;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    transition: transform 0.15s;
-}
-
-.kanban-card:hover {
-    transform: translateX(4px);
-}
-
-.kanban-icone {
-    display: flex;
-    align-items: center;
-}
-
-.kanban-info {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex: 1;
-}
-
-.kanban-titulo {
-    font-size: 0.875rem;
-    color: #94a3b8;
-}
-
-.kanban-qtd {
-    font-size: 1.4rem;
-    font-weight: 700;
-}
-
-/* Barra de progresso */
-.funil-barra-wrap {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.funil-barra {
-    height: 8px;
-    background: #0f172a;
-    border-radius: 99px;
-    overflow: hidden;
-    display: flex;
-}
-
-.funil-seg {
-    height: 100%;
-    transition: width 0.6s ease;
-}
-
-.funil-legenda {
-    display: flex;
-    gap: 16px;
-    font-size: 0.72rem;
-    color: #64748b;
-}
-
-/* Botão */
-.btn-ver-todas {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    background: transparent;
-    border: 1px solid #334155;
-    color: #94a3b8;
-    border-radius: 8px;
-    padding: 10px;
-    font-size: 0.82rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    margin-top: auto;
-}
-
-.btn-ver-todas:hover {
-    border-color: #f97316;
-    color: #f97316;
-    background: #f9731610;
-}
-
-/* Responsivo */
+/* Responsividade */
 @media (max-width: 1024px) {
     .dashboard-linha {
         grid-template-columns: 1fr;
