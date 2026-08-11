@@ -39,32 +39,45 @@
 /* Header */
 .dashboard-header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #1e293b;
 }
 
-.dashboard-header h2 {
+.header-title-group {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.icone-destaque {
+    background: #f9731615;
+    padding: 12px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #f9731630;
+    box-shadow: inset 0 0 12px #f9731610;
+}
+
+.titulo-gradient {
     font-size: 1.8rem;
-    font-weight: 700;
-    color: #f1f5f9;
+    font-weight: 800;
     margin: 0;
+    background: linear-gradient(90deg, #f8fafc 0%, #94a3b8 100%);
+    -webkit-background-clip: text;
+    background-clip: text; 
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.02em;
 }
 
 .dashboard-sub {
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     color: #64748b;
     margin: 4px 0 0;
-}
-
-.dashboard-badge {
-    background: #1e293b;
-    color: #f97316;
-    border: 1px solid #f9731630;
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.05em;
+    font-weight: 500;
 }
 
 /* Cards Superiores */
@@ -278,6 +291,215 @@
     color: #64748b;
     margin: 0 0 6px;
     font-weight: 600;
+}
+
+/* ===========================
+   FILTROS GLOBAIS CUSTOMIZADOS E ENTREGAS
+   =========================== */
+.filtros-globais {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #1e293b;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid #334155;
+}
+
+.filtro-custom-container {
+    position: relative;
+    outline: none;
+}
+
+.filtro-custom-trigger {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #e2e8f0;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+}
+
+.filtro-custom-dropdown {
+    position: absolute;
+    top: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    min-width: 120px;
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    max-height: 140px;
+    overflow-y: auto;
+    z-index: 50;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.filtro-custom-dropdown::-webkit-scrollbar {
+    width: 6px;
+}
+
+.filtro-custom-dropdown::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 4px;
+}
+
+.filtro-custom-option {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.filtro-custom-option:hover,
+.filtro-custom-option.ativo {
+    background: #1e293b;
+    color: #f8fafc;
+}
+
+/* Próximas Entregas */
+.lista-entregas {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.item-entrega {
+    background: #0f172a;
+    padding: 12px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.item-entrega-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.os-id {
+    background: #334155;
+    color: #94a3b8;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.os-cliente {
+    font-size: 0.85rem;
+    color: #f1f5f9;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.item-entrega-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #94a3b8;
+}
+
+.os-data {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.os-status {
+    font-weight: 600;
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    color: #3b82f6;
+}
+
+.msg-vazia {
+    color: #64748b;
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 20px 0;
+}
+
+/* ===========================
+   ELEVAÇÃO VISUAL (Modo Claro / Fundo Branco)
+   =========================== */
+.destaque-lateral {
+    background: #f8fafc; /* Fundo branco/gelo */
+    border: 1px solid #e2e8f0;
+    border-top: 4px solid #3b82f6; /* Linha de âncora visual */
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+/* Força os textos principais do card para escuro */
+.destaque-lateral .card-header h3,
+.destaque-lateral .filtro-custom-trigger {
+    color: #0f172a;
+    font-weight: 700;
+}
+
+.destaque-lateral .card-header {
+    border-bottom: 1px solid #cbd5e1;
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+}
+
+/* Itens da lista de entregas (O.S.) */
+.destaque-lateral .item-entrega {
+    background: #ffffff; 
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.destaque-lateral .os-cliente {
+    color: #1e293b;
+    font-weight: 700;
+}
+
+.destaque-lateral .os-id {
+    background: #e2e8f0;
+    color: #334155;
+}
+
+.destaque-lateral .os-data {
+    color: #64748b;
+    font-weight: 500;
+}
+
+/* Caixinhas da Esteira de Produção */
+.destaque-lateral .status-box {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.destaque-lateral .status-box strong {
+    color: #0f172a;
+}
+
+.destaque-lateral .status-box span {
+    color: #64748b;
+    font-weight: 600;
+}
+
+/* Botão de Ação Inferior */
+.destaque-lateral .btn-ver-todas {
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    background: #ffffff;
+}
+
+.destaque-lateral .btn-ver-todas:hover {
+    background: #f1f5f9;
+    border-color: #3b82f6;
+    color: #3b82f6;
 }
 
 /* Responsividade */

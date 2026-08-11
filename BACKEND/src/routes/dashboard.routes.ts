@@ -6,7 +6,11 @@ const dashboardService = new DashboardService();
 
 router.get('/resumo', async (req, res) => {
     try {
-        const dados = await dashboardService.getResumo();
+        // Captura os parâmetros da URL ou usa a data atual como fallback
+        const mes = req.query.mes ? Number(req.query.mes) : new Date().getMonth() + 1;
+        const ano = req.query.ano ? Number(req.query.ano) : new Date().getFullYear();
+        
+        const dados = await dashboardService.getResumo(mes, ano);
         res.json(dados);
     } catch (error) {
         console.error('Erro ao carregar dashboard:', error);

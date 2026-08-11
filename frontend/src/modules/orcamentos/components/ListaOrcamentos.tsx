@@ -192,7 +192,20 @@ export function ListaOrcamentos({ lista, idEditando, onEditar, onExcluir, onVerD
                                                 <button className="btn-icon" style={{ backgroundColor: '#f59e0b' }} title="Editar" onClick={() => onEditar(orc)}>
                                                     <Edit2 size={16} />
                                                 </button>
-                                                <button className="btn-icon btn-del" title="Excluir" onClick={() => setOrcamentoParaExcluir(orc)}>
+                                                
+                                                {/* --- BLOQUEIO PREVENTIVO DE EXCLUSÃO DIRETO NA UI --- */}
+                                                <button 
+                                                    className="btn-icon btn-del" 
+                                                    title={orcComOS.os_id ? "Ação Bloqueada: Possui O.S." : "Excluir Orçamento"} 
+                                                    onClick={() => {
+                                                        if (orcComOS.os_id) {
+                                                            setErroModal(`Exclusão bloqueada: Este orçamento não pode ser apagado pois já está em produção na Ordem de Serviço #${orcComOS.os_id}.`);
+                                                        } else {
+                                                            setOrcamentoParaExcluir(orc);
+                                                        }
+                                                    }}
+                                                    style={orcComOS.os_id ? { backgroundColor: '#475569', cursor: 'not-allowed', opacity: 0.85 } : undefined}
+                                                >
                                                     <Trash2 size={16} />
                                                 </button>
                                             </div>

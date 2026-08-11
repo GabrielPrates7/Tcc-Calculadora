@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { User, Tag, DollarSign, Calendar, Printer, Wrench, FileText, AlertTriangle, Users, CheckCircle, ChevronDown, ChevronUp, Plus, Trash2, Info } from 'lucide-react';
+import { User, Tag, DollarSign, Calendar, Printer, Wrench, FileText, AlertTriangle, Users, CheckCircle, Package, ChevronDown, ChevronUp, Plus, Trash2, Info } from 'lucide-react';
 import type { OrdemServico } from '../types';
 
 interface Props {
@@ -72,6 +72,7 @@ export function VisaoLeituraOS({
     onExcluirPagamento
 }: Props) {
     const estaFinalizado = ['pronto', 'entregue'].includes(osSelecionada.status_producao);
+    const estaEntregue = osSelecionada.status_producao === 'entregue';
     const estaAtrasado = Boolean(osSelecionada.esta_atrasado);
 
     // Expansão de Equipe
@@ -215,9 +216,21 @@ export function VisaoLeituraOS({
                         </div>
                     </div>
                 )}
+
+                {estaEntregue && (
+                    <div className="os-info-box" style={{ borderColor: '#64748b', backgroundColor: '#f8fafc' }}>
+                        <Package size={18} color="#475569"/>
+                        <div>
+                            <label style={{ color: '#475569', fontWeight: 700 }}>Data de Entrega (Real)</label>
+                            <p style={{ color: '#334155', fontWeight: 700 }}>
+                                {formatarData(osSelecionada.data_entregue || osSelecionada.atualizado_em)}
+                            </p>
+                        </div>
+                    </div>
+                )}
             </div>
 
-            {(equipeListRead.length > 0 || osSelecionada.laudo_tecnico || osSelecionada.observacoes || Number(osSelecionada.custo_extra_materiais) > 0) && (
+            {(equipeListRead.length > 0 || osSelecionada.laudo_tecnico || osSelecionada.observacoes || osSelecionada.observacoes_cliente || Number(osSelecionada.custo_extra_materiais) > 0) && (
                 <div className="os-secao-tecnica">
                     {equipeListRead.length > 0 && (
                         <div className="box-tecnica" style={{ borderLeftColor: '#3b82f6' }}>
@@ -267,6 +280,19 @@ export function VisaoLeituraOS({
                             <TextoExpansivel 
                                 texto={osSelecionada.observacoes} 
                                 textoBotao="Ler observação completa" 
+                            />
+                        </div>
+                    )}
+
+                    {osSelecionada.observacoes_cliente && (
+                        <div className="box-tecnica" style={{ borderLeftColor: '#8b5cf6' }}>
+                            <div className="box-header">
+                                <User size={16} color="#8b5cf6" />
+                                <strong style={{ color: '#6d28d9' }}>Feedback / Observações do Cliente</strong>
+                            </div>
+                            <TextoExpansivel 
+                                texto={osSelecionada.observacoes_cliente} 
+                                textoBotao="Ler feedback completo" 
                             />
                         </div>
                     )}
@@ -409,7 +435,6 @@ export function VisaoLeituraOS({
                                 </div>
                             ))}
                             
-                            {/* BOTÃO DE EXPANSÃO DE HISTÓRICO */}
                             {temMaisPagamentos && (
                                 <button 
                                     type="button" 

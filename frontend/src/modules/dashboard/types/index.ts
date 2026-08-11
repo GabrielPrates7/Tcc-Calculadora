@@ -2,17 +2,25 @@ export interface DashboardResumo {
     indicadores: {
         taxaCustoFixo: number;
         faturamentoBase: number;
-        totalDespesas: number;
-        receitaMes: number;
-        lucroMes: number;
+        custoOperacionalTotal: number;
+        receitaRealizada: number;
+        receitaPrevista: number;
+        ticketMedio: number;
+        qtdPagamentos: number;
     };
     funilProducao: {
         fila: number;
         andamento: number;
         concluido: number;
     };
-    topCustos: {
-        funcao: string;
-        custo_total: number;
+    ordensDestaque: {
+        urgentes: { id: number; cliente: string; info_secundaria: string; status_producao: string; }[];
+        maiorValor: { id: number; cliente: string; info_secundaria: string; status_producao: string; }[];
+        recentes: { id: number; cliente: string; info_secundaria: string; status_producao: string; }[];
+    };
+    graficoFinanceiro: {
+        mes: string;
+        prevista: number;
+        realizada: number;
     }[];
 }

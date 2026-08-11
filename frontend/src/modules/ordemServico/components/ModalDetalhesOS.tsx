@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Edit3, Trash2, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { X, Edit3, Trash2, CheckCircle2, AlertTriangle, Package } from 'lucide-react';
 import type { OrdemServico } from '../types';
 import { formatarBRL } from '../../../utils/formatters';
 import { FormEdicaoOS } from './FormEdicaoOS';
@@ -45,7 +45,9 @@ export function ModalDetalhesOS({
         : [];
 
     const estaFinalizado = osSelecionada.status_producao === 'pronto' || osSelecionada.status_producao === 'entregue';
+    const estaEntregue = osSelecionada.status_producao === 'entregue';
     const dataFimReal = osSelecionada.data_finalizacao || osSelecionada.atualizado_em;
+    const dataEntregueReal = osSelecionada.data_entregue || osSelecionada.atualizado_em;
 
     return (
         <div className="modal-overlay">
@@ -73,6 +75,24 @@ export function ModalDetalhesOS({
                                 }}>
                                     <CheckCircle2 size={14} />
                                     Concluído em: {formatarData(dataFimReal)}
+                                </span>
+                            )}
+
+                            {estaEntregue && dataEntregueReal && (
+                                <span className="no-print" style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 700,
+                                    color: '#475569',
+                                    backgroundColor: '#f8fafc',
+                                    padding: '2px 8px',
+                                    borderRadius: '4px',
+                                    border: '1px solid #cbd5e1'
+                                }}>
+                                    <Package size={14} />
+                                    Entregue em: {formatarData(dataEntregueReal)}
                                 </span>
                             )}
                         </div>

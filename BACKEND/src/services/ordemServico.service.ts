@@ -8,10 +8,11 @@ export interface IOrdemServicoEdicao {
     custo_extra_materiais?: number;
     descricao_materiais_extras?: string | null;
     data_finalizacao?: string | null;
+    data_entregue?: string | null;
+    observacoes_cliente?: string | null;
 }
 
 export class OrdemServicoService {
-    // CTE centralizada para garantir o cálculo financeiro em todas as requisições
     private queryBaseOS = `
         WITH pagamentos_agg AS (
             SELECT 
@@ -35,12 +36,14 @@ export class OrdemServicoService {
             os.orcamento_id,
             os.status_producao,
             os.data_entrega,
+            os.data_finalizacao,
+            os.data_entregue,
             os.responsaveis_execucao,
             os.observacoes,
+            os.observacoes_cliente,
             os.laudo_tecnico,
             os.custo_extra_materiais,
             os.descricao_materiais_extras,
-            os.data_finalizacao,
             os.atualizado_em,
             os.criado_em,
             o.cliente,
@@ -76,7 +79,6 @@ export class OrdemServicoService {
         `;
         const insertResult = await db.query(insertQuery, [orcamentoId, dataEntrega || null]);
         
-        // Retorna a O.S formatada com a query base
         const query = `${this.queryBaseOS} WHERE os.id = $1`;
         const result = await db.query(query, [insertResult.rows[0].id]);
         return result.rows[0];
@@ -89,6 +91,10 @@ export class OrdemServicoService {
                 status_producao = COALESCE($1, status_producao),
                 data_finalizacao = CASE 
                     WHEN COALESCE($1, status_producao) IN ('pronto', 'entregue') THEN COALESCE(data_finalizacao, CURRENT_DATE)
+                    ELSE NULL 
+                END,
+                data_entregue = CASE 
+                    WHEN COALESCE($1, status_producao) = 'entregue' THEN COALESCE(data_entregue, CURRENT_DATE)
                     ELSE NULL 
                 END,
                 atualizado_em = NOW()
@@ -113,13 +119,15 @@ export class OrdemServicoService {
                 custo_extra_materiais = COALESCE($5, 0),
                 descricao_materiais_extras = $6,
                 data_finalizacao = $7,
+                data_entregue = $8,
+                observacoes_cliente = $9,
                 atualizado_em = NOW()
-            WHERE id = $8
+            WHERE id = $10
         `;
         const values = [
             dados.data_entrega || null, dados.responsaveis_execucao || null, dados.observacoes || null,
             dados.laudo_tecnico || null, Number(dados.custo_extra_materiais) || 0, dados.descricao_materiais_extras || null,
-            dados.data_finalizacao || null, id
+            dados.data_finalizacao || null, dados.data_entregue || null, dados.observacoes_cliente || null, id
         ];
         await db.query(query, values);
 
@@ -136,7 +144,6 @@ export class OrdemServicoService {
         return true;
     }
 
-    // --- NOVOS MÉTODOS FINANCEIROS ---
     async registrarPagamento(os_id: number, valor: number, forma_pagamento: string, data_pagamento: string) {
         const query = `
             INSERT INTO public.pagamentos_os (os_id, valor, forma_pagamento, data_pagamento)
@@ -144,14 +151,12 @@ export class OrdemServicoService {
         `;
         await db.query(query, [os_id, valor, forma_pagamento, data_pagamento]);
         
-        // Retorna a O.S. inteira atualizada com os novos cálculos
         const returnQuery = `${this.queryBaseOS} WHERE os.id = $1`;
         const result = await db.query(returnQuery, [os_id]);
         return result.rows[0];
     }
 
     async excluirPagamento(pagamento_id: number) {
-        // Busca a qual OS pertence antes de deletar
         const getOsIdQuery = 'SELECT os_id FROM public.pagamentos_os WHERE id = $1';
         const osIdResult = await db.query(getOsIdQuery, [pagamento_id]);
         if (osIdResult.rowCount === 0) throw new Error('Pagamento não encontrado.');
@@ -160,7 +165,6 @@ export class OrdemServicoService {
         const deleteQuery = 'DELETE FROM public.pagamentos_os WHERE id = $1';
         await db.query(deleteQuery, [pagamento_id]);
 
-        // Retorna a O.S. atualizada
         const returnQuery = `${this.queryBaseOS} WHERE os.id = $1`;
         const result = await db.query(returnQuery, [os_id]);
         return result.rows[0];

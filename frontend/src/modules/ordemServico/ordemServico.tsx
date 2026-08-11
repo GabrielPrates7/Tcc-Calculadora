@@ -208,12 +208,26 @@ export function OrdemServicoKanban() {
                                                         <h3 className="cliente-nome">{os.cliente || 'Consumidor Final'}</h3>
                                                         <p className="produto-nome">{os.nome_produto}</p>
                                                     </div>
+
+                                                    {os.observacoes_cliente && (
+                                                        <div style={{ backgroundColor: '#f8fafc', border: '1px dashed #cbd5e1', padding: '6px 8px', borderRadius: '4px', fontSize: '0.75rem', color: '#64748b', marginBottom: '10px', fontStyle: 'italic' }}>
+                                                            "{os.observacoes_cliente.length > 50 ? os.observacoes_cliente.substring(0, 50) + '...' : os.observacoes_cliente}"
+                                                        </div>
+                                                    )}
+
                                                     <div className="card-footer">
                                                         <div className="card-datas">
                                                             <span className="criacao-os" title="Data de emissão/criação">Criado: {formatarData(os.criado_em)}</span>
                                                             <span className={`prazo-os ${estaAtrasado ? 'atrasado' : ''}`}><Calendar size={13}/> {formatarData(os.data_entrega)}</span>
+                                                            
                                                             {['pronto', 'entregue'].includes(os.status_producao) && (
                                                                 <span className="finalizado-os">✓ Finalizado: {formatarData(os.data_finalizacao || os.atualizado_em)}</span>
+                                                            )}
+
+                                                            {os.status_producao === 'entregue' && (
+                                                                <span style={{ display: 'block', fontSize: '0.75rem', color: '#475569', fontWeight: 700, marginTop: '2px' }}>
+                                                                    📦 Entregue: {formatarData(os.data_entregue || os.atualizado_em)}
+                                                                </span>
                                                             )}
                                                         </div>
                                                         <span className="valor-os">{formatarBRL(os.preco_venda)}</span>

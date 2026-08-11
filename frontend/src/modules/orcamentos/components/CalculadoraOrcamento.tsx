@@ -111,9 +111,9 @@ export function CalculadoraOrcamento({
     return (
         <div className="card-calculadora">
             <h2>
-                {orcamentoEdicao ? <Edit2 size={24} className="text-blue-500" /> : <Calculator size={24} className="text-blue-500" />} 
-                {orcamentoEdicao ? ' Editar Orçamento' : ' Novo Orçamento'}
-            </h2>
+    {orcamentoEdicao ? <Edit2 size={24} color="#f97316" /> : <Calculator size={24} color="#f97316" />} 
+    {orcamentoEdicao ? ' Editar Orçamento' : ' Novo Orçamento'}
+</h2>
 
             <CustoObraOrcamentos
                 listaCenarios={listaCenarios}

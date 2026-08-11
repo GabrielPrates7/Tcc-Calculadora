@@ -70,6 +70,9 @@ router.patch('/:id/status', async (req: Request, res: Response) => {
 });
 
 // PUT: Atualizar dados completos da O.S. (com sanitização explícita do payload)
+// (Mantenha as importações e outras rotas iguais...)
+
+// PUT: Atualizar dados completos da O.S. (com sanitização explícita do payload)
 router.put('/:id', async (req: Request, res: Response) => {
     try {
         const id = Number(req.params.id);
@@ -84,7 +87,9 @@ router.put('/:id', async (req: Request, res: Response) => {
             laudo_tecnico: req.body.laudo_tecnico,
             custo_extra_materiais: req.body.custo_extra_materiais,
             descricao_materiais_extras: req.body.descricao_materiais_extras,
-            data_finalizacao: req.body.data_finalizacao
+            data_finalizacao: req.body.data_finalizacao,
+            data_entregue: req.body.data_entregue,
+            observacoes_cliente: req.body.observacoes_cliente
         };
 
         const osAtualizada = await osService.atualizarDados(id, dadosSanitizados);
@@ -96,6 +101,8 @@ router.put('/:id', async (req: Request, res: Response) => {
         res.status(statusCode).json({ error: err.message });
     }
 });
+
+// (Mantenha as outras rotas iguais...)
 
 // DELETE: Excluir uma Ordem de Serviço
 router.delete('/:id', async (req: Request, res: Response) => {
