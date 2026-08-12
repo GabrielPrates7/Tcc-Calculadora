@@ -19,10 +19,10 @@ export function FormEdicaoOS({ osSelecionada, onSalvarEdicao, onCancelar }: Prop
     const estaFinalizado = ['pronto', 'entregue'].includes(osSelecionada.status_producao);
     const estaEntregue = osSelecionada.status_producao === 'entregue';
 
-    // Fallback de retrocompatibilidade: Se a O.S. já for 'entregue' e não tiver data_entregue (registro antigo), 
-    // ele preenche temporariamente com a data de finalização ou atualização para não exibir um campo vazio.
+   // CORREÇÃO: O fallback para O.S. antigas (sem data_entregue no banco) 
+    // deve puxar a última vez que o cartão foi movido (atualizado_em), e não a finalização.
     const fallbackDataEntregue = estaEntregue 
-        ? (osSelecionada.data_finalizacao || osSelecionada.atualizado_em || '').split('T')[0] 
+        ? (osSelecionada.atualizado_em || '').split('T')[0] 
         : '';
 
     const [formData, setFormData] = useState({

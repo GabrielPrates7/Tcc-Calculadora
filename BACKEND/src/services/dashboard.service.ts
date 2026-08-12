@@ -3,6 +3,7 @@ import { pool } from './db';
 interface TotalRow { total: string | number | null; }
 interface FaturamentoRow { valor: string | number; }
 interface GraficoRow { mes_abreviado: string; receita_prevista: number; receita_realizada: number; }
+interface ProdutividadeRow { mes_abreviado: string; criadas: number; finalizadas: number; }
 
 export class DashboardService {
     async getResumo(mes: number, ano: number) {
@@ -20,10 +21,11 @@ export class DashboardService {
         `, [mes, ano]);
         const totalDespesasFixas = Number(despesasRes.rows[0]?.total) || 0;
 
+        // 2.1 Custo Folha (Sincronizado estritamente com a Gestão de Equipe)
         const folhaRes = await pool.query<TotalRow>(`
             SELECT SUM(custo_total_mensal) as total FROM funcionarios 
-            WHERE data_admissao < (make_date($2::int, $1::int, 1) + interval '1 month')
-            AND (data_inativacao IS NULL OR data_inativacao >= make_date($2::int, $1::int, 1))
+            WHERE ativo = true
+            AND data_admissao < (make_date($2::int, $1::int, 1) + interval '1 month')
         `, [mes, ano]);
         const totalFolha = Number(folhaRes.rows[0]?.total) || 0;
 
@@ -34,6 +36,13 @@ export class DashboardService {
         const totalInvestimentos = Number(invRes.rows[0]?.total) || 0;
 
         const custoOperacionalTotal = totalDespesasFixas + totalFolha + totalInvestimentos;
+
+        // Distribuição de Custos para o Gráfico de Rosca
+        const distribuicaoCustos = [
+            { nome: 'Despesas Fixas', valor: totalDespesasFixas, cor: '#ef4444' }, // Vermelho
+            { nome: 'Folha de Pag.', valor: totalFolha, cor: '#f59e0b' },         // Laranja
+            { nome: 'Investimentos', valor: totalInvestimentos, cor: '#3b82f6' }     // Azul
+        ].filter(item => item.valor > 0);
 
         // 3. Taxa de Custo Fixo
         const taxaCustoFixo = faturamentoBase > 0 ? (totalDespesasFixas / faturamentoBase) * 100 : 0;
@@ -47,7 +56,6 @@ export class DashboardService {
         
         const receitaRealizada = Number(receitaRealizadaRes.rows[0]?.total) || 0;
         const qtdPagamentos = Number(receitaRealizadaRes.rows[0]?.qtd) || 0;
-        
         const ticketMedio = qtdPagamentos > 0 ? (receitaRealizada / qtdPagamentos) : 0;
 
         // 5. Receita Prevista Estrita
@@ -68,19 +76,20 @@ export class DashboardService {
             GROUP BY status_producao
         `, [mes, ano]);
         
-        const funil = { fila: 0, andamento: 0, concluido: 0 };
+        const funil = { fila: 0, andamento: 0, concluido: 0, entregue: 0 };
         funilRes.rows.forEach((row: any) => {
             if (row.status_producao === 'fila') funil.fila += Number(row.quantidade);
             if (row.status_producao === 'andamento' || row.status_producao === 'producao') funil.andamento += Number(row.quantidade);
             if (row.status_producao === 'concluido' || row.status_producao === 'pronto') funil.concluido += Number(row.quantidade);
+            if (row.status_producao === 'entregue') funil.entregue += Number(row.quantidade);
         });
 
-        // 7. Painel de O.S. em Destaque (As 3 Visões)
+        // 7. Painel de O.S. em Destaque
         const urgentesRes = await pool.query(`
             SELECT os.id, orc.cliente, os.data_entrega as info_secundaria, os.status_producao
             FROM ordens_servico os
             INNER JOIN orcamentos orc ON os.orcamento_id = orc.id
-            WHERE os.status_producao NOT IN ('concluido', 'pronto') 
+            WHERE os.status_producao NOT IN ('concluido', 'pronto', 'entregue') 
             AND os.data_entrega IS NOT NULL
             AND EXTRACT(MONTH FROM os.data_entrega) = $1 
             AND EXTRACT(YEAR FROM os.data_entrega) = $2
@@ -104,7 +113,7 @@ export class DashboardService {
             ORDER BY os.criado_em DESC LIMIT 4
         `, [mes, ano]);
 
-        // 8. Gráfico Histórico Dinâmico
+        // 8. Gráfico Histórico Financeiro
         const graficoRes = await pool.query<GraficoRow>(`
             WITH meses AS (
                 SELECT generate_series(
@@ -130,6 +139,29 @@ export class DashboardService {
             ORDER BY m.mes_data ASC;
         `, [mes, ano]);
 
+        // 9. Gráfico Histórico de Produtividade Fabril
+        const produtividadeRes = await pool.query<ProdutividadeRow>(`
+            WITH meses AS (
+                SELECT generate_series(
+                    make_date($2::int, $1::int, 1) - interval '5 months',
+                    make_date($2::int, $1::int, 1),
+                    '1 month'
+                )::date AS mes_data
+            )
+            SELECT 
+                to_char(m.mes_data, 'TMMon') AS mes_abreviado,
+                COALESCE((
+                    SELECT COUNT(*) FROM ordens_servico os WHERE date_trunc('month', os.criado_em) = m.mes_data
+                ), 0)::int AS criadas,
+                COALESCE((
+                    SELECT COUNT(*) FROM ordens_servico os 
+                    WHERE date_trunc('month', os.data_entrega) = m.mes_data 
+                    AND os.status_producao IN ('pronto', 'concluido', 'entregue')
+                ), 0)::int AS finalizadas
+            FROM meses m
+            ORDER BY m.mes_data ASC;
+        `, [mes, ano]);
+
         return {
             indicadores: {
                 taxaCustoFixo,
@@ -150,7 +182,13 @@ export class DashboardService {
                 mes: row.mes_abreviado,
                 prevista: Number(row.receita_prevista),
                 realizada: Number(row.receita_realizada)
-            }))
+            })),
+            graficoProdutividade: produtividadeRes.rows.map(row => ({
+                mes: row.mes_abreviado,
+                criadas: Number(row.criadas),
+                finalizadas: Number(row.finalizadas)
+            })),
+            distribuicaoCustos
         };
     }
 }

@@ -12,6 +12,7 @@ export interface DashboardResumo {
         fila: number;
         andamento: number;
         concluido: number;
+        entregue: number;
     };
     ordensDestaque: {
         urgentes: { id: number; cliente: string; info_secundaria: string; status_producao: string; }[];
@@ -22,5 +23,15 @@ export interface DashboardResumo {
         mes: string;
         prevista: number;
         realizada: number;
+    }[];
+    graficoProdutividade: {
+        mes: string;
+        criadas: number;
+        finalizadas: number;
+    }[];
+    distribuicaoCustos: {
+        nome: string;
+        valor: number;
+        cor: string;
     }[];
 }

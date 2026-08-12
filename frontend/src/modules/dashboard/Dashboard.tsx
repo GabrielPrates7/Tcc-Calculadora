@@ -4,7 +4,9 @@ import { useDashboard } from './hooks/useDashboard';
 import { formatarBRL } from '../../utils/formatters';
 import { IndicadorCard } from './components/IndicadorCard';
 import { GraficoFinanceiro } from './components/GraficoFinanceiro';
-import { DollarSign, Clock, CircleCheck, FileText, Wallet, AlertCircle, Calendar, ShieldAlert, ChevronDown, BarChart3, TrendingUp, Trophy, Sparkles, LayoutDashboard, Tag } from 'lucide-react';
+import { GraficoProdutividade } from './components/GraficoProdutividade';
+import { GraficoCustos } from './components/GraficoCustos';
+import { DollarSign, Clock, CircleCheck, FileText, Wallet, AlertCircle, Calendar, ShieldAlert, ChevronDown, BarChart3, TrendingUp, Trophy, Sparkles, LayoutDashboard, Tag, Package } from 'lucide-react';
 import './styles/Dashboard.css';
 
 const MESES = [
@@ -75,7 +77,15 @@ export function Dashboard() {
         );
     }
 
-    const { indicadores, funilProducao, ordensDestaque, graficoFinanceiro } = dados;
+    const { 
+        indicadores, 
+        funilProducao, 
+        ordensDestaque, 
+        graficoFinanceiro,
+        graficoProdutividade,
+        distribuicaoCustos 
+    } = dados;
+    
     const listaExibicao = ordensDestaque[visaoOS];
 
     return (
@@ -100,73 +110,89 @@ export function Dashboard() {
             <div className="indicadores-grid">
                 <IndicadorCard titulo="Taxa Custo Fixo (Atual)" valor={`${indicadores.taxaCustoFixo.toFixed(2)}%`} icone={<BarChart3 size={20} />} cor="#f59e0b" sub={`Base declarada: ${formatarBRL(indicadores.faturamentoBase)}`} />
                 <IndicadorCard titulo="Custo Operacional Total" valor={formatarBRL(indicadores.custoOperacionalTotal)} icone={<Wallet size={20} />} cor="#ef4444" sub="Fixos + Folha + Investimentos" />
-                <IndicadorCard titulo="Receita Realizada (O.S.)" valor={formatarBRL(indicadores.receitaRealizada)} icone={<DollarSign size={20} />} cor="#10b981" sub="Pagamentos baixados no mês" />
+                <IndicadorCard titulo="Receita Realizada (O.S.)" valor={formatarBRL(indicadores.receitaRealizada)} icone={<DollarSign size={20} />} cor="#10b981" sub={`${indicadores.qtdPagamentos} pagamentos baixados no mês`} />
                 <IndicadorCard titulo="Ticket Médio" valor={formatarBRL(indicadores.ticketMedio)} icone={<Tag size={20} />} cor="#3b82f6" sub="Receita Realizada ÷ Qtd pagamentos" />
                 <IndicadorCard titulo="Receita Prevista (Gargalo)" valor={formatarBRL(indicadores.receitaPrevista)} icone={<Clock size={20} />} cor="#a855f7" sub="Projeção das O.S. abertas no mês" />
             </div>
 
             <div className="dashboard-linha">
+                
+                {/* --- LINHA 1 --- */}
+                {/* 1.1 Esquerda: Gráfico Principal */}
                 <GraficoFinanceiro data={graficoFinanceiro} />
 
-                <div className="coluna-lateral">
-                    <div className="card-modulo destaque-lateral">
-                        <div className="card-header" style={{ paddingBottom: '8px' }}>
-                            <FiltroDropdown valor={visaoOS} opcoes={OPCOES_OS} onChange={setVisaoOS} />
-                        </div>
-                        <div className="lista-entregas">
-                            {listaExibicao.length === 0 ? (
-                                <p className="msg-vazia">Nenhum dado encontrado para o período.</p>
-                            ) : (
-                                listaExibicao.map((os) => (
-                                    <div key={os.id} className="item-entrega">
-                                        <div className="item-entrega-info">
-                                            <span className="os-id">#{os.id}</span>
-                                            <span className="os-cliente">{os.cliente}</span>
-                                        </div>
-                                        <div className="item-entrega-meta">
-                                            <span className="os-data" style={{ color: visaoOS === 'maiorValor' ? '#10b981' : '#94a3b8' }}>
-                                                {visaoOS === 'urgentes' && <AlertCircle size={12} color="#f59e0b" />}
-                                                {visaoOS === 'maiorValor' && <Trophy size={12} color="#10b981" />}
-                                                {visaoOS === 'recentes' && <Sparkles size={12} color="#3b82f6" />}
-                                                
-                                                {visaoOS === 'maiorValor' 
-                                                    ? formatarBRL(Number(os.info_secundaria)) 
-                                                    : new Date(os.info_secundaria).toLocaleDateString('pt-BR')}
-                                            </span>
-                                            <span className="os-status">{os.status_producao.toUpperCase()}</span>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
+                {/* 1.2 Direita: Urgências (Prazo) */}
+                <div className="card-modulo destaque-lateral">
+                    <div className="card-header" style={{ paddingBottom: '8px' }}>
+                        <FiltroDropdown valor={visaoOS} opcoes={OPCOES_OS} onChange={setVisaoOS} />
                     </div>
-
-                    <div className="card-modulo destaque-lateral">
-                        <div className="card-header">
-                            <h3>Esteira de Produção</h3>
-                        </div>
-                        <div className="status-grid">
-                            <div className="status-box" style={{ borderBottom: '3px solid #f97316' }}>
-                                <Clock size={18} color="#f97316" />
-                                <strong>{funilProducao.fila}</strong>
-                                <span>Fila</span>
-                            </div>
-                            <div className="status-box" style={{ borderBottom: '3px solid #3b82f6' }}>
-                                <TrendingUp size={18} color="#3b82f6" />
-                                <strong>{funilProducao.andamento}</strong>
-                                <span>Andamento</span>
-                            </div>
-                            <div className="status-box" style={{ borderBottom: '3px solid #10b981' }}>
-                                <CircleCheck size={18} color="#10b981" />
-                                <strong>{funilProducao.concluido}</strong>
-                                <span>Pronto</span>
-                            </div>
-                        </div>
-                        <button className="btn-ver-todas" onClick={() => navigate('/ordens-servico')}>
-                            <FileText size={14} /> Gerenciar Ordens de Serviço
-                        </button>
+                    <div className="lista-entregas">
+                        {listaExibicao.length === 0 ? (
+                            <p className="msg-vazia">Nenhum dado encontrado para o período.</p>
+                        ) : (
+                            listaExibicao.map((os) => (
+                                <div key={os.id} className="item-entrega">
+                                    <div className="item-entrega-info">
+                                        <span className="os-id">#{os.id}</span>
+                                        <span className="os-cliente">{os.cliente}</span>
+                                    </div>
+                                    <div className="item-entrega-meta">
+                                        <span className="os-data" style={{ color: visaoOS === 'maiorValor' ? '#10b981' : '#94a3b8' }}>
+                                            {visaoOS === 'urgentes' && <AlertCircle size={12} color="#f59e0b" />}
+                                            {visaoOS === 'maiorValor' && <Trophy size={12} color="#10b981" />}
+                                            {visaoOS === 'recentes' && <Sparkles size={12} color="#3b82f6" />}
+                                            
+                                            {visaoOS === 'maiorValor' 
+                                                ? formatarBRL(Number(os.info_secundaria)) 
+                                                : new Date(os.info_secundaria).toLocaleDateString('pt-BR')}
+                                        </span>
+                                        <span className="os-status">{os.status_producao.toUpperCase()}</span>
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
+
+                {/* --- LINHA 2 --- */}
+                {/* 2.1 Esquerda: Gráficos Secundários */}
+                <div className="graficos-secundarios">
+                    <GraficoProdutividade data={graficoProdutividade} />
+                    <GraficoCustos data={distribuicaoCustos} />
+                </div>
+
+                {/* 2.2 Direita: Esteira de Produção */}
+                <div className="card-modulo destaque-lateral">
+                    <div className="card-header">
+                        <h3>Esteira de Produção</h3>
+                    </div>
+                    <div className="status-grid">
+                        <div className="status-box" style={{ borderBottom: '3px solid #f97316' }}>
+                            <Clock size={18} color="#f97316" />
+                            <strong>{funilProducao.fila}</strong>
+                            <span>Fila</span>
+                        </div>
+                        <div className="status-box" style={{ borderBottom: '3px solid #3b82f6' }}>
+                            <TrendingUp size={18} color="#3b82f6" />
+                            <strong>{funilProducao.andamento}</strong>
+                            <span>Andamento</span>
+                        </div>
+                        <div className="status-box" style={{ borderBottom: '3px solid #10b981' }}>
+                            <CircleCheck size={18} color="#10b981" />
+                            <strong>{funilProducao.concluido}</strong>
+                            <span>Pronto</span>
+                        </div>
+                        <div className="status-box" style={{ borderBottom: '3px solid #6366f1' }}>
+                            <Package size={18} color="#6366f1" />
+                            <strong>{funilProducao.entregue}</strong>
+                            <span>Entregue</span>
+                        </div>
+                    </div>
+                    <button className="btn-ver-todas" onClick={() => navigate('/ordens-servico')}>
+                        <FileText size={14} /> Gerenciar Ordens de Serviço
+                    </button>
+                </div>
+
             </div>
         </div>
     );

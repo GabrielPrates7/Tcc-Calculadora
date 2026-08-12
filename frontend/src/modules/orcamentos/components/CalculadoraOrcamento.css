@@ -1,13 +1,16 @@
 /* ==========================================================================
-   1. CONTAINER PRINCIPAL (BLINDADO CONTRA BORDAS GLOBAIS)
+   CONTAINER PRINCIPAL (CIRCULADO EM LARANJA COM GLOW)
    ========================================================================== */
 .card-calculadora {
-    background-color: #1e293b !important;
-    border: 1px solid #334155 !important;
-    border-radius: 12px;
-    padding: 24px;
-    color: #f8fafc;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+    background: linear-gradient(165deg, #2a3a50 0%, #1e293b 100%) !important;
+    border: 2px solid #f97316 !important; /* Borda laranja estrutural */
+    border-top: 2px solid #fb923c !important; /* Luz de topo mais clara para dar relevo */
+    border-radius: 14px;
+    padding: 28px 24px;
+    color: #ffffff;
+    box-shadow: 
+        0 25px 50px -12px rgba(0, 0, 0, 0.7), 
+        0 0 30px rgba(249, 115, 22, 0.2) !important; /* Efeito glow laranja ao redor do card */
 }
 
 .card-calculadora h2 {
@@ -16,14 +19,15 @@
     gap: 10px;
     margin-top: 0;
     margin-bottom: 24px;
-    font-size: 1.4rem;
-    color: #f8fafc;
+    font-size: 1.5rem;
+    color: #ffffff;
     border-bottom: 1px solid #334155;
     padding-bottom: 14px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
 }
 
 /* ==========================================================================
-   2. ESTRUTURA DOS FORMULÁRIOS E TÍTULOS LARANJAS
+   ESTRUTURA DOS FORMULÁRIOS
    ========================================================================== */
 .form-group {
     display: flex;
@@ -38,17 +42,17 @@
     gap: 16px;
 }
 
-/* Títulos/Labels blindados na cor laranja */
 .form-group label {
     color: #f97316 !important;
     font-size: 0.75rem;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 
 /* ==========================================================================
-   3. INPUTS DARK (SOBREPONDO O FUNDO BRANCO GLOBAL)
+   INPUTS "BAIXO-RELEVO" (PROFUNDIDADE)
    ========================================================================== */
 .input-icon-wrapper {
     position: relative;
@@ -66,35 +70,41 @@
 
 .input-icon-wrapper input {
     width: 100%;
-    background-color: #0f172a !important; /* Força o fundo escuro */
-    border: 1px solid #334155 !important;
-    color: #f8fafc !important;
+    background-color: #0b1120 !important; 
+    border: 1px solid #1e293b !important;
+    border-top: 1px solid #000000 !important;
+    color: #ffffff !important;
     font-size: 0.95rem;
+    font-weight: 500;
     padding: 12px 12px 12px 42px !important; 
     border-radius: 8px;
     outline: none;
     box-sizing: border-box;
     transition: all 0.2s ease;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
 }
 
 .input-icon-wrapper input::placeholder {
     color: #475569 !important;
+    font-weight: 400;
 }
 
 .input-icon-wrapper input:focus {
+    background-color: #0f172a !important;
     border-color: #f97316 !important;
-    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15) !important;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.5), 0 0 0 3px rgba(249, 115, 22, 0.2) !important;
 }
 
 /* ==========================================================================
-   4. BOX DE QUEBRA DE CUSTOS (Resumo)
+   BOX DE QUEBRA DE CUSTOS (Resumo)
    ========================================================================== */
 .custos-breakdown {
-    background-color: #0f172a !important;
-    border: 1px dashed #334155 !important;
+    background-color: rgba(15, 23, 42, 0.6) !important;
+    border: 1px solid #334155 !important;
     border-radius: 8px;
     padding: 16px 20px;
     margin: 24px 0;
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.2);
 }
 
 .custo-linha {
@@ -113,14 +123,15 @@
 .custo-valor {
     font-family: 'Courier New', Courier, monospace;
     font-size: 0.95rem;
-    color: #cbd5e1;
+    color: #e2e8f0;
+    font-weight: 600;
 }
 
 .custo-linha.destaque {
-    border-top: 1px dashed #334155;
+    border-top: 1px dashed #475569;
     margin-top: 14px;
     padding-top: 14px;
-    color: #f8fafc;
+    color: #ffffff;
     font-weight: 700;
     font-size: 0.95rem;
 }
@@ -129,24 +140,27 @@
     color: #f97316 !important;
     font-weight: 800;
     font-size: 1.05rem;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
 }
 
 /* ==========================================================================
-   5. RESULTADO FINAL (Preço de Venda)
+   RESULTADO FINAL (Preço de Venda)
    ========================================================================== */
 .resultado-box {
-    background: linear-gradient(145deg, #1e293b, #0f172a) !important;
-    border: 2px solid #f97316 !important;
+    background: linear-gradient(145deg, #1e293b, #0b1120) !important;
+    border: 2px solid #ea580c !important;
     border-radius: 8px;
     padding: 24px;
     text-align: center;
     margin-bottom: 24px;
-    box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+    box-shadow: 
+        inset 0 4px 10px rgba(0,0,0,0.5), 
+        0 8px 20px rgba(234, 88, 12, 0.15) !important;
 }
 
 .resultado-label {
     display: block;
-    color: #f97316 !important;
+    color: #fbd38d !important;
     font-size: 0.85rem;
     font-weight: 800;
     text-transform: uppercase;
@@ -156,20 +170,22 @@
 
 .resultado-valor {
     color: #f97316 !important;
-    font-size: 2.2rem;
+    font-size: 2.4rem;
     font-weight: 900;
     letter-spacing: -0.5px;
     margin: 0;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.6);
 }
 
 /* ==========================================================================
-   6. BOTÕES
+   BOTÕES
    ========================================================================== */
 .btn-salvar {
     flex: 1;
-    background-color: #f97316 !important;
+    background: linear-gradient(to bottom, #f97316, #ea580c) !important;
     color: white !important;
-    border: none;
+    border: 1px solid #c2410c !important;
+    border-top: 1px solid #fb923c !important;
     padding: 14px;
     border-radius: 8px;
     font-weight: 700;
@@ -180,17 +196,26 @@
     justify-content: center;
     gap: 8px;
     transition: 0.2s;
-    box-shadow: 0 4px 6px -1px rgba(249, 115, 22, 0.2);
+    box-shadow: 0 4px 6px -1px rgba(249, 115, 22, 0.3);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
 }
 
 .btn-salvar:hover:not(:disabled) {
-    background-color: #ea580c !important;
+    background: linear-gradient(to bottom, #ea580c, #c2410c) !important;
     transform: translateY(-2px);
+    box-shadow: 0 8px 12px -2px rgba(249, 115, 22, 0.4);
+}
+
+.btn-salvar:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(249, 115, 22, 0.3);
 }
 
 .btn-salvar:disabled {
-    background-color: #475569 !important;
+    background: #334155 !important;
+    border-color: #1e293b !important;
     cursor: not-allowed;
     box-shadow: none;
-    color: #94a3b8 !important;
+    color: #64748b !important;
+    text-shadow: none;
 }
