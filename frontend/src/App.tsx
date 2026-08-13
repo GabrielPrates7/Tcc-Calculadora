@@ -29,7 +29,10 @@ function App() {
             <Route path="/" element={<Dashboard />} /> 
             
             <Route path="/orcamentos" element={<Orcamentos />} />
-            <Route path="/financeiro" element={<Financeiro />} />
+            
+            {/* CORREÇÃO APLICADA AQUI: Sincronia de rota com a Sidebar */}
+            <Route path="/custos-fixos" element={<Financeiro />} />
+            
             <Route path="/funcionarios" element={<Funcionarios />} />
             <Route path="/custo-obra" element={<CustoObra />} />
             <Route path="/ordens-servico" element={<OrdemServicoKanban />} />

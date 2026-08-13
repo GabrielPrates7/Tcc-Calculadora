@@ -1,65 +1,108 @@
 import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Users, HardHat, DollarSign, Calculator,
-  ChevronLeft, ChevronRight, ClipboardList, Settings // <-- Ícone Settings adicionado aqui
+  ChevronLeft, ChevronRight, ClipboardList, Settings, LogOut,
+  type LucideIcon
 } from 'lucide-react';
-import './Sidebar.css';
+import logoDenarius from '../assets/images/logo-denarius.png';
+import './sidebar.css';
+
+interface MenuItem {
+  id: string;
+  label: string;
+  icon: LucideIcon;
+  path: string;
+}
+
+const MENU_PRINCIPAL: MenuItem[] = [
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/' },
+];
+
+const MENU_GESTAO: MenuItem[] = [
+  { id: 'orcamentos', label: 'Orçamentos', icon: Calculator, path: '/orcamentos' },
+  { id: 'ordens-servico', label: 'Ordens de Serviço', icon: ClipboardList, path: '/ordens-servico' },
+  { id: 'custo-obra', label: 'Custo de Produção', icon: HardHat, path: '/custo-obra' },
+  // Atualização de label e path para refletir o novo escopo
+  { id: 'custos-despesas', label: 'Custos e Despesas', icon: DollarSign, path: '/custos-despesas' },
+  { id: 'funcionarios', label: 'Funcionários', icon: Users, path: '/funcionarios' },
+];
+
+const MENU_SISTEMA: MenuItem[] = [
+  { id: 'configuracoes', label: 'Configurações', icon: Settings, path: '/configuracoes' },
+];
 
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
 
-  const toggleSidebar = () => setIsCollapsed(!isCollapsed);
+  const toggleSidebar = () => setIsCollapsed((prev) => !prev);
 
-  const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    { id: 'funcionarios', label: 'Funcionários', icon: Users, path: '/funcionarios' },
-    { id: 'custo-obra', label: 'Custo de Obra', icon: HardHat, path: '/custo-obra' },
-    { id: 'financeiro', label: 'Financeiro', icon: DollarSign, path: '/financeiro' },
-    { id: 'orcamentos', label: 'Orçamentos', icon: Calculator, path: '/orcamentos' },
-    { id: 'ordens-servico', label: 'Ordens de Serviço', icon: ClipboardList, path: '/ordens-servico' },
-    // 👇 NOVA TELA DE CONFIGURAÇÕES GLOBAIS 👇
-    { id: 'configuracoes', label: 'Configurações', icon: Settings, path: '/configuracoes' }, 
-  ];
+  const renderLinks = (items: MenuItem[]) => (
+    items.map((item) => (
+      <NavLink
+        key={item.id}
+        to={item.path}
+        className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+        title={isCollapsed ? item.label : undefined}
+      >
+        <item.icon className="nav-icon" size={20} strokeWidth={2} />
+        <span className="nav-text">{item.label}</span>
+      </NavLink>
+    ))
+  );
 
   return (
-    <div className={`sidebar ${isCollapsed ? 'collapsed' : 'expanded'}`}>
-      {/* CABEÇALHO */}
+    <aside className={`sidebar ${isCollapsed ? 'collapsed' : 'expanded'}`}>
       <div className="sidebar-header">
-        {!isCollapsed && (
-            <div className="logo-text">
-                Denarius<span className="logo-highlight">.</span>
-            </div>
-        )}
-        <button className="toggle-btn" onClick={toggleSidebar}>
-          {isCollapsed ? <ChevronRight size={24} /> : <ChevronLeft size={24} />}
+        <div className="brand-container">
+          <img src={logoDenarius} alt="Logo Denarius" className="brand-logo" />
+          {!isCollapsed && (
+            <span className="brand-text">DENARIUS</span>
+          )}
+        </div>
+
+        <button 
+          className="toggle-btn" 
+          onClick={toggleSidebar}
+          aria-expanded={!isCollapsed}
+          aria-label="Alternar barra lateral"
+        >
+          {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
         </button>
       </div>
 
-      {/* NAVEGAÇÃO */}
-      <nav className="nav-links">
-        {menuItems.map((item) => {
-          const isActive = location.pathname === item.path;
-          return (
-            <div
-              key={item.id}
-              className={`nav-item ${isActive ? 'active' : ''}`}
-              onClick={() => navigate(item.path)}
-              title={isCollapsed ? item.label : ''}
-            >
-              <item.icon className="nav-icon" size={20} />
-              <span className="nav-text">{item.label}</span>
-            </div>
-          );
-        })}
-      </nav>
-      
-      {/* Rodapé decorativo ou versão */}
-      <div className="sidebar-footer">
-          {!isCollapsed && <span style={{fontSize: '0.75rem', color: '#64748b'}}>v1.0.0</span>}
+      <div className="sidebar-content">
+        <nav className="nav-group">
+          {!isCollapsed && <span className="nav-group-title">GERAL</span>}
+          {renderLinks(MENU_PRINCIPAL)}
+        </nav>
+
+        <nav className="nav-group">
+          {!isCollapsed && <span className="nav-group-title">OPERAÇÃO</span>}
+          {renderLinks(MENU_GESTAO)}
+        </nav>
+
+        <div className="bottom-section">
+          <nav className="nav-group">
+            {renderLinks(MENU_SISTEMA)}
+          </nav>
+          
+          <div className="user-profile">
+            <div className="avatar">G</div>
+            {!isCollapsed && (
+              <div className="user-info">
+                <span className="user-name">Gabriel Prates</span>
+                <span className="user-role">Administrador</span>
+              </div>
+            )}
+            {!isCollapsed && (
+              <button className="logout-btn" title="Sair">
+                <LogOut size={16} />
+              </button>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
+    </aside>
   );
 }

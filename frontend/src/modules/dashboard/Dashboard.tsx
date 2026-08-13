@@ -112,7 +112,7 @@ export function Dashboard() {
                 <IndicadorCard titulo="Custo Operacional Total" valor={formatarBRL(indicadores.custoOperacionalTotal)} icone={<Wallet size={20} />} cor="#ef4444" sub="Fixos + Folha + Investimentos" />
                 <IndicadorCard titulo="Receita Realizada (O.S.)" valor={formatarBRL(indicadores.receitaRealizada)} icone={<DollarSign size={20} />} cor="#10b981" sub={`${indicadores.qtdPagamentos} pagamentos baixados no mês`} />
                 <IndicadorCard titulo="Ticket Médio" valor={formatarBRL(indicadores.ticketMedio)} icone={<Tag size={20} />} cor="#3b82f6" sub="Receita Realizada ÷ Qtd pagamentos" />
-                <IndicadorCard titulo="Receita Prevista (Gargalo)" valor={formatarBRL(indicadores.receitaPrevista)} icone={<Clock size={20} />} cor="#a855f7" sub="Projeção das O.S. abertas no mês" />
+                <IndicadorCard titulo="Valores a Receber" valor={formatarBRL(indicadores.receitaPrevista)} icone={<Clock size={20} />} cor="#a855f7" sub="Soma das O.S. abertas no mês" />
             </div>
 
             <div className="dashboard-linha">

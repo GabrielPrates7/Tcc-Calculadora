@@ -23,7 +23,7 @@ export function GraficoProdutividade({ data }: ProdutividadeProps) {
     return (
         <div className="grafico-card">
             <div className="card-header">
-                <h3>Produtividade Fabril (Gargalo)</h3>
+                <h3>Produtividade (Entrada × Saída)</h3>
                 <span className="card-badge">Últimos 6 meses</span>
             </div>
             {/* O SEGREDO DO ENCAPSULAMENTO ABSOLUTO */}

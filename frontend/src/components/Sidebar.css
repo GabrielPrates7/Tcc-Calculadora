@@ -1,62 +1,235 @@
+:root {
+    --sidebar-bg: #111827; 
+    --sidebar-border: #1f2937;
+    --text-muted: #6b7280;
+    --text-primary: #f3f4f6;
+    --accent-color: #f97316;
+    --accent-bg: rgba(249, 115, 22, 0.1);
+    --hover-bg: rgba(255, 255, 255, 0.05);
+}
+
 .sidebar {
-    height: 100vh;
-    background-color: var(--bg-card); /* Azul Petróleo */
+    position: sticky;
+    top: 0;
+    height: 100vh; 
+    height: 100dvh;
+    background-color: var(--sidebar-bg);
     color: var(--text-primary);
     display: flex;
     flex-direction: column;
-    transition: width 0.3s ease;
-    box-shadow: 4px 0 10px rgba(0,0,0,0.2);
-    border-right: 1px solid var(--border-color);
-    z-index: 10;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-right: 1px solid var(--sidebar-border);
+    z-index: 50;
+    font-family: 'Inter', system-ui, sans-serif; 
 }
 
-.sidebar.expanded { width: 260px; }
-.sidebar.collapsed { width: 80px; }
+.sidebar.expanded { width: 280px; flex-shrink: 0; }
+.sidebar.collapsed { width: 80px; flex-shrink: 0; }
 
 .sidebar-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 20px; border-bottom: 1px solid var(--border-color); height: 80px;
+    display: flex; 
+    align-items: center; 
+    justify-content: space-between;
+    padding: 0 20px; 
+    border-bottom: 1px solid var(--sidebar-border); 
+    min-height: 72px;
 }
 
-.logo-text {
-    font-size: 1.5rem; font-weight: bold; color: var(--text-primary);
-    white-space: nowrap; overflow: hidden; letter-spacing: -0.5px;
+.brand-container {
+    display: flex;
+    align-items: center;
+    gap: 8px; 
+    overflow: hidden;
 }
 
-/* O PONTO LARANJA */
-.logo-highlight { color: var(--cor-primaria); font-size: 2rem; line-height: 0; }
+.brand-logo {
+    width: 44px;  
+    height: 44px; 
+    object-fit: contain;
+    flex-shrink: 0; 
+}
+
+.brand-text {
+    font-size: 1.25rem; 
+    font-weight: 800; 
+    color: #ffffff;
+    white-space: nowrap; 
+    letter-spacing: 0.05em;
+}
 
 .toggle-btn {
-    background: none; border: none; color: var(--text-secondary);
-    cursor: pointer; padding: 5px; border-radius: 5px; transition: 0.2s;
+    background: transparent; 
+    border: 1px solid var(--sidebar-border); 
+    color: var(--text-muted);
+    cursor: pointer; 
+    padding: 6px; 
+    border-radius: 8px; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
 }
-.toggle-btn:hover { color: var(--cor-primaria); background-color: rgba(255, 255, 255, 0.05); }
 
-.nav-links { list-style: none; padding: 0; margin-top: 20px; flex: 1; }
+.toggle-btn:hover { 
+    color: var(--text-primary); 
+    background-color: var(--hover-bg); 
+}
+
+.sidebar-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    padding: 20px 12px; 
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.sidebar-content::-webkit-scrollbar { display: none; }
+.sidebar-content { -ms-overflow-style: none; scrollbar-width: none; }
+
+.nav-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 24px;
+    gap: 4px;
+}
+
+.nav-group-title {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    padding: 0 12px;
+    margin-bottom: 8px;
+}
 
 .nav-item {
-    display: flex; align-items: center; padding: 16px 24px;
-    cursor: pointer; text-decoration: none; color: var(--text-secondary);
-    transition: all 0.2s; font-size: 1rem; border-left: 4px solid transparent;
+    display: flex; 
+    align-items: center; 
+    padding: 10px 12px;
+    cursor: pointer; 
+    text-decoration: none; 
+    color: var(--text-muted);
+    transition: all 0.2s ease; 
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: 8px; 
 }
 
 .nav-item:hover {
-    background-color: rgba(255, 255, 255, 0.03); color: var(--text-primary);
+    background-color: var(--hover-bg); 
+    color: var(--text-primary);
 }
 
-/* ITEM ATIVO: LARANJA */
 .nav-item.active {
-    background-color: rgba(249, 115, 22, 0.1); /* Laranja bem suave no fundo */
-    color: var(--cor-primaria); /* Ícone e texto laranja */
-    border-left: 4px solid var(--cor-primaria); /* Borda laranja */
+    background-color: var(--accent-bg); 
+    color: var(--accent-color); 
 }
 
-.nav-icon { margin-right: 15px; min-width: 24px; }
+.nav-icon { 
+    margin-right: 12px; 
+    min-width: 20px; 
+}
 
-.sidebar.collapsed .nav-text, .sidebar.collapsed .logo-text { display: none; }
-.sidebar.collapsed .nav-item { justify-content: center; padding: 16px 0; }
-.sidebar.collapsed .nav-icon { margin-right: 0; }
+.bottom-section {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+}
 
-.sidebar-footer {
-    padding: 20px; text-align: center; border-top: 1px solid var(--border-color);
+.user-profile {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    margin-top: 12px;
+    border-top: 1px solid var(--sidebar-border);
+    gap: 12px;
+}
+
+.avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background-color: var(--hover-bg);
+    color: var(--accent-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex: 1;
+}
+
+.user-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.user-role {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.logout-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+    transition: 0.2s;
+}
+
+.logout-btn:hover {
+    color: #ef4444; 
+    background-color: rgba(239, 68, 68, 0.1);
+}
+
+/* Modificadores de estado colapsado */
+.sidebar.collapsed .nav-text, 
+.sidebar.collapsed .nav-group-title,
+.sidebar.collapsed .user-info { 
+    display: none; 
+}
+
+.sidebar.collapsed .sidebar-header {
+    flex-direction: column; 
+    justify-content: center;
+    padding: 20px 0;
+    gap: 16px; 
+    min-height: max-content; 
+}
+
+.sidebar.collapsed .toggle-btn {
+    display: flex;
+    margin: 0 auto;
+    background-color: var(--hover-bg);
+}
+
+.sidebar.collapsed .brand-container {
+    gap: 0;
+}
+
+.sidebar.collapsed .nav-item { 
+    justify-content: center; 
+    padding: 12px 0; 
+}
+
+.sidebar.collapsed .nav-icon { 
+    margin-right: 0; 
+}
+
+.sidebar.collapsed .user-profile {
+    justify-content: center;
+    padding: 12px 0;
 }
