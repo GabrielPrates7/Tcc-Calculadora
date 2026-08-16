@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
-import { X, Calendar, Search, Download } from 'lucide-react';
-import html2canvas from 'html2canvas';
+import { X, Calendar, Search, Download, AlertCircle } from 'lucide-react';
 import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { formatarBRL } from '../../../utils/formatters'; 
 import type { Funcionario } from '../types';
 import './ModalRelatorioCusto.css'; 
@@ -19,12 +19,13 @@ export function ModalRelatorioCusto({ onClose, onBuscar }: Props) {
     const [resultados, setResultados] = useState<Funcionario[] | null>(null);
     const [loading, setLoading] = useState(false);
     const [gerandoPdf, setGerandoPdf] = useState(false);
+    const [erroValidacao, setErroValidacao] = useState<string | null>(null);
 
     const [filtroSetor, setFiltroSetor] = useState<TipoFiltroSetor>('todos');
 
     const inicioRef = useRef<HTMLInputElement>(null);
     const fimRef = useRef<HTMLInputElement>(null);
-    const relatorioRef = useRef<HTMLDivElement>(null); 
+    const logoRef = useRef<HTMLImageElement>(null); 
 
     const formatarData = (dataIso: string) => {
         if (!dataIso) return '---';
@@ -33,55 +34,27 @@ export function ModalRelatorioCusto({ onClose, onBuscar }: Props) {
     };
 
     const handleFiltrar = async () => {
-        if (!inicio || !fim) return alert("Selecione o período completo.");
+        setErroValidacao(null); // Reseta erros anteriores
+
+        if (!inicio || !fim) {
+            setErroValidacao("Preencha a data de início e fim para gerar o relatório.");
+            return;
+        }
+
+        if (new Date(inicio) > new Date(fim)) {
+            setErroValidacao("A data de início não pode ser posterior à data de término.");
+            return;
+        }
+
         setLoading(true);
         try {
             const dados = await onBuscar(inicio, fim);
             setResultados(dados);
         } catch (err) {
             console.error("Erro ao buscar:", err);
-            alert("Erro ao buscar relatório.");
+            setErroValidacao("Falha na comunicação com o servidor ao buscar os dados.");
         } finally {
             setLoading(false);
-        }
-    };
-
-    const exportarPDF = async () => {
-        if (!relatorioRef.current) return;
-        setGerandoPdf(true);
-
-        try {
-            const element = relatorioRef.current;
-            
-            const canvas = await html2canvas(element, { 
-                scale: 2, 
-                backgroundColor: '#ffffff',
-                onclone: (documentClone) => {
-                    const headerOculto = documentClone.querySelector('.apenas-pdf') as HTMLElement;
-                    if (headerOculto) {
-                        headerOculto.style.display = 'block';
-                    }
-                }
-            });
-
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const imgWidth = canvas.width;
-            const imgHeight = canvas.height;
-            const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-            const imgX = (pdfWidth - imgWidth * ratio) / 2;
-            const imgY = 10;
-
-            pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-            pdf.save(`Relatorio_Custos_${inicio}_ate_${fim}.pdf`);
-
-        } catch (error) {
-            console.error("Erro PDF:", error);
-            alert("Erro ao gerar PDF");
-        } finally {
-            setGerandoPdf(false);
         }
     };
 
@@ -92,8 +65,103 @@ export function ModalRelatorioCusto({ onClose, onBuscar }: Props) {
 
     const custoTotal = dadosFiltrados?.reduce((acc, func) => acc + (Number(func.custo_total_mensal) || 0), 0) || 0;
 
+    const exportarPDF = () => {
+        if (!dadosFiltrados || dadosFiltrados.length === 0) return;
+        setGerandoPdf(true);
+
+        try {
+            const doc = new jsPDF('p', 'pt', 'a4');
+            
+            // 1. Cabeçalho Nativo e Injeção da Logo
+            const yHeader = 40;
+            const logoImg = logoRef.current;
+            let textStartX = 40;
+
+            if (logoImg) {
+                try {
+                    doc.addImage(logoImg, 'PNG', 40, yHeader - 15, 28, 28);
+                    textStartX = 75; 
+                } catch (e) {
+                    console.error("Erro ao renderizar logo no PDF:", e);
+                }
+            }
+
+            doc.setFontSize(16);
+            doc.setTextColor(15, 23, 42); 
+            doc.text('Relatório de Custos - Folha de Pagamento', textStartX, yHeader);
+            
+            doc.setFontSize(9);
+            doc.setTextColor(100, 116, 139);
+            doc.text(`Período: ${formatarData(inicio)} até ${formatarData(fim)}`, textStartX, yHeader + 14);
+            doc.text(`Setor: ${filtroSetor.toUpperCase()}   |   Emissão: ${new Date().toLocaleDateString('pt-BR')}`, textStartX, yHeader + 26);
+
+            // 2. Resumo de Totais
+            const ySummary = yHeader + 60;
+            doc.setFontSize(10);
+            doc.setTextColor(51, 65, 85);
+            doc.text(`Visualizando: ${dadosFiltrados.length} registros`, 40, ySummary);
+
+            const totalFormatado = formatarBRL(custoTotal);
+            doc.setFontSize(11);
+            doc.setTextColor(21, 128, 61); 
+            doc.setFont('helvetica', 'bold');
+            doc.text(`Custo Total: ${totalFormatado}`, 390, ySummary);
+            doc.setFont('helvetica', 'normal'); 
+
+            // 3. Tabela Multi-Páginas
+            autoTable(doc, {
+                startY: ySummary + 15,
+                head: [['NOME', 'SETOR', 'FUNÇÃO', 'ADMISSÃO', 'CUSTO MENSAL']],
+                body: dadosFiltrados.map(func => [
+                    func.nome,
+                    func.setor === 'producao' ? 'PRODUÇÃO' : 'ADMIN',
+                    func.funcao || '-',
+                    new Date(func.data_admissao).toLocaleDateString('pt-BR'),
+                    formatarBRL(func.custo_total_mensal || 0)
+                ]),
+                theme: 'grid',
+                headStyles: {
+                    fillColor: [255, 255, 255], 
+                    textColor: [15, 23, 42],
+                    fontSize: 8,
+                    fontStyle: 'bold',
+                    lineColor: [226, 232, 240],
+                    lineWidth: 1,
+                },
+                bodyStyles: {
+                    fillColor: [255, 255, 255],
+                    textColor: [51, 65, 85],
+                    fontSize: 8,
+                    lineColor: [226, 232, 240],
+                    lineWidth: 1,
+                },
+                alternateRowStyles: {
+                    fillColor: [255, 255, 255] 
+                },
+                styles: {
+                    cellPadding: 6,
+                }
+            });
+
+            doc.save(`Relatorio_Custos_${inicio}_ate_${fim}.pdf`);
+
+        } catch (error) {
+            console.error("Erro PDF:", error);
+            alert("Erro ao gerar PDF");
+        } finally {
+            setGerandoPdf(false);
+        }
+    };
+
     return (
         <div className="modal-overlay">
+            <img 
+                ref={logoRef}
+                src="/logo-denarius-branca.png" 
+                alt="Logo Denarius Branca" 
+                style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: '10px' }}
+            />
+
             <div className="modal-content" style={{ maxWidth: '900px' }}>
                 
                 <div className="modal-header" style={{ alignItems: 'center' }}>
@@ -111,7 +179,7 @@ export function ModalRelatorioCusto({ onClose, onBuscar }: Props) {
                                 onClick={exportarPDF} 
                                 disabled={gerandoPdf}
                                 className="btn-icon"
-                                title="Baixar PDF"
+                                title="Baixar PDF Analítico"
                                 style={{ color: '#0f766e', borderColor: '#0f766e' }}
                             >
                                 {gerandoPdf ? '...' : <Download size={20}/>}
@@ -122,6 +190,19 @@ export function ModalRelatorioCusto({ onClose, onBuscar }: Props) {
                 </div>
 
                 <div className="modal-body">
+                    
+                    {erroValidacao && (
+                        <div style={{ 
+                            display: 'flex', alignItems: 'center', gap: '8px', 
+                            backgroundColor: '#fef2f2', border: '1px solid #fecaca', 
+                            color: '#ef4444', padding: '12px 16px', borderRadius: '6px', 
+                            marginBottom: '20px', fontSize: '0.9rem', fontWeight: '500'
+                        }}>
+                            <AlertCircle size={18} />
+                            {erroValidacao}
+                        </div>
+                    )}
+
                     <div className="filtros-box">
                         <div className="filtro-grupo">
                             <label>Início</label>
@@ -158,51 +239,42 @@ export function ModalRelatorioCusto({ onClose, onBuscar }: Props) {
                     </div>
 
                     {dadosFiltrados && (
-                        <div ref={relatorioRef} style={{ padding: '20px', background: 'white' }}> 
+                        <div style={{ padding: '20px', background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0' }}> 
                             
-                            <div className="apenas-pdf" style={{ display: 'none', marginBottom: '25px', borderBottom: '2px solid #e2e8f0', paddingBottom: '15px' }}>
-                                <h1 style={{ fontSize: '24px', color: '#0f172a', margin: '0 0 5px 0' }}>Relatório de Custos - Folha de Pagamento</h1>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569', fontSize: '14px' }}>
-                                    <p style={{ margin: 0 }}><strong>Período:</strong> {formatarData(inicio)} até {formatarData(fim)}</p>
-                                    <p style={{ margin: 0 }}><strong>Setor Filtrado:</strong> {filtroSetor.toUpperCase()}</p>
-                                    <p style={{ margin: 0 }}><strong>Emissão:</strong> {new Date().toLocaleDateString('pt-BR')}</p>
-                                </div>
-                            </div>
-
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', alignItems: 'center' }}>
                                 <strong style={{ color: '#334155' }}>
                                     Visualizando: {dadosFiltrados.length} registros 
                                 </strong>
-                                <div style={{ background: '#ecfccb', color: '#365314', padding: '5px 12px', borderRadius: '20px', fontSize: '0.9rem', fontWeight: 'bold', border: '1px solid #d9f99d' }}>
+                                <div style={{ background: '#ecfccb', color: '#365314', padding: '6px 14px', borderRadius: '20px', fontSize: '0.95rem', fontWeight: 'bold', border: '1px solid #d9f99d' }}>
                                     Total: {formatarBRL(custoTotal)}
                                 </div>
                             </div>
 
-                            <div className="tabela-container" style={{ maxHeight: 'none', overflowY: 'visible', border: 'none' }}> 
+                            <div className="tabela-container" style={{ maxHeight: 'none', overflowY: 'visible', border: 'none', boxShadow: 'none' }}> 
                                 <table style={{ border: '1px solid #e2e8f0', width: '100%', borderCollapse: 'collapse' }}>
                                     <thead>
                                         <tr style={{ background: '#f8fafc', textAlign: 'left' }}>
-                                            <th style={{ padding: '12px', borderBottom: '1px solid #e2e8f0' }}>Nome</th>
-                                            <th style={{ padding: '12px', borderBottom: '1px solid #e2e8f0' }}>Setor</th>
-                                            <th style={{ padding: '12px', borderBottom: '1px solid #e2e8f0' }}>Função</th>
-                                            <th style={{ padding: '12px', borderBottom: '1px solid #e2e8f0' }}>Admissão</th>
-                                            <th style={{ padding: '12px', borderBottom: '1px solid #e2e8f0' }}>Custo Mensal</th>
+                                            <th style={{ padding: '12px', borderBottom: '1px solid #e2e8f0', color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase' }}>Nome</th>
+                                            <th style={{ padding: '12px', borderBottom: '1px solid #e2e8f0', color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase' }}>Setor</th>
+                                            <th style={{ padding: '12px', borderBottom: '1px solid #e2e8f0', color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase' }}>Função</th>
+                                            <th style={{ padding: '12px', borderBottom: '1px solid #e2e8f0', color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase' }}>Admissão</th>
+                                            <th style={{ padding: '12px', borderBottom: '1px solid #e2e8f0', color: '#475569', fontSize: '0.75rem', textTransform: 'uppercase' }}>Custo Mensal</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {dadosFiltrados.length === 0 ? (
-                                            <tr><td colSpan={5} style={{ textAlign: 'center', padding: '20px' }}>Nenhum registro encontrado.</td></tr>
+                                            <tr><td colSpan={5} style={{ textAlign: 'center', padding: '30px', color: '#64748b' }}>Nenhum registro encontrado para este período.</td></tr>
                                         ) : (
                                             dadosFiltrados.map(func => (
-                                                <tr key={func.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                                                    <td style={{ padding: '12px' }}><strong>{func.nome}</strong></td>
+                                                <tr key={func.id} style={{ borderBottom: '1px solid #e2e8f0', transition: 'background 0.2s' }}>
+                                                    <td style={{ padding: '12px', color: '#334155' }}><strong>{func.nome}</strong></td>
                                                     <td style={{ padding: '12px' }}>
                                                         <span className={`badge-setor ${func.setor}`}>
                                                             {func.setor === 'producao' ? 'Produção' : 'Admin'}
                                                         </span>
                                                     </td>
-                                                    <td style={{ padding: '12px' }}>{func.funcao}</td>
-                                                    <td style={{ padding: '12px' }}>{new Date(func.data_admissao).toLocaleDateString('pt-BR')}</td>
+                                                    <td style={{ padding: '12px', color: '#475569' }}>{func.funcao}</td>
+                                                    <td style={{ padding: '12px', color: '#475569' }}>{new Date(func.data_admissao).toLocaleDateString('pt-BR')}</td>
                                                     <td style={{ padding: '12px', fontWeight: 'bold', color: '#0f172a' }}>
                                                         {formatarBRL(func.custo_total_mensal || 0)}
                                                     </td>

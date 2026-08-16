@@ -16,6 +16,7 @@ export interface RecursoObraInput {
     qtd_profissionais: number;
     horas_estimadas: number;
     custo_hora_aplicado: number;
+    unidade_tempo?: 'horas' | 'dias'; // ✅ ADICIONADO: O formulário agora envia este campo
 }
 
 export interface NovaObraBody {
@@ -42,6 +43,7 @@ export interface ObraHistorico {
         qtd_profissionais: number;
         horas_estimadas: number;
         custo_hora_aplicado: number;
+        unidade_tempo?: 'horas' | 'dias'; // ✅ ADICIONADO: O histórico agora lê este campo
     }[];
 }
 

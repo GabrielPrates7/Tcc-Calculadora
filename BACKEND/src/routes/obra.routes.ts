@@ -22,13 +22,14 @@ interface RecursoObraInput {
     qtd_profissionais: number;
     horas_estimadas: number;
     custo_hora_aplicado: number;
+    unidade_tempo?: 'horas' | 'dias'; // ✅ ADICIONADO: O contrato agora aceita a unidade de tempo por profissional
 }
 
 interface NovaObraBody {
     titulo: string;
     cliente: string;
     data_entrega?: string;
-    tipo_tempo?: 'horas' | 'dias'; // <-- NOVO CAMPO
+    tipo_tempo?: 'horas' | 'dias'; 
     recursos: RecursoObraInput[];
 }
 
@@ -98,7 +99,6 @@ router.post('/', async (req: Request<{}, {}, NovaObraBody>, res: Response): Prom
             return acc + (recurso.horas_estimadas * recurso.custo_hora_aplicado);
         }, 0);
 
-        // ATUALIZADO: Gravando tipo_tempo
         const insertObraQuery = `
             INSERT INTO public.obras (titulo, cliente, data_entrega, custo_total_estimado, tipo_tempo) 
             VALUES ($1, $2, $3, $4, $5) 
@@ -113,9 +113,21 @@ router.post('/', async (req: Request<{}, {}, NovaObraBody>, res: Response): Prom
         ]);
         const obraId = obraResult.rows[0].id;
 
-        const insertRecursoQuery = `INSERT INTO public.obra_recursos_humanos (obra_id, funcao_id, qtd_profissionais, horas_estimadas, custo_hora_aplicado) VALUES ($1, $2, $3, $4, $5);`;
+        // ✅ ADICIONADO: Query atualizada para incluir a coluna unidade_tempo
+        const insertRecursoQuery = `
+            INSERT INTO public.obra_recursos_humanos 
+            (obra_id, funcao_id, qtd_profissionais, horas_estimadas, custo_hora_aplicado, unidade_tempo) 
+            VALUES ($1, $2, $3, $4, $5, $6);
+        `;
         for (const recurso of recursos) {
-            await client.query(insertRecursoQuery, [obraId, recurso.funcao_id, recurso.qtd_profissionais, recurso.horas_estimadas, recurso.custo_hora_aplicado]);
+            await client.query(insertRecursoQuery, [
+                obraId, 
+                recurso.funcao_id, 
+                recurso.qtd_profissionais, 
+                recurso.horas_estimadas, 
+                recurso.custo_hora_aplicado,
+                recurso.unidade_tempo || 'horas' // Faz o bind do valor vindo do front
+            ]);
         }
         await client.query('COMMIT');
         res.status(201).json({ message: 'Criado com sucesso!', obra_id: obraId, custo_total: custoTotalEstimado });
@@ -147,7 +159,6 @@ router.put('/:id', async (req: Request, res: Response): Promise<void> => {
             return acc + (recurso.horas_estimadas * recurso.custo_hora_aplicado);
         }, 0);
         
-        // ATUALIZADO: Atualizando tipo_tempo
         await client.query(
             `UPDATE public.obras 
              SET titulo = $1, cliente = $2, data_entrega = $3, custo_total_estimado = $4, tipo_tempo = $5 
@@ -157,9 +168,21 @@ router.put('/:id', async (req: Request, res: Response): Promise<void> => {
 
         await client.query(`DELETE FROM public.obra_recursos_humanos WHERE obra_id = $1`, [id]);
 
-        const insertRecursoQuery = `INSERT INTO public.obra_recursos_humanos (obra_id, funcao_id, qtd_profissionais, horas_estimadas, custo_hora_aplicado) VALUES ($1, $2, $3, $4, $5);`;
+        // ✅ ADICIONADO: Query atualizada também no bloco de Update para reconstruir a tabela com a unidade correta
+        const insertRecursoQuery = `
+            INSERT INTO public.obra_recursos_humanos 
+            (obra_id, funcao_id, qtd_profissionais, horas_estimadas, custo_hora_aplicado, unidade_tempo) 
+            VALUES ($1, $2, $3, $4, $5, $6);
+        `;
         for (const recurso of recursos) {
-            await client.query(insertRecursoQuery, [id, recurso.funcao_id, recurso.qtd_profissionais, recurso.horas_estimadas, recurso.custo_hora_aplicado]);
+            await client.query(insertRecursoQuery, [
+                id, 
+                recurso.funcao_id, 
+                recurso.qtd_profissionais, 
+                recurso.horas_estimadas, 
+                recurso.custo_hora_aplicado,
+                recurso.unidade_tempo || 'horas'
+            ]);
         }
 
         await client.query('COMMIT');
@@ -178,7 +201,6 @@ router.put('/:id', async (req: Request, res: Response): Promise<void> => {
 // ============================================================================
 router.get('/', async (req: Request, res: Response) => {
     try {
-        // ATUALIZADO: Retornando o campo o.tipo_tempo
         const query = `
             SELECT o.id, o.titulo, o.cliente, o.data_inicio, o.data_entrega, o.status, o.custo_total_estimado, o.criado_em, o.tipo_tempo,
                 COALESCE(
@@ -188,7 +210,8 @@ router.get('/', async (req: Request, res: Response) => {
                             'funcao_nome', f.nome,
                             'qtd_profissionais', orh.qtd_profissionais,
                             'horas_estimadas', orh.horas_estimadas,
-                            'custo_hora_aplicado', orh.custo_hora_aplicado
+                            'custo_hora_aplicado', orh.custo_hora_aplicado,
+                            'unidade_tempo', COALESCE(orh.unidade_tempo, 'horas') -- ✅ ADICIONADO: Retornando para o frontend
                         )
                     ) FILTER (WHERE orh.id IS NOT NULL), '[]'
                 ) AS recursos

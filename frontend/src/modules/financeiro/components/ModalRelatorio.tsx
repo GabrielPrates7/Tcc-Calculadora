@@ -64,44 +64,56 @@ export function ModalRelatorio({ despesas, investimentos, onClose, somarFaturame
             const doc = new jsPDF();
             const pageWidth = doc.internal.pageSize.width;
             
-            const AZUL_ESCURO = [30, 41, 59]; 
-            const AZUL_CLARO = [59, 130, 246]; 
-            const VERMELHO = [239, 68, 68];
-            const ROXO = [139, 92, 246];
-            const CINZA_FUNDO = [241, 245, 249];
+            // ==========================================
+            // CORREÇÃO TYPESCRIPT: Tuplas estritas [number, number, number]
+            // ==========================================
+            const AZUL_ESCURO: [number, number, number] = [30, 41, 59]; 
+            const AZUL_CLARO: [number, number, number] = [59, 130, 246]; 
+            const VERMELHO: [number, number, number] = [239, 68, 68];
+            const ROXO: [number, number, number] = [139, 92, 246];
 
-            // CABEÇALHO
-            doc.setFillColor(AZUL_ESCURO[0], AZUL_ESCURO[1], AZUL_ESCURO[2]);
-            doc.rect(0, 0, pageWidth, 40, 'F');
-            doc.setTextColor(255, 255, 255);
+            // ==========================================
+            // CABEÇALHO (PRINT-FRIENDLY - FUNDO BRANCO)
+            // ==========================================
+            doc.addImage('/logo-denarius-branca.png', 'PNG', 14, 8, 24, 24);
+
+            doc.setTextColor(AZUL_ESCURO[0], AZUL_ESCURO[1], AZUL_ESCURO[2]);
             doc.setFontSize(22);
             doc.setFont("helvetica", "bold");
-            doc.text("Relatório Financeiro", 14, 20);
+            doc.text("Relatório Financeiro", 42, 20); 
             
             doc.setFontSize(10);
             doc.setFont("helvetica", "normal");
-            doc.text(`Período de Análise: ${formatarDataSemFuso(dataInicio)} até ${formatarDataSemFuso(dataFim)}`, 14, 30);
+            doc.setTextColor(100, 116, 139); 
+            doc.text(`Período de Análise: ${formatarDataSemFuso(dataInicio)} até ${formatarDataSemFuso(dataFim)}`, 42, 28);
             
-            doc.setFontSize(14);
-            doc.text("Denarius", pageWidth - 35, 25);
-
-            // CARDS
-            const startY = 50;
-            const cardWidth = 45;
-            const cardHeight = 25;
-            const gap = 10;
+            // ==========================================
+            // CARDS (ECONOMIA DE TINTA)
+            // ==========================================
+// ==========================================
+            // CARDS (ECONOMIA DE TINTA)
+            // ==========================================
+            const startY = 45;
             const margin = 14;
+            const gap = 6; // Reduzimos o espaço entre os cards para ficar mais elegante
+            
+            // CÁLCULO DINÂMICO: (Largura da Folha - Margens Laterais - Espaços dos Gaps) / 4 cards
+            const cardWidth = (pageWidth - (margin * 2) - (gap * 3)) / 4; 
+            const cardHeight = 25;
 
-            const drawCard = (x: number, title: string, value: string, colorRGB: number[]) => {
-                doc.setFillColor(CINZA_FUNDO[0], CINZA_FUNDO[1], CINZA_FUNDO[2]);
-                doc.setDrawColor(200);
+            const drawCard = (x: number, title: string, value: string, colorRGB: [number, number, number]) => {
+                doc.setDrawColor(226, 232, 240); 
+                doc.setFillColor(255, 255, 255); 
                 doc.roundedRect(x, startY, cardWidth, cardHeight, 2, 2, 'FD');
+                
                 doc.setFillColor(colorRGB[0], colorRGB[1], colorRGB[2]);
                 doc.rect(x, startY, 2, cardHeight, 'F');
-                doc.setTextColor(100);
+                
+                doc.setTextColor(100, 116, 139);
                 doc.setFontSize(8);
                 doc.text(title.toUpperCase(), x + 5, startY + 8);
-                doc.setTextColor(30);
+                
+                doc.setTextColor(30, 41, 59);
                 doc.setFontSize(11);
                 doc.setFont("helvetica", "bold");
                 doc.text(value, x + 5, startY + 18);
@@ -110,15 +122,17 @@ export function ModalRelatorio({ despesas, investimentos, onClose, somarFaturame
             drawCard(margin, "Faturamento", formatarBRL(faturamentoPeriodo), AZUL_CLARO);
             drawCard(margin + cardWidth + gap, "Despesas", formatarBRL(totalDespesas), VERMELHO);
             drawCard(margin + (cardWidth + gap) * 2, "Investimentos", formatarBRL(totalInvestimentos), ROXO);
-            drawCard(margin + (cardWidth + gap) * 3, "Taxa Custo Fixo", `${taxaCustoFixo.toFixed(2)}%`, taxaCustoFixo > 30 ? VERMELHO : [34, 197, 94]);
+            drawCard(margin + (cardWidth + gap) * 3, "Taxa Custo Fixo", `${taxaCustoFixo.toFixed(2)}%`, taxaCustoFixo > 30 ? VERMELHO : [34, 197, 94] as [number, number, number]);
 
-            // TABELAS
+            // ==========================================
+            // TABELA 1: DESPESAS (FOLHA 1)
+            // ==========================================
             doc.setFontSize(14);
-            doc.setTextColor(30);
-            doc.text("Detalhamento de Despesas", 14, 90);
+            doc.setTextColor(AZUL_ESCURO[0], AZUL_ESCURO[1], AZUL_ESCURO[2]);
+            doc.text("Detalhamento de Despesas", 14, 85);
 
             autoTable(doc, {
-                startY: 95,
+                startY: 90,
                 head: [['Vencimento', 'Descrição', 'Beneficiário', 'Status', 'Valor']],
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 body: despesasFiltradas.map((d: any) => [
@@ -128,20 +142,23 @@ export function ModalRelatorio({ despesas, investimentos, onClose, somarFaturame
                     d.pago ? 'Pago' : 'Pendente',
                     formatarBRL(d.valor)
                 ]),
-                theme: 'striped',
-                headStyles: { fillColor: [239, 68, 68], textColor: 255, fontStyle: 'bold' },
-                styles: { fontSize: 9, cellPadding: 3 },
-                alternateRowStyles: { fillColor: [254, 242, 242] }
+                theme: 'grid', 
+                headStyles: { fillColor: VERMELHO, textColor: 255, fontStyle: 'bold' },
+                styles: { fontSize: 9, cellPadding: 4, lineColor: [226, 232, 240], lineWidth: 0.1 },
+                alternateRowStyles: { fillColor: [255, 255, 255] } 
             });
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const finalY = (doc as any).lastAutoTable.finalY + 15;
+            // ==========================================
+            // TABELA 2: INVESTIMENTOS (NOVA FOLHA)
+            // ==========================================
+            doc.addPage(); 
+
             doc.setFontSize(14);
-            doc.setTextColor(30);
-            doc.text("Detalhamento de Investimentos", 14, finalY);
+            doc.setTextColor(AZUL_ESCURO[0], AZUL_ESCURO[1], AZUL_ESCURO[2]);
+            doc.text("Detalhamento de Investimentos", 14, 20);
 
             autoTable(doc, {
-                startY: finalY + 5,
+                startY: 25, 
                 head: [['Vencimento', 'Descrição', 'Valor']],
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 body: investimentosFiltrados.map((i: any) => [
@@ -149,13 +166,15 @@ export function ModalRelatorio({ despesas, investimentos, onClose, somarFaturame
                     i.nome,
                     formatarBRL(i.valor)
                 ]),
-                theme: 'striped',
-                headStyles: { fillColor: [139, 92, 246], textColor: 255, fontStyle: 'bold' },
-                styles: { fontSize: 9, cellPadding: 3 },
-                alternateRowStyles: { fillColor: [243, 232, 255] }
+                theme: 'grid',
+                headStyles: { fillColor: ROXO, textColor: 255, fontStyle: 'bold' },
+                styles: { fontSize: 9, cellPadding: 4, lineColor: [226, 232, 240], lineWidth: 0.1 },
+                alternateRowStyles: { fillColor: [255, 255, 255] }
             });
 
-            // RODAPÉ
+            // ==========================================
+            // RODAPÉ (INSERIDO EM TODAS AS PÁGINAS)
+            // ==========================================
             const pageCount = doc.getNumberOfPages();
             for(let i = 1; i <= pageCount; i++) {
                 doc.setPage(i);
@@ -178,7 +197,6 @@ export function ModalRelatorio({ despesas, investimentos, onClose, somarFaturame
     };
 
     return (
-        /* CORREÇÃO: Sem onClick={onClose} no backdrop */
         <div className="modal-overlay">
             <div className="modal-content" style={{ maxWidth: '450px' }}>
                 <div className="modal-header">

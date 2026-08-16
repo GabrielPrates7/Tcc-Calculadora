@@ -108,13 +108,13 @@ export function OrdemServicoKanban() {
         <div className="kanban-container">
             <div className="kanban-header">
                 <div className="header-titles">
-                    <h1>ORDENS DE SERVIÇO  📋</h1>
+                    <h1>ORDENS DE SERVIÇO 📋</h1>
                     <p>Controle de Ordens de Serviço e Fluxo de Fabricação</p>
                 </div>
 
                 <div className="kanban-toolbar">
                     <div className="search-box compacta">
-                        <Search size={17} color="#64748b" />
+                        <Search size={17} color="#f97316" />
                         <input 
                             type="text" 
                             placeholder="Buscar cliente, produto ou #ID..." 
@@ -189,7 +189,27 @@ export function OrdemServicoKanban() {
 
                                 <div className="column-body">
                                     {ordensDaColuna.length === 0 ? (
-                                        <div className="empty-column">Nenhuma O.S. aqui</div>
+                                        <div className="empty-column" style={{ 
+                                            display: 'flex', 
+                                            flexDirection: 'column', 
+                                            alignItems: 'center', 
+                                            justifyContent: 'center', 
+                                            gap: '12px',
+                                            padding: '30px 10px',
+                                            opacity: 0.6 
+                                        }}>
+                                            <img 
+                                                src="/logo-denarius-branca.png" 
+                                                alt="Logo Denarius" 
+                                                style={{ 
+                                                    width: '45px', 
+                                                    filter: 'grayscale(100%) opacity(60%)' 
+                                                }} 
+                                            />
+                                            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#94a3b8' }}>
+                                                Nenhuma O.S. aqui
+                                            </span>
+                                        </div>
                                     ) : (
                                         ordensDaColuna.map(os => {
                                             const estaAtrasado = Boolean(os.esta_atrasado);

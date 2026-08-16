@@ -4,8 +4,8 @@ import {
     Plus, Search, RotateCcw, Download, 
     ArrowUpAZ, ArrowDownZA, Calendar, Filter, FileBarChart2, Briefcase, X
 } from 'lucide-react';
-import html2canvas from 'html2canvas'; 
-import jsPDF from 'jspdf';             
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 import { useFuncionarios } from './hooks/useFuncionarios';
 import { TabelaFuncionarios } from './components/TabelaFuncionarios';
@@ -120,51 +120,161 @@ export function Funcionarios() {
         setPaginaAtual(1);
     };
 
+    const formatarMoedaPDF = (valor?: number | string) => {
+        return Number(valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    };
+
     const exportarPDF = async () => {
-        if (!containerRef.current) return;
         setGerandoPdf(true);
 
         try {
-            const element = containerRef.current;
-            const canvas = await html2canvas(element, { 
-                scale: 2, 
-                backgroundColor: '#0f172a', 
-                onclone: (documentClone) => {
-                    const toolbar = documentClone.querySelector('.toolbar-container') as HTMLElement;
-                    if (toolbar) toolbar.style.display = 'none';
+            let listaCompleta: Funcionario[] = [];
+            let paginaAtualBusca = 1;
+            let buscarMais = true;
+            let ultimoIdVisto: number | string | null = null;
+            
+            // Pede um limite massivo para evitar loop e envia todos os formatos comuns de parâmetros
+            const LIMITE_ALTO = 1000; 
 
-                    const btnRelatorio = documentClone.querySelector('.btn-relatorio-topo') as HTMLElement;
-                    if (btnRelatorio) btnRelatorio.style.display = 'none';
+            while (buscarMais) {
+                const queryParams = new URLSearchParams({
+                    busca: termoBusca,
+                    setor: filtroSetor,
+                    status: filtroStatus,
+                    funcao: filtroFuncao !== 'todas' ? filtroFuncao : '',
+                    ordenarPor: ordenarPor,
+                    direcaoOrdem: direcaoOrdem,
+                    limite: String(LIMITE_ALTO),
+                    limit: String(LIMITE_ALTO),
+                    pagina: String(paginaAtualBusca),
+                    page: String(paginaAtualBusca)
+                }).toString();
 
-                    const header = documentClone.querySelector('.header-top div') as HTMLElement;
-                    if (header) {
-                        const dataImpressao = document.createElement('p');
-                        dataImpressao.innerText = `Relatório Geral emitido em: ${new Date().toLocaleDateString()} às ${new Date().toLocaleTimeString()}`;
-                        dataImpressao.style.color = '#94a3b8';
-                        dataImpressao.style.fontSize = '0.8rem';
-                        dataImpressao.style.marginTop = '5px';
-                        header.appendChild(dataImpressao);
+                const res = await fetch(`http://localhost:3000/api/funcionarios?${queryParams}`);
+                const data = await res.json();
+                
+                const itens: Funcionario[] = Array.isArray(data) ? data : (data.dados || data.funcionarios || data.data || []);
+                
+                if (itens.length > 0) {
+                    // MEMÓRIA ANTI-DUPLICAÇÃO: Se a API ignorar tudo e devolver a mesma página, quebra o loop
+                    const idPrimeiroItem = itens[0]?.id;
+                    if (ultimoIdVisto === idPrimeiroItem) {
+                        console.warn("API retornou registros duplicados. Interrompendo paginação do PDF.");
+                        break; 
                     }
+                    ultimoIdVisto = idPrimeiroItem ?? null;
+
+                    listaCompleta = [...listaCompleta, ...itens];
+                    
+                    // Se devolveu menos que o nosso teto gigante, já pegou tudo. Pode parar.
+                    if (itens.length < LIMITE_ALTO) {
+                        buscarMais = false;
+                    } else {
+                        paginaAtualBusca++;
+                    }
+                } else {
+                    buscarMais = false; 
+                }
+
+                // Trava de segurança absoluta
+                if (paginaAtualBusca > 20) buscarMais = false; 
+            }
+
+            // 2. Configuração Nativa do Documento A4
+            const doc = new jsPDF('p', 'pt', 'a4');
+
+// 3. Cabeçalho Fixo no Topo
+            const yHeader = 35;
+            const logoImg = document.getElementById('logo-pdf-branca') as HTMLImageElement;
+            
+            if (logoImg) {
+                doc.addImage(logoImg, 'PNG', 40, yHeader - 15, 28, 28);
+                doc.setFontSize(16);
+                doc.setTextColor(15, 23, 42); 
+                doc.text('Gestão de Equipe', 75, yHeader);
+                doc.setFontSize(9);
+                doc.setTextColor(100, 116, 139);
+                doc.text(`Relatório Analítico emitido em: ${new Date().toLocaleDateString()} às ${new Date().toLocaleTimeString()}`, 75, yHeader + 14);
+            } else {
+                doc.setFontSize(16);
+                doc.setTextColor(15, 23, 42); 
+                doc.text('Gestão de Equipe', 40, yHeader);
+                doc.setFontSize(9);
+                doc.setTextColor(100, 116, 139);
+                doc.text(`Relatório Analítico emitido em: ${new Date().toLocaleDateString()} às ${new Date().toLocaleTimeString()}`, 40, yHeader + 14);
+            }
+
+            // 4. Renderização dos Cards (Fundo Branco Limpo)
+            const yCards = 75; 
+            const wCard = 160;
+            const hCard = 40;
+            
+            doc.setDrawColor(226, 232, 240); // Borda Cinza Clara
+            doc.setLineWidth(1);
+
+            // Card 1: Equipe
+            doc.roundedRect(40, yCards, wCard, hCard, 4, 4, 'S'); 
+            doc.setFontSize(8); doc.setTextColor(100, 116, 139);
+            doc.text('EQUIPE ATIVA', 50, yCards + 15);
+            doc.setFontSize(12); doc.setTextColor(249, 115, 22);
+            doc.text(`${resumo.totalAtivos} colaboradores`, 50, yCards + 30);
+
+            // Card 2: Custo Folha
+            doc.roundedRect(215, yCards, wCard, hCard, 4, 4, 'S');
+            doc.setFontSize(8); doc.setTextColor(100, 116, 139);
+            doc.text('CUSTO FOLHA MENSAL', 225, yCards + 15);
+            doc.setFontSize(12); doc.setTextColor(59, 130, 246);
+            doc.text(formatarMoedaPDF(resumo.custoFolha), 225, yCards + 30);
+
+            // Card 3: Custo Produção
+            doc.roundedRect(390, yCards, wCard, hCard, 4, 4, 'S');
+            doc.setFontSize(8); doc.setTextColor(100, 116, 139);
+            doc.text('CUSTO PRODUÇÃO', 400, yCards + 15);
+            doc.setFontSize(12); doc.setTextColor(16, 185, 129);
+            doc.text(formatarMoedaPDF(resumo.custoProducao), 400, yCards + 30);
+
+            // 5. Tabela Multi-Páginas Perfeita
+            autoTable(doc, {
+                startY: yCards + hCard + 15,
+                head: [['NOME', 'FUNÇÃO', 'SETOR', 'SALÁRIO BASE', 'CUSTO MENSAL', 'STATUS']],
+                body: listaCompleta.map((f: Funcionario) => [
+                    f.nome,
+                    f.funcao || '-',
+                    f.setor?.toUpperCase() || '-',
+                    formatarMoedaPDF(f.salario_base),
+                    formatarMoedaPDF(f.custo_total_mensal),
+                    f.ativo ? 'Ativo' : 'Inativo'
+                ]),
+                theme: 'grid',
+                headStyles: {
+                    fillColor: [255, 255, 255], 
+                    textColor: [15, 23, 42],
+                    fontSize: 8,
+                    fontStyle: 'bold',
+                    lineColor: [226, 232, 240],
+                    lineWidth: 1,
+                },
+                bodyStyles: {
+                    fillColor: [255, 255, 255],
+                    textColor: [51, 65, 85],
+                    fontSize: 8,
+                    lineColor: [226, 232, 240],
+                    lineWidth: 1,
+                },
+                alternateRowStyles: {
+                    fillColor: [255, 255, 255] 
+                },
+                styles: {
+                    cellPadding: 6,
                 }
             });
 
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const imgWidth = canvas.width;
-            const imgHeight = canvas.height;
-            const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-            
-            const imgX = (pdfWidth - imgWidth * ratio) / 2;
-            const imgY = 10;
-
-            pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-            pdf.save(`Dashboard_Equipe_${new Date().toISOString().split('T')[0]}.pdf`);
+            // 6. Download
+            doc.save(`Relatorio_Equipe_${new Date().toISOString().split('T')[0]}.pdf`);
 
         } catch (error) {
             console.error("Erro PDF:", error);
-            alert("Erro ao gerar PDF");
+            alert("Erro ao buscar registros integrais para o PDF.");
         } finally {
             setGerandoPdf(false);
         }
@@ -199,6 +309,14 @@ export function Funcionarios() {
     return (
         <div className="funcionarios-container" ref={containerRef}>
             
+{/* INJEÇÃO OCULTA DA LOGO (Disponível apenas para o motor do jsPDF) */}
+            <img 
+                id="logo-pdf-branca"
+                src="/logo-denarius-branca.png" 
+                alt="Logo Denarius Branca" 
+                style={{ display: 'none' }}
+            />
+
             <div className="header-top">
                 <div>
                     <h1 style={{ fontSize: '1.8rem', color: 'var(--text-primary)', marginBottom: '5px' }}>
@@ -282,17 +400,17 @@ export function Funcionarios() {
                                 }}
                             />
                             {filtroFuncao !== 'todas' && (
-    <span 
-        title="Limpar função"
-        onClick={() => {
-            setBuscaFiltroFuncao('');
-            handleFiltroChange<string>(setFiltroFuncao, 'todas');
-        }}
-        style={{ cursor: 'pointer', marginLeft: '4px', display: 'flex', alignItems: 'center' }}
-    >
-        <X size={14} color="#64748b" />
-    </span>
-)}
+                                <span 
+                                    title="Limpar função"
+                                    onClick={() => {
+                                        setBuscaFiltroFuncao('');
+                                        handleFiltroChange<string>(setFiltroFuncao, 'todas');
+                                    }}
+                                    style={{ cursor: 'pointer', marginLeft: '4px', display: 'flex', alignItems: 'center' }}
+                                >
+                                    <X size={14} color="#64748b" />
+                                </span>
+                            )}
                         </div>
 
                         {dropdownFiltroFuncaoOpen && (
@@ -388,7 +506,7 @@ export function Funcionarios() {
                         <button 
                             className="btn-icon btn-csv" 
                             onClick={exportarPDF} 
-                            title="Baixar Tabela Atual (PDF)"
+                            title="Gerar Relatório Analítico (PDF)"
                             disabled={gerandoPdf}
                         >
                             {gerandoPdf ? '...' : <Download size={18} />}

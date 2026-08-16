@@ -30,8 +30,8 @@ function App() {
             
             <Route path="/orcamentos" element={<Orcamentos />} />
             
-            {/* CORREÇÃO APLICADA AQUI: Sincronia de rota com a Sidebar */}
-            <Route path="/custos-fixos" element={<Financeiro />} />
+            {/* Rota atualizada para sincronizar com "Custos e Despesas" na Sidebar */}
+            <Route path="/custos-despesas" element={<Financeiro />} />
             
             <Route path="/funcionarios" element={<Funcionarios />} />
             <Route path="/custo-obra" element={<CustoObra />} />

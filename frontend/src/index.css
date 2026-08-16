@@ -53,3 +53,21 @@ input, select, textarea {
     color: var(--text-primary);
     border: 1px solid var(--border-color);
 }
+
+/* ==========================================================================
+   DESBLOQUEIO GLOBAL DE IMPRESSÃO (VENCE O REACT/SPA)
+   ========================================================================== */
+@media print {
+  html, body, #root {
+    /* Força o fundo a ser branco e liberta a altura para não cortar a folha */
+    background: #ffffff !important;
+    color: #000000 !important;
+    height: auto !important;
+    min-height: auto !important;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    position: static !important;
+  }
+}

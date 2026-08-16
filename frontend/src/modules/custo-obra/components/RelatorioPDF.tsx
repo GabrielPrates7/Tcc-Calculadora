@@ -1,4 +1,4 @@
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import { formatarBRL } from '../../../utils/formatters';
 
 interface RelatorioPDFProps {
@@ -12,31 +12,48 @@ interface RelatorioPDFProps {
             qtd_profissionais: number;
             horas_estimadas: number;
             custo_hora_aplicado: number;
+            unidade_tempo?: 'horas' | 'dias';
         }[];
         custoTotalMaoDeObra: number;
     }
 }
 
-// ESTILOS DO PDF
+// ESTILOS DO PDF - DESIGN FINAL (Fundo branco, texto preto, logo branca/escura)
 const styles = StyleSheet.create({
     page: { 
         padding: 40, 
         backgroundColor: '#ffffff', 
         fontFamily: 'Helvetica' 
     },
-    header: { 
-        marginBottom: 30, 
-        textAlign: 'center' 
+    headerBanner: {
+        backgroundColor: '#ffffff', // ✅ Fundo branco onde você marcou o X
+        paddingBottom: 20,
+        marginBottom: 25,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        borderBottom: '1px solid #e2e8f0' // ✅ Fio elegante para separar do resto
     },
-    title: { 
-        fontSize: 20, 
+    logoContainer: {
+        width: 85, // Tamanho elegante
+    },
+    logo: {
+        width: '100%',
+        height: 'auto'
+    },
+    headerTextContainer: {
+        alignItems: 'flex-end'
+    },
+    titleDark: { 
+        fontSize: 18, 
         fontWeight: 'bold', 
-        color: '#1e293b', 
-        marginBottom: 5 
+        color: '#0f172a', // ✅ Texto principal Preto/Escuro
+        marginBottom: 4 
     },
-    subtitle: { 
-        fontSize: 10, 
-        color: '#64748b' 
+    subtitleDark: { 
+        fontSize: 9, 
+        color: '#64748b', // ✅ Subtítulo cinza elegante
+        textTransform: 'uppercase'
     },
     infoRow: { 
         flexDirection: 'row', 
@@ -45,10 +62,10 @@ const styles = StyleSheet.create({
     },
     infoBox: { 
         width: '48%', 
-        padding: 15, 
-        borderRadius: 8, 
-        border: '1px solid #e2e8f0', 
-        backgroundColor: '#f8fafc' 
+        padding: 12, 
+        borderRadius: 6, 
+        border: '1px solid #cbd5e1', 
+        backgroundColor: '#ffffff' 
     },
     infoLabel: { 
         fontSize: 8, 
@@ -65,19 +82,19 @@ const styles = StyleSheet.create({
     infoDate: { 
         fontSize: 8, 
         color: '#94a3b8', 
-        marginTop: 10 
+        marginTop: 8 
     },
     table: { 
         width: '100%', 
-        border: '1px solid #e2e8f0', 
-        borderRadius: 8, 
+        border: '1px solid #cbd5e1', 
+        borderRadius: 6, 
         overflow: 'hidden' 
     },
     tableHeader: { 
         flexDirection: 'row', 
-        backgroundColor: '#f1f5f9', 
+        backgroundColor: '#f8fafc', 
         padding: 10, 
-        borderBottom: '1px solid #e2e8f0' 
+        borderBottom: '1px solid #cbd5e1' 
     },
     tableRow: { 
         flexDirection: 'row', 
@@ -100,29 +117,28 @@ const styles = StyleSheet.create({
     },
     totalRow: { 
         flexDirection: 'row', 
-        backgroundColor: '#0f172a', 
+        backgroundColor: '#ffffff', 
         padding: 15, 
         justifyContent: 'space-between', 
-        alignItems: 'center' 
+        alignItems: 'center',
+        borderTop: '2px solid #0f172a' 
     },
     totalLabel: { 
-        fontSize: 12, 
-        color: '#f8fafc', 
-        fontWeight: 'bold' 
+        fontSize: 11, 
+        color: '#0f172a', 
+        fontWeight: 'bold',
+        textTransform: 'uppercase'
     },
     totalValue: { 
         fontSize: 16, 
-        color: '#f97316', 
+        color: '#0f172a', 
         fontWeight: 'bold' 
     }
 });
 
-// FUNÇÃO MÁGICA ATUALIZADA (Força Bruta):
-// Vare o texto e quebra forçadamente palavras com mais de 20 caracteres sem espaço.
 const protegerPalavrasLongas = (texto: string) => {
     if (!texto) return '';
     return texto.split(' ').map(palavra => {
-        // Se a palavra tiver mais de 20 caracteres, injetamos um espaço real
         if (palavra.length > 20) {
             return palavra.match(/.{1,20}/g)?.join(' ') || palavra;
         }
@@ -130,14 +146,24 @@ const protegerPalavrasLongas = (texto: string) => {
     }).join(' ');
 };
 
+const HORAS_PADRAO_DIA = 8;
+
 export function RelatorioPDF({ dados }: RelatorioPDFProps) {
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+
     return (
         <Document>
             <Page size="A4" style={styles.page}>
                 
-                <View style={styles.header}>
-                    <Text style={styles.title}>Orçamento de Custo Direto (Mão de Obra)</Text>
-                    <Text style={styles.subtitle}>Sistema Denarius • Custeio ABC Industrial</Text>
+                <View style={styles.headerBanner}>
+                    <View style={styles.logoContainer}>
+                        {/* ✅ Mantido o arquivo da logo branca conforme você pediu */}
+                        <Image src={`${baseUrl}/logo-denarius-branca.png`} style={styles.logo} />
+                    </View>
+                    <View style={styles.headerTextContainer}>
+                        <Text style={styles.titleDark}>Orçamento Custo Direto</Text>
+                        <Text style={styles.subtitleDark}>Mão de Obra • Sistema Denarius</Text>
+                    </View>
                 </View>
 
                 <View style={styles.infoRow}>
@@ -157,29 +183,40 @@ export function RelatorioPDF({ dados }: RelatorioPDFProps) {
                     <View style={styles.tableHeader}>
                         <View style={styles.col1}><Text style={styles.colTextHeader}>Função / Cargo</Text></View>
                         <View style={styles.col2}><Text style={styles.colTextHeader}>Profissionais</Text></View>
-                        <View style={styles.col3}><Text style={styles.colTextHeader}>Tempo (Horas)</Text></View>
+                        <View style={styles.col3}><Text style={styles.colTextHeader}>Tempo Alocado</Text></View>
                         <View style={styles.col4}><Text style={styles.colTextHeader}>Subtotal</Text></View>
                     </View>
 
-                    {dados.recursos.map((recurso, index) => (
-                        <View key={index} style={styles.tableRow}>
-                            <View style={styles.col1}>
-                                <Text style={styles.colText}>{recurso.funcao_nome}</Text>
+                    {dados.recursos.map((recurso, index) => {
+                        const isDia = recurso.unidade_tempo === 'dias';
+                        const horasIndividuais = recurso.horas_estimadas / recurso.qtd_profissionais;
+                        
+                        const valorTempoExibicao = isDia 
+                            ? (horasIndividuais / HORAS_PADRAO_DIA) 
+                            : horasIndividuais;
+                        
+                        const labelUnidade = isDia ? 'dias' : 'h';
+
+                        return (
+                            <View key={index} style={styles.tableRow}>
+                                <View style={styles.col1}>
+                                    <Text style={styles.colText}>{recurso.funcao_nome}</Text>
+                                </View>
+                                <View style={styles.col2}>
+                                    <Text style={styles.colText}>{recurso.qtd_profissionais}</Text>
+                                </View>
+                                <View style={styles.col3}>
+                                    <Text style={styles.colText}>{valorTempoExibicao.toFixed(1)} {labelUnidade}</Text>
+                                </View>
+                                <View style={styles.col4}>
+                                    <Text style={styles.colText}>{formatarBRL(recurso.horas_estimadas * recurso.custo_hora_aplicado)}</Text>
+                                </View>
                             </View>
-                            <View style={styles.col2}>
-                                <Text style={styles.colText}>{recurso.qtd_profissionais}</Text>
-                            </View>
-                            <View style={styles.col3}>
-                                <Text style={styles.colText}>{(recurso.horas_estimadas / recurso.qtd_profissionais).toFixed(1)} h</Text>
-                            </View>
-                            <View style={styles.col4}>
-                                <Text style={styles.colText}>{formatarBRL(recurso.horas_estimadas * recurso.custo_hora_aplicado)}</Text>
-                            </View>
-                        </View>
-                    ))}
+                        );
+                    })}
 
                     <View style={styles.totalRow}>
-                        <Text style={styles.totalLabel}>Custo Direto Total Estimado</Text>
+                        <Text style={styles.totalLabel}>Custo Total (Mão de Obra)</Text>
                         <Text style={styles.totalValue}>{formatarBRL(dados.custoTotalMaoDeObra)}</Text>
                     </View>
                 </View>

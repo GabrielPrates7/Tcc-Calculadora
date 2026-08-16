@@ -17,31 +17,41 @@ export function FichaProducaoPrint({
 
     return (
         <div className="print-layout">
-            <div className="print-header-banner">
-                <div className="print-brand">
-                    <strong>DENARIUS</strong>
-                    <span>Gestão Industrial & Controle de Oficina</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #1e293b', paddingBottom: '12px', marginBottom: '20px' }}>
+                
+                {/* BLOCO DA LOGO CENTRALIZADO */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
+                    <img 
+                        src="/logo-denarius-branca.png" 
+                        alt="Denarius" 
+                        style={{ height: '55px', objectFit: 'contain' }} 
+                    />
+                    <span style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 600, letterSpacing: '0.5px' }}>
+                        INTELIGÊNCIA EM PRECIFICAÇÃO
+                    </span>
                 </div>
-                <div className="print-title-box">
-                    <h1>FICHA DE PRODUÇÃO</h1>
-                    <h2>ORDEM DE SERVIÇO #{osSelecionada.os_id}</h2>
+
+                <div style={{ textAlign: 'right' }}>
+                    <h2 style={{ margin: 0, fontSize: '1.4rem', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                        Ficha de Produção
+                    </h2>
+                    <p style={{ margin: '4px 0 0 0', fontWeight: 800, fontSize: '1.1rem', color: '#0f172a' }}>
+                        ORDEM DE SERVIÇO #{osSelecionada.os_id}
+                    </p>
                 </div>
             </div>
 
             <div className="print-info-grid">
-                {/* 1. CLIENTE */}
                 <div className="print-box">
                     <span className="print-box-label">Cliente</span>
                     <strong>{osSelecionada.cliente || 'Consumidor Final'}</strong>
                 </div>
 
-                {/* 2. PRODUTO / SERVIÇO */}
                 <div className="print-box">
                     <span className="print-box-label">Produto / Serviço Usinado</span>
                     <strong>{osSelecionada.nome_produto}</strong>
                 </div>
 
-                {/* 3. DATA DE FINALIZAÇÃO (EXIBIÇÃO CONDICIONAL COM RÓTULO LIMPO) */}
                 {estaFinalizado && (
                     <div className="print-box" style={{ gridColumn: 'span 2', borderColor: '#16a34a', backgroundColor: '#f0fdf4' }}>
                         <span className="print-box-label" style={{ color: '#16a34a' }}>Data de Finalização</span>
@@ -51,7 +61,6 @@ export function FichaProducaoPrint({
                     </div>
                 )}
 
-                {/* 4. EQUIPE EXECUTORA */}
                 <div className="print-box" style={{ gridColumn: 'span 2' }}>
                     <span className="print-box-label">Equipe Executora Alocada</span>
                     {equipeListRead.length > 0 ? (

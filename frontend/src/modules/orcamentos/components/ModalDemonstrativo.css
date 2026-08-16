@@ -1,155 +1,83 @@
-/* --- FUNDO ESCURO DO MODAL (COM AFASTAMENTO VERTICAL OBRIGATÓRIO) --- */
+/* --- FUNDO ESCURO DO MODAL (TELA DO SISTEMA) --- */
 .modal-overlay-print {
     position: fixed;
-    top: 0; 
-    left: 0; 
-    right: 0; 
-    bottom: 0;
+    top: 0; left: 0; right: 0; bottom: 0;
     background-color: rgba(15, 23, 42, 0.85);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    backdrop-filter: blur(4px);
-    padding: 36px 20px; /* 36px topo/fundo e 20px laterais */
-    box-sizing: border-box;
+    display: flex; justify-content: center; align-items: center;
+    z-index: 1000; backdrop-filter: blur(4px);
+    padding: 36px 20px; box-sizing: border-box;
 }
 
-/* --- A FOLHA A4 DO DOCUMENTO (COM TRAVA DE ALTURA E ROLAGEM INTERNA) --- */
 .modal-demonstrativo {
     background: #ffffff;
-    width: 100%;
-    max-width: 750px;
-    border-radius: 12px;
-    padding: 40px;
+    width: 100%; max-width: 750px;
+    border-radius: 12px; padding: 40px;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3);
     position: relative;
-    max-height: calc(100vh - 72px); /* Respeita exatamente os 36px de margem do overlay */
-    overflow-y: auto;
+    max-height: calc(100vh - 72px); overflow-y: auto;
     box-sizing: border-box;
 }
 
-/* --- BARRA DE ROLAGEM CUSTOMIZADA DO MODAL --- */
-.modal-demonstrativo::-webkit-scrollbar {
-    width: 6px;
-}
-.modal-demonstrativo::-webkit-scrollbar-track {
-    background: #f1f5f9;
-    border-radius: 8px;
-}
-.modal-demonstrativo::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 8px;
-}
-.modal-demonstrativo::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
-}
+.modal-demonstrativo::-webkit-scrollbar { width: 6px; }
+.modal-demonstrativo::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+.modal-demonstrativo::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
 
 .btn-fechar-modal {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    background: transparent;
-    border: none;
-    color: #64748b;
-    cursor: pointer;
-    transition: 0.2s;
+    position: absolute; top: 10px; right: 20px; background: transparent;
+    border: none; color: #64748b; cursor: pointer; transition: 0.2s;
 }
-.btn-fechar-modal:hover { 
-    color: #ef4444; 
-    transform: scale(1.1); 
+.btn-fechar-modal:hover { color: #ef4444; transform: scale(1.1); }
+
+/* --- CONTROLE ÚNICO DA LOGO NA TELA --- */
+.doc-logo-img {
+    width: 85px;
+    max-width: 85px;
+    height: auto;
+    object-fit: contain;
+    display: block;
 }
 
-/* --- CABEÇALHO --- */
+/* --- CABEÇALHO ESCURO (NO MODO TELA) --- */
 .doc-header {
-    display: flex;
-    justify-content: space-between;
-    border-bottom: 2px solid #e2e8f0;
-    padding-bottom: 20px;
-    margin-bottom: 25px;
+    display: flex; justify-content: space-between; align-items: center;
+    background-color: #0f172a; padding: 20px 25px; 
+    border-radius: 8px; margin-bottom: 25px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .doc-logo-area { display: flex; align-items: center; gap: 15px; }
-.doc-logo-area h2 { margin: 0; color: #1e293b; font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px; }
-.doc-logo-area span { color: #64748b; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; }
+.doc-logo-area h2 { margin: 0; color: #f8fafc; font-size: 1.6rem; font-weight: 800; letter-spacing: -0.5px; }
+.doc-logo-area span { color: #94a3b8; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; }
 
 .doc-info { text-align: right; }
-.doc-info h3 { margin: 0 0 5px 0; color: #0f172a; font-size: 1.1rem; }
-.doc-info p { margin: 2px 0; color: #475569; font-size: 0.9rem; }
+.doc-info h3 { margin: 0 0 5px 0; color: #f8fafc; font-size: 1.1rem; }
+.doc-info p { margin: 2px 0; color: #cbd5e1; font-size: 0.9rem; }
 
-/* --- DADOS DO CLIENTE --- */
+/* --- DADOS E LISTA --- */
 .doc-client-info {
-    display: flex;
-    gap: 40px;
-    background-color: #f8fafc;
-    padding: 18px 25px;
-    border-radius: 8px;
-    border-left: 5px solid #3b82f6;
-    margin-bottom: 30px;
+    display: flex; gap: 40px; background-color: #f8fafc;
+    padding: 18px 25px; border-radius: 8px; border-left: 5px solid #3b82f6; margin-bottom: 30px;
 }
 .info-box { display: flex; flex-direction: column; }
 .info-label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 700; margin-bottom: 4px; }
 .info-value { font-size: 1.2rem; color: #0f172a; font-weight: 700; }
 
-/* --- LISTA FINANCEIRA (SUBSTITUI A TABELA BUGADA) --- */
-.lista-financeira {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 30px;
-}
-
-.linha-lista {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 20px;
-    border-bottom: 1px solid #e2e8f0;
-}
+.lista-financeira { display: flex; flex-direction: column; margin-bottom: 30px; }
+.linha-lista { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid #e2e8f0; }
 
 .header-lista {
-    background-color: #f1f5f9;
-    border-bottom: 2px solid #cbd5e1;
-    border-radius: 8px 8px 0 0;
-    color: #475569;
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    padding: 12px 20px;
+    background-color: #f1f5f9; border-bottom: 2px solid #cbd5e1;
+    border-radius: 8px 8px 0 0; color: #475569; font-size: 0.85rem;
+    text-transform: uppercase; font-weight: 700; padding: 12px 20px;
 }
 
-/* Colunas Flex */
-.coluna-desc { 
-    display: flex; 
-    flex-direction: column; 
-    gap: 6px; 
-    flex: 1;
-}
-
-.coluna-valores { 
-    display: flex; 
-    gap: 30px; 
-    justify-content: flex-end;
-    align-items: center;
-    min-width: 250px;
-}
-
+.coluna-desc { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+.coluna-valores { display: flex; gap: 30px; justify-content: flex-end; align-items: center; min-width: 250px; }
 .col-peso { width: 80px; text-align: right; color: #64748b; font-size: 0.95rem; }
 .col-rs { width: 140px; text-align: right; color: #1e293b; font-size: 1.05rem; }
 
-/* Elementos Internos da Linha */
 .titulo-item { display: flex; align-items: center; gap: 8px; font-weight: 600; color: #334155; }
-
-.badge-base {
-    align-self: flex-start;
-    background-color: #e2e8f0;
-    color: #475569;
-    font-size: 0.75rem;
-    padding: 3px 8px;
-    border-radius: 4px;
-    font-weight: 600;
-}
-
+.badge-base { align-self: flex-start; background-color: #e2e8f0; color: #475569; font-size: 0.75rem; padding: 3px 8px; border-radius: 4px; font-weight: 600; }
 .badge-success { background-color: #dcfce7; color: #15803d; }
 .text-success { color: #15803d !important; }
 .text-gray { background-color: transparent; padding: 0; color: #94a3b8; }
@@ -157,125 +85,15 @@
 .font-bold { font-weight: 800; }
 .text-lg { font-size: 1.25rem; }
 
-/* Destaques Especiais */
-.destaque-topo {
-    background-color: #f8fafc;
-    border-bottom: 2px solid #cbd5e1;
-}
+.destaque-topo { background-color: #f8fafc; border-bottom: 2px solid #cbd5e1; }
 .destaque-topo .coluna-desc strong { color: #0f172a; font-size: 1.1rem; }
+.destaque-lucro { background-color: #f0fdf4; border-bottom: none; border-top: 2px solid #bbf7d0; border-radius: 0 0 8px 8px; }
 
-.destaque-lucro {
-    background-color: #f0fdf4;
-    border-bottom: none;
-    border-top: 2px solid #bbf7d0;
-    border-radius: 0 0 8px 8px;
-}
-
-/* --- UTILITÁRIOS --- */
 .flex { display: flex; }
 .items-center { align-items: center; }
 .gap-2 { gap: 8px; }
 
-/* --- RODAPÉ --- */
-.doc-footer {
-    text-align: center;
-    border-top: 1px dashed #cbd5e1;
-    padding-top: 20px;
-    color: #94a3b8;
-    font-size: 0.85rem;
-    margin-bottom: 20px;
-}
-
-/* --- BOTÕES --- */
+.doc-footer { text-align: center; border-top: 1px dashed #cbd5e1; padding-top: 20px; color: #94a3b8; font-size: 0.85rem; margin-bottom: 20px; }
 .modal-actions { display: flex; justify-content: flex-end; }
-
-.btn-imprimir-doc {
-    background-color: #2563eb;
-    color: white;
-    border: none;
-    padding: 14px 28px;
-    border-radius: 8px;
-    font-weight: bold;
-    font-size: 1rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: 0.2s;
-    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
-}
-.btn-imprimir-doc:hover { 
-    background-color: #1d4ed8; 
-    transform: translateY(-2px); 
-    box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3); 
-}
-
-.btn-aprovar-os {
-    background-color: #16a34a;
-    color: white;
-    border: none;
-    padding: 14px 28px;
-    border-radius: 8px;
-    font-weight: bold;
-    font-size: 1rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: 0.2s;
-    box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.2);
-    margin-right: 15px;
-}
-.btn-aprovar-os:hover { 
-    background-color: #15803d; 
-    transform: translateY(-2px); 
-    box-shadow: 0 10px 15px -3px rgba(22, 163, 74, 0.3); 
-}
-
-/* ========================================================= */
-/* MÁGICA DA IMPRESSÃO: FORÇA UMA ÚNICA FOLHA A4 E REMOVE BORDAS */
-/* ========================================================= */
-@media print {
-    body * { visibility: hidden; }
-
-    .modal-overlay-print, .modal-demonstrativo, .modal-demonstrativo * {
-        visibility: visible;
-    }
-
-    .modal-overlay-print {
-        position: absolute;
-        left: 0; 
-        top: 0;
-        background: none !important;
-        padding: 0 !important;
-        display: block !important;
-    }
-
-    .modal-demonstrativo {
-        position: absolute;
-        left: 0; 
-        top: 0;
-        width: 100% !important;
-        max-width: 100% !important;
-        box-shadow: none !important;
-        border: none !important;
-        padding: 0 !important;
-        margin: 0 !important;
-        max-height: none !important;
-        overflow: hidden !important;
-        page-break-inside: avoid;
-    }
-
-    .no-print { display: none !important; }
-
-    @page {
-        size: A4 portrait;
-        margin: 1.5cm;
-    }
-    
-    html, body {
-        height: 100%;
-        overflow: hidden !important;
-        background-color: white;
-    }
-}
+.btn-imprimir-doc { background-color: #2563eb; color: white; border: none; padding: 14px 28px; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2); }
+.btn-aprovar-os { background-color: #16a34a; color: white; border: none; padding: 14px 28px; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s; box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.2); margin-right: 15px; }

@@ -164,9 +164,14 @@ export function ListaFinanceiro({
 
             <div className="lista-scroll">
                 {itensPaginados.length === 0 ? (
-                    <div className="empty-state">
-                        <Filter size={48} style={{marginBottom: 10, opacity: 0.2}}/>
-                        <p>Nenhum lançamento encontrado.</p>
+                    <div className="empty-state" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0' }}>
+                        {/* MUDANÇA: Injeção da Logo Branca no Empty State como Marca d'água */}
+                        <img 
+                            src="/logo-denarius-branca.png" 
+                            alt="Denarius Logo" 
+                            style={{ width: '64px', height: '64px', marginBottom: '16px', opacity: 0.15, filter: 'grayscale(100%)' }} 
+                        />
+                        <p style={{ color: '#94a3b8', fontSize: '1rem' }}>Nenhum lançamento encontrado para este filtro.</p>
                     </div>
                 ) : (
                     itensPaginados.map(item => (
@@ -175,12 +180,11 @@ export function ListaFinanceiro({
                                 <button className={`btn-switch ${item.ativo ? 'on' : 'off'}`} onClick={() => onAlternarAtivo(item)}><Power size={14} /></button>
                             </div>
                             
-                            {/* AQUI ESTÁ A CORREÇÃO (BLINDAGEM FLEXBOX PARA TEXTOS GIGANTES) */}
                             <div 
                                 className="col-info" 
                                 style={{ 
                                     flex: 2, 
-                                    minWidth: 0, /* Regra vital para forçar o corte no flexbox */
+                                    minWidth: 0,
                                     display: 'flex', 
                                     flexDirection: 'column', 
                                     justifyContent: 'center' 
@@ -227,7 +231,6 @@ export function ListaFinanceiro({
                                 {item.pago ? <span className="badge badge-pago"><CheckCircle size={12}/> Pago</span> : <span className="badge badge-pendente"><AlertCircle size={12}/> Pendente</span>}
                             </div>
                             
-                            {/* Blindagem de Valores numéricos gigantes já aplicada anteriormente */}
                             <div 
                                 className="col-valor" 
                                 style={{ 

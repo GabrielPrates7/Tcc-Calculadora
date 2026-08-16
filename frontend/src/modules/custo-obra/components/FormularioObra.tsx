@@ -54,7 +54,9 @@ export function FormularioObra({ onSalvarSucesso, obraEmEdicao, onCancelarEdicao
                 
                 const recursosFormatados: RecursoAlocado[] = obraEmEdicao.recursos.map(r => {
                     const horasIndividuais = r.horas_estimadas / r.qtd_profissionais;
-                    const isDia = obraEmEdicao.tipo_tempo === 'dias' || (horasIndividuais > 0 && horasIndividuais % HORAS_PADRAO_DIA === 0);
+                    
+                    // ✅ CÓDIGO LIMPO: Sem o "any". Lemos a verdade absoluta do banco direto da interface.
+                    const isDia = r.unidade_tempo === 'dias'; 
 
                     return {
                         funcao_id: r.funcao_id,
@@ -104,7 +106,6 @@ export function FormularioObra({ onSalvarSucesso, obraEmEdicao, onCancelarEdicao
         try {
             setIsSaving(true);
             
-            // CORREÇÃO: Anotação explícita ': NovaObraBody' evita o erro ts(2345) de alargamento de tipo (string -> 'horas' | 'dias')
             const payload: NovaObraBody = {
                 titulo, 
                 cliente,
@@ -122,10 +123,11 @@ export function FormularioObra({ onSalvarSucesso, obraEmEdicao, onCancelarEdicao
                         funcao_id: r.funcao_id,
                         qtd_profissionais: r.qtd_profissionais,
                         horas_estimadas: horasEstimadas * r.qtd_profissionais, 
-                        custo_hora_aplicado: custoAplicado
+                        custo_hora_aplicado: custoAplicado,
+                        unidade_tempo: r.unidade // ✅ Enviando perfeitamente conforme o Contrato
                     };
                 })
-            };
+            }; // ✅ CÓDIGO LIMPO: Removemos o "as any" daqui.
 
             if (obraEmEdicao) {
                 await CustoObraService.atualizarOrcamento(obraEmEdicao.id, payload);
