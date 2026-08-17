@@ -1,3 +1,5 @@
+import { api } from '../../../services/api';
+
 // ============================================================================
 // CONTRATOS (Interfaces)
 // ============================================================================
@@ -16,7 +18,7 @@ export interface RecursoObraInput {
     qtd_profissionais: number;
     horas_estimadas: number;
     custo_hora_aplicado: number;
-    unidade_tempo?: 'horas' | 'dias'; // ✅ ADICIONADO: O formulário agora envia este campo
+    unidade_tempo?: 'horas' | 'dias'; 
 }
 
 export interface NovaObraBody {
@@ -43,11 +45,9 @@ export interface ObraHistorico {
         qtd_profissionais: number;
         horas_estimadas: number;
         custo_hora_aplicado: number;
-        unidade_tempo?: 'horas' | 'dias'; // ✅ ADICIONADO: O histórico agora lê este campo
+        unidade_tempo?: 'horas' | 'dias'; 
     }[];
 }
-
-const API_URL = 'http://localhost:3000/api/obras'; 
 
 // ============================================================================
 // SERVIÇO (Data Fetching)
@@ -55,44 +55,51 @@ const API_URL = 'http://localhost:3000/api/obras';
 export const CustoObraService = {
     
     async obterTaxas(): Promise<TaxaFuncao[]> {
-        const res = await fetch(`${API_URL}/taxas`);
-        if (!res.ok) throw new Error('Falha ao buscar as taxas de produção por função.');
-        return res.json();
+        try {
+            const res = await api.get('/obras/taxas');
+            return res.data;
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { error?: string } } };
+            throw new Error(err.response?.data?.error || 'Falha ao buscar as taxas de produção por função.');
+        }
     },
 
     async salvarOrcamento(dados: NovaObraBody): Promise<{ message: string; obra_id: number; custo_total: number }> {
-        const res = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dados)
-        });
-
-        if (!res.ok) throw new Error('Falha ao salvar o orçamento da obra.');
-        return res.json();
+        try {
+            const res = await api.post('/obras', dados);
+            return res.data;
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { error?: string } } };
+            throw new Error(err.response?.data?.error || 'Falha ao salvar o orçamento da obra.');
+        }
     },
 
     async atualizarOrcamento(id: number, dados: NovaObraBody): Promise<{ message: string; custo_total: number }> {
-        const res = await fetch(`${API_URL}/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dados)
-        });
-        
-        if (!res.ok) throw new Error('Falha ao atualizar o orçamento da obra.');
-        return res.json();
+        try {
+            const res = await api.put(`/obras/${id}`, dados);
+            return res.data;
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { error?: string } } };
+            throw new Error(err.response?.data?.error || 'Falha ao atualizar o orçamento da obra.');
+        }
     },
 
     async listarHistorico(): Promise<ObraHistorico[]> {
-        const res = await fetch(API_URL);
-        if (!res.ok) throw new Error('Falha ao carregar o histórico de obras.');
-        return res.json();
+        try {
+            const res = await api.get('/obras');
+            return res.data;
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { error?: string } } };
+            throw new Error(err.response?.data?.error || 'Falha ao carregar o histórico de obras.');
+        }
     },
 
     async excluirObra(id: number): Promise<void> {
-        const res = await fetch(`${API_URL}/${id}`, {
-            method: 'DELETE'
-        });
-
-        if (!res.ok) throw new Error('Falha ao excluir a obra no servidor.');
+        try {
+            await api.delete(`/obras/${id}`);
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { error?: string } } };
+            throw new Error(err.response?.data?.error || 'Falha ao excluir a obra no servidor.');
+        }
     }
 };

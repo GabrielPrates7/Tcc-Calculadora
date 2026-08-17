@@ -1,8 +1,6 @@
 import type { Funcionario } from '../types';
+import { api } from '../../../services/api'; // <-- Injeção do Interceptador Axios
 
-const API_URL = 'http://localhost:3000/api/funcionarios';
-
-// Interseção de tipos: Herda Funcionario e adiciona as chaves flexíveis necessárias para o POST/PUT
 type FuncionarioPayload = Partial<Funcionario> & {
     funcao_id?: number | string;
     salario_base?: number | string;
@@ -12,26 +10,19 @@ type FuncionarioPayload = Partial<Funcionario> & {
 export const FuncionariosService = {
     
     async listar(): Promise<Funcionario[]> {
-        const res = await fetch(API_URL);
-        if (!res.ok) {
-            throw new Error('Erro ao buscar lista de funcionários');
-        }
-        return res.json();
+        const res = await api.get('/funcionarios');
+        return res.data;
     },
 
     async buscarRelatorio(inicio: string, fim: string): Promise<Funcionario[]> {
-        const query = new URLSearchParams({ inicio, fim }).toString();
-        const url = `${API_URL}/relatorio?${query}`;
-        
-        const res = await fetch(url);
-        
-        if (!res.ok) {
-            const erroMsg = await res.text();
-            console.error("❌ Erro na API:", erroMsg);
-            throw new Error(`Falha ao filtrar: ${res.statusText}`);
+        try {
+            const res = await api.get('/funcionarios/relatorio', { params: { inicio, fim } });
+            return res.data;
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: string, statusText?: string } };
+            console.error("❌ Erro na API:", err.response?.data);
+            throw new Error(`Falha ao filtrar: ${err.response?.statusText}`);
         }
-
-        return res.json();
     },
 
     async criar(dados: FuncionarioPayload): Promise<Funcionario> {
@@ -42,18 +33,14 @@ export const FuncionariosService = {
             epi: Number(dados.epi || 0)
         };
 
-        const res = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-        });
-        
-        if (!res.ok) {
-            const erroMsg = await res.text();
-            console.error("Erro na API ao criar:", erroMsg);
-            throw new Error('Erro ao criar funcionário');
+        try {
+            const res = await api.post('/funcionarios', payload);
+            return res.data;
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { error?: string } } };
+            console.error("Erro na API ao criar:", err.response?.data);
+            throw new Error(err.response?.data?.error || 'Erro ao criar funcionário');
         }
-        return res.json();
     },
 
     async atualizar(id: number, dados: FuncionarioPayload): Promise<void> {
@@ -64,18 +51,20 @@ export const FuncionariosService = {
              epi: dados.epi !== undefined ? Number(dados.epi) : undefined
         };
 
-        const res = await fetch(`${API_URL}/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-        });
-        if (!res.ok) throw new Error('Erro ao atualizar funcionário');
+        try {
+            await api.put(`/funcionarios/${id}`, payload);
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { error?: string } } };
+            throw new Error(err.response?.data?.error || 'Erro ao atualizar funcionário');
+        }
     },
 
     async excluir(id: number): Promise<void> {
-        const res = await fetch(`${API_URL}/${id}`, {
-            method: 'DELETE',
-        });
-        if (!res.ok) throw new Error('Erro ao excluir funcionário');
+        try {
+            await api.delete(`/funcionarios/${id}`);
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { error?: string } } };
+            throw new Error(err.response?.data?.error || 'Erro ao excluir funcionário');
+        }
     }
 };

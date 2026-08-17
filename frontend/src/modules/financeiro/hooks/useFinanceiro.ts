@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FinanceiroService } from '../services/financeiro.service';
 import type { ItemFinanceiro, DashboardData } from '../types';
-
-const API_BASE = 'http://localhost:3000/api/financeiro'; 
+import { api } from '../../../services/api'; // <-- Injeção do Interceptador Axios
 
 export function useFinanceiro() {
     const [loading, setLoading] = useState(true);
@@ -73,10 +72,9 @@ export function useFinanceiro() {
 
     const buscarFaturamentoMensal = async (mes: number, ano: number) => {
         try {
-            const response = await fetch(`${API_BASE}/faturamento/${mes}/${ano}`);
-            if (!response.ok) return null;
-            const data = await response.json();
-            return data.valor != null ? Number(data.valor) : null;
+            // CORREÇÃO: Substituição do fetch por api.get
+            const response = await api.get(`/financeiro/faturamento/${mes}/${ano}`);
+            return response.data.valor != null ? Number(response.data.valor) : null;
         } catch (error) { 
             console.error("Erro ao buscar faturamento:", error);
             return null; 
@@ -96,19 +94,15 @@ export function useFinanceiro() {
 
     const somarFaturamentoPeriodo = async (meses: number[], ano: number) => {
         try {
-            const response = await fetch(`${API_BASE}/faturamento/soma`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ meses, ano })
-            });
-            if (!response.ok) return 0;
-            const data = await response.json();
-            return Number(data.valor) || 0;
+            // CORREÇÃO: Substituição do fetch por api.post
+            const response = await api.post('/financeiro/faturamento/soma', { meses, ano });
+            return Number(response.data.valor) || 0;
         } catch (error) { 
             console.error("Erro ao somar faturamento:", error);
             return 0; 
         }
     };
 
-    // NOVA FUNÇÃO: Persistência do Snapshot Financeiro
     const salvarSnapshot = async (descricao: string) => {
         try {
             const payload = {
@@ -120,13 +114,8 @@ export function useFinanceiro() {
                 dados_backup: { despesas, investimentos }
             };
 
-            const response = await fetch(`${API_BASE}/snapshots`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) throw new Error("Falha ao salvar snapshot no servidor");
+            // CORREÇÃO: Substituição do fetch por api.post
+            await api.post('/financeiro/snapshots', payload);
             return true;
         } catch (error) {
             console.error("Erro ao persistir snapshot:", error);

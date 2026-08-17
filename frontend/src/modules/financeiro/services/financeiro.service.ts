@@ -1,10 +1,8 @@
-// ARQUIVO: src/modules/financeiro/services/financeiro.service.ts (FRONTEND / REACT)
+// ARQUIVO: src/modules/financeiro/services/financeiro.service.ts
 
 import type { ItemFinanceiro, DashboardData } from '../types';
+import { api } from '../../../services/api';
 
-const API_URL = 'http://localhost:3000/api/financeiro';
-
-// DTO (Data Transfer Object): Tipagem rigorosa do que esperamos receber do Backend via fetch
 interface ItemBackend {
     id: number;
     nome: string;
@@ -13,24 +11,19 @@ interface ItemBackend {
     pago: boolean;
     beneficiario?: string | null;
     dataVencimento?: string | null;
-    data_vencimento?: string | null; // Absorve caso o backend envie snake_case
+    data_vencimento?: string | null;
 }
 
 export const FinanceiroService = {
     async getDashboard(): Promise<DashboardData> {
-        const res = await fetch(`${API_URL}/dashboard`);
-        if (!res.ok) throw new Error('Erro ao buscar dashboard');
-        return res.json();
+        const res = await api.get('/financeiro/dashboard');
+        return res.data;
     },
 
     async getDespesas(): Promise<ItemFinanceiro[]> {
-        const res = await fetch(`${API_URL}/despesas`);
-        if (!res.ok) throw new Error('Erro ao buscar despesas');
-        
-        // Avisamos ao TypeScript que o JSON recebido é um array de ItemBackend
-        const dados: ItemBackend[] = await res.json();
-        
-        // Agora o 'd' já é reconhecido e tipado automaticamente, sem precisar de 'any'
+        const res = await api.get<ItemBackend[]>('/financeiro/despesas');
+        const dados = res.data;
+
         return dados.map((d) => ({
             id: d.id,
             nome: d.nome,
@@ -43,11 +36,9 @@ export const FinanceiroService = {
     },
 
     async getInvestimentos(): Promise<ItemFinanceiro[]> {
-        const res = await fetch(`${API_URL}/investimentos`);
-        if (!res.ok) throw new Error('Erro ao buscar investimentos');
-        
-        const dados: ItemBackend[] = await res.json();
-        
+        const res = await api.get<ItemBackend[]>('/financeiro/investimentos');
+        const dados = res.data;
+
         return dados.map((d) => ({
             id: d.id,
             nome: d.nome,
@@ -60,39 +51,35 @@ export const FinanceiroService = {
     },
 
     async salvarItem(tipo: 'despesas' | 'investimentos', item: Partial<ItemFinanceiro>): Promise<void> {
-        const url = item.id ? `${API_URL}/${tipo}/${item.id}` : `${API_URL}/${tipo}`;
-        const method = item.id ? 'PUT' : 'POST';
+        const endpoint = item.id ? `/financeiro/${tipo}/${item.id}` : `/financeiro/${tipo}`;
         
-        const res = await fetch(url, {
-            method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                nome: item.nome, 
-                valor: Number(item.valor),
-                ativo: item.ativo,
-                pago: item.pago,
-                beneficiario: item.beneficiario,
-                dataVencimento: item.dataVencimento 
-            })
-        });
+        const payload = { 
+            nome: item.nome, 
+            valor: Number(item.valor),
+            ativo: item.ativo,
+            pago: item.pago,
+            beneficiario: item.beneficiario,
+            dataVencimento: item.dataVencimento 
+        };
 
-        if (!res.ok) {
-            const erroBackend = await res.json().catch(() => ({}));
-            throw new Error(erroBackend.error || `Erro interno no servidor ao salvar ${tipo}`);
+        try {
+            if (item.id) {
+                await api.put(endpoint, payload);
+            } else {
+                await api.post(endpoint, payload);
+            }
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { error?: string } } };
+            const mensagem = err.response?.data?.error || `Erro interno no servidor ao salvar ${tipo}`;
+            throw new Error(mensagem);
         }
     },
 
     async excluirItem(tipo: 'despesas' | 'investimentos', id: number): Promise<void> {
-        const res = await fetch(`${API_URL}/${tipo}/${id}`, { method: 'DELETE' });
-        if (!res.ok) throw new Error('Erro ao excluir item');
+        await api.delete(`/financeiro/${tipo}/${id}`);
     },
 
     async salvarFaturamento(mes: number, ano: number, valor: number): Promise<void> {
-        const res = await fetch(`${API_URL}/faturamento`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ mes, ano, valor })
-        });
-        if (!res.ok) throw new Error('Erro ao salvar faturamento');
+        await api.post('/financeiro/faturamento', { mes, ano, valor });
     }
 };

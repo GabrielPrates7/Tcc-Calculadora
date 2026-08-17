@@ -5,6 +5,7 @@ import {
   ChevronLeft, ChevronRight, ClipboardList, Settings, LogOut,
   type LucideIcon
 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext'; 
 import logoDenarius from '../assets/images/logo-denarius.png';
 import './sidebar.css';
 
@@ -23,7 +24,6 @@ const MENU_GESTAO: MenuItem[] = [
   { id: 'orcamentos', label: 'Orçamentos', icon: Calculator, path: '/orcamentos' },
   { id: 'ordens-servico', label: 'Ordens de Serviço', icon: ClipboardList, path: '/ordens-servico' },
   { id: 'custo-obra', label: 'Custo de Produção', icon: HardHat, path: '/custo-obra' },
-  // Atualização de label e path para refletir o novo escopo
   { id: 'custos-despesas', label: 'Custos e Despesas', icon: DollarSign, path: '/custos-despesas' },
   { id: 'funcionarios', label: 'Funcionários', icon: Users, path: '/funcionarios' },
 ];
@@ -34,8 +34,13 @@ const MENU_SISTEMA: MenuItem[] = [
 
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { usuario, logout } = useAuth(); 
 
   const toggleSidebar = () => setIsCollapsed((prev) => !prev);
+
+  // Extração flexível para lidar com chaves diferentes enviadas pelo Node.js
+  const nomeExibicao = usuario?.nome || usuario?.nome_usuario || 'Usuário';
+  const inicialAvatar = nomeExibicao.charAt(0).toUpperCase();
 
   const renderLinks = (items: MenuItem[]) => (
     items.map((item) => (
@@ -88,15 +93,18 @@ export function Sidebar() {
           </nav>
           
           <div className="user-profile">
-            <div className="avatar">G</div>
+            <div className="avatar">
+              {inicialAvatar}
+            </div>
+            
             {!isCollapsed && (
               <div className="user-info">
-                <span className="user-name">Gabriel Prates</span>
+                <span className="user-name">{nomeExibicao}</span>
                 <span className="user-role">Administrador</span>
               </div>
             )}
             {!isCollapsed && (
-              <button className="logout-btn" title="Sair">
+              <button className="logout-btn" title="Sair" onClick={logout}>
                 <LogOut size={16} />
               </button>
             )}

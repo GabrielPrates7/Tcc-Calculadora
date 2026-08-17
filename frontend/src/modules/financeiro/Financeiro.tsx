@@ -13,9 +13,8 @@ import { ModalConfirmacao } from './components/ModalConfirmacao';
 import { ModalNovoCheckpoint } from './components/ModalNovoCheckpoint';
 import type { ViewMode, TipoModal, ItemFinanceiro, StatusFilter } from './types'; 
 import { analisarIntervalo } from './utils/dateHelper';
+import { api } from '../../services/api'; // <-- IMPORTAÇÃO DA API CORRIGIDA
 import './Financeiro.css'; 
-
-const API_BASE = 'http://localhost:3000/api/financeiro';
 
 export function Financeiro() {
     const { 
@@ -125,22 +124,15 @@ export function Financeiro() {
 
     const confirmarSalvarCheckpoint = async (descricao: string): Promise<boolean> => {
         try {
-            const response = await fetch(`${API_BASE}/snapshots`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    descricao,
-                    faturamento: dashboardCalculado.faturamento,
-                    total_despesas: dashboardCalculado.totalDespesas,
-                    total_investimentos: dashboardCalculado.totalInvestimentos,
-                    taxa_custo_fixo: dashboardCalculado.taxaCustoFixo,
-                    dados_backup: { despesas, investimentos }
-                })
+            // CORREÇÃO: Usando a 'api' do Axios em vez de 'fetch'
+            await api.post('/financeiro/snapshots', {
+                descricao,
+                faturamento: dashboardCalculado.faturamento,
+                total_despesas: dashboardCalculado.totalDespesas,
+                total_investimentos: dashboardCalculado.totalInvestimentos,
+                taxa_custo_fixo: dashboardCalculado.taxaCustoFixo,
+                dados_backup: { despesas, investimentos }
             });
-            
-            if (!response.ok) {
-                throw new Error('Falha na requisição');
-            }
             
             return true;
         } catch (error) {

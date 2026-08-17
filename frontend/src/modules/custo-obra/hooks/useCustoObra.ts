@@ -40,7 +40,6 @@ export function useCustoObra() {
     };
 
     const carregarHistorico = useCallback(async () => {
-        await Promise.resolve();
         try {
             setIsLoadingHistorico(true);
             const dados = await CustoObraService.listarHistorico();
@@ -134,7 +133,6 @@ export function useCustoObra() {
             currentPage, setCurrentPage, totalPages, totalItems,
             getVisiblePages, indexOfFirstItem, indexOfLastItem,
             searchTerm, setSearchTerm: handleSearchChange,
-            // NOVAS PROPRIEDADES EXPORTADAS
             dataInicio, setDataInicio: handleDataInicioChange,
             dataFim, setDataFim: handleDataFimChange,
             limparFiltros

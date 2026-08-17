@@ -13,8 +13,8 @@ import { ModalFuncionario } from './components/ModalFuncionario';
 import { ModalDetalhes } from './components/ModalDetalhes';
 import { ResumoFinanceiro } from './components/ResumoFinanceiro'; 
 import { ModalRelatorioCusto } from './components/ModalRelatorioCusto'; 
-
 import { ConfirmModal } from '../../components/ConfirmModal/ConfirmModal';
+import { api } from '../../services/api'; // <-- Injeção do Interceptador Axios
 
 import type { Funcionario } from './types';
 import './Funcionarios.css'; 
@@ -38,7 +38,6 @@ export function Funcionarios() {
         carregarResumo
     } = useFuncionarios();
 
-    // Estados de Filtro e Paginação
     const [paginaAtual, setPaginaAtual] = useState(1);
     const [termoBusca, setTermoBusca] = useState('');
     const [filtroSetor, setFiltroSetor] = useState<FiltroSetor>('todos');
@@ -47,16 +46,13 @@ export function Funcionarios() {
     const [ordenarPor, setOrdenarPor] = useState<OpcaoOrdenacao>('nome');
     const [direcaoOrdem, setDirecaoOrdem] = useState<DirecaoOrdenacao>('asc');
     
-    // Estados do Autocomplete de Funções
     const [listaFuncoes, setListaFuncoes] = useState<{id: number, nome: string}[]>([]);
     const [filtroFuncao, setFiltroFuncao] = useState<string>('todas');
     const [buscaFiltroFuncao, setBuscaFiltroFuncao] = useState('');
     const [dropdownFiltroFuncaoOpen, setDropdownFiltroFuncaoOpen] = useState(false);
     
-    // Gatilho para forçar recarregamento após CRUD
     const [atualizarFiltro, setAtualizarFiltro] = useState(0);
     
-    // Estados Visuais (Modais)
     const [modalAberto, setModalAberto] = useState(false);
     const [modalRelatorioAberto, setModalRelatorioAberto] = useState(false);
     const [funcionarioEdicao, setFuncionarioEdicao] = useState<Funcionario | null>(null);
@@ -68,12 +64,12 @@ export function Funcionarios() {
     const [gerandoPdf, setGerandoPdf] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null); 
 
-    // Carrega Departamentos (Funções) com proteção contra falhas da API
     useEffect(() => {
         const fetchFuncoes = async () => {
             try {
-                const res = await fetch('http://localhost:3000/api/funcoes');
-                const data = await res.json();
+                // CORREÇÃO: Usando a api do Axios
+                const res = await api.get('/funcoes');
+                const data = res.data;
                 
                 if (Array.isArray(data)) {
                     setListaFuncoes(data);
@@ -88,7 +84,6 @@ export function Funcionarios() {
         void fetchFuncoes();
     }, [atualizarFiltro]);
 
-    // Motor de Busca Assíncrona
     useEffect(() => {
         carregarLista({
             pagina: paginaAtual,
@@ -103,7 +98,6 @@ export function Funcionarios() {
         carregarResumo();
     }, [paginaAtual, termoBusca, filtroSetor, filtroStatus, filtroFuncao, ordenarPor, direcaoOrdem, atualizarFiltro, carregarLista, carregarResumo]);
 
-    // Filtro dinâmico para o input dropdown
     const funcoesFiltroFiltradas = (Array.isArray(listaFuncoes) ? listaFuncoes : []).filter(f => 
         f?.nome?.toLowerCase().includes(buscaFiltroFuncao.toLowerCase())
     );
@@ -133,30 +127,29 @@ export function Funcionarios() {
             let buscarMais = true;
             let ultimoIdVisto: number | string | null = null;
             
-            // Pede um limite massivo para evitar loop e envia todos os formatos comuns de parâmetros
             const LIMITE_ALTO = 1000; 
 
             while (buscarMais) {
-                const queryParams = new URLSearchParams({
+                // CORREÇÃO: Utilizando os params através do Axios
+                const paramsConfig = {
                     busca: termoBusca,
                     setor: filtroSetor,
                     status: filtroStatus,
                     funcao: filtroFuncao !== 'todas' ? filtroFuncao : '',
                     ordenarPor: ordenarPor,
                     direcaoOrdem: direcaoOrdem,
-                    limite: String(LIMITE_ALTO),
-                    limit: String(LIMITE_ALTO),
-                    pagina: String(paginaAtualBusca),
-                    page: String(paginaAtualBusca)
-                }).toString();
+                    limite: LIMITE_ALTO,
+                    limit: LIMITE_ALTO,
+                    pagina: paginaAtualBusca,
+                    page: paginaAtualBusca
+                };
 
-                const res = await fetch(`http://localhost:3000/api/funcionarios?${queryParams}`);
-                const data = await res.json();
+                const res = await api.get('/funcionarios', { params: paramsConfig });
+                const data = res.data;
                 
                 const itens: Funcionario[] = Array.isArray(data) ? data : (data.dados || data.funcionarios || data.data || []);
                 
                 if (itens.length > 0) {
-                    // MEMÓRIA ANTI-DUPLICAÇÃO: Se a API ignorar tudo e devolver a mesma página, quebra o loop
                     const idPrimeiroItem = itens[0]?.id;
                     if (ultimoIdVisto === idPrimeiroItem) {
                         console.warn("API retornou registros duplicados. Interrompendo paginação do PDF.");
@@ -166,7 +159,6 @@ export function Funcionarios() {
 
                     listaCompleta = [...listaCompleta, ...itens];
                     
-                    // Se devolveu menos que o nosso teto gigante, já pegou tudo. Pode parar.
                     if (itens.length < LIMITE_ALTO) {
                         buscarMais = false;
                     } else {
@@ -176,14 +168,11 @@ export function Funcionarios() {
                     buscarMais = false; 
                 }
 
-                // Trava de segurança absoluta
                 if (paginaAtualBusca > 20) buscarMais = false; 
             }
 
-            // 2. Configuração Nativa do Documento A4
             const doc = new jsPDF('p', 'pt', 'a4');
 
-// 3. Cabeçalho Fixo no Topo
             const yHeader = 35;
             const logoImg = document.getElementById('logo-pdf-branca') as HTMLImageElement;
             
@@ -204,36 +193,31 @@ export function Funcionarios() {
                 doc.text(`Relatório Analítico emitido em: ${new Date().toLocaleDateString()} às ${new Date().toLocaleTimeString()}`, 40, yHeader + 14);
             }
 
-            // 4. Renderização dos Cards (Fundo Branco Limpo)
             const yCards = 75; 
             const wCard = 160;
             const hCard = 40;
             
-            doc.setDrawColor(226, 232, 240); // Borda Cinza Clara
+            doc.setDrawColor(226, 232, 240);
             doc.setLineWidth(1);
 
-            // Card 1: Equipe
             doc.roundedRect(40, yCards, wCard, hCard, 4, 4, 'S'); 
             doc.setFontSize(8); doc.setTextColor(100, 116, 139);
             doc.text('EQUIPE ATIVA', 50, yCards + 15);
             doc.setFontSize(12); doc.setTextColor(249, 115, 22);
             doc.text(`${resumo.totalAtivos} colaboradores`, 50, yCards + 30);
 
-            // Card 2: Custo Folha
             doc.roundedRect(215, yCards, wCard, hCard, 4, 4, 'S');
             doc.setFontSize(8); doc.setTextColor(100, 116, 139);
             doc.text('CUSTO FOLHA MENSAL', 225, yCards + 15);
             doc.setFontSize(12); doc.setTextColor(59, 130, 246);
             doc.text(formatarMoedaPDF(resumo.custoFolha), 225, yCards + 30);
 
-            // Card 3: Custo Produção
             doc.roundedRect(390, yCards, wCard, hCard, 4, 4, 'S');
             doc.setFontSize(8); doc.setTextColor(100, 116, 139);
             doc.text('CUSTO PRODUÇÃO', 400, yCards + 15);
             doc.setFontSize(12); doc.setTextColor(16, 185, 129);
             doc.text(formatarMoedaPDF(resumo.custoProducao), 400, yCards + 30);
 
-            // 5. Tabela Multi-Páginas Perfeita
             autoTable(doc, {
                 startY: yCards + hCard + 15,
                 head: [['NOME', 'FUNÇÃO', 'SETOR', 'SALÁRIO BASE', 'CUSTO MENSAL', 'STATUS']],
@@ -269,7 +253,6 @@ export function Funcionarios() {
                 }
             });
 
-            // 6. Download
             doc.save(`Relatorio_Equipe_${new Date().toISOString().split('T')[0]}.pdf`);
 
         } catch (error) {
@@ -308,8 +291,6 @@ export function Funcionarios() {
 
     return (
         <div className="funcionarios-container" ref={containerRef}>
-            
-{/* INJEÇÃO OCULTA DA LOGO (Disponível apenas para o motor do jsPDF) */}
             <img 
                 id="logo-pdf-branca"
                 src="/logo-denarius-branca.png" 

@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { DashboardResumo } from '../types';
-
-const API_URL = 'http://localhost:3000/api/dashboard';
+import { dashboardService } from '../services/dashboard.service'; // Utilizando o serviço atualizado
 
 export function useDashboard() {
     const [dados, setDados] = useState<DashboardResumo | null>(null);
@@ -19,22 +18,15 @@ export function useDashboard() {
             setError(null);
             
             try {
-                const response = await fetch(`${API_URL}/resumo?mes=${mes}&ano=${ano}`);
-                
-                if (!response.ok) {
-                    const errData = await response.json().catch(() => ({}));
-                    throw new Error(errData.error || `Erro interno no servidor (Status: ${response.status})`);
-                }
-                
-                const data = await response.json();
+                // Chamada usando o serviço com axios
+                const data = await dashboardService.getResumo(mes, ano);
                 
                 if (isMounted) {
                     setDados(data);
                 }
-            } catch (err) { // Tipagem 'any' removida
+            } catch (err: unknown) { 
                 console.error("Falha no Dashboard:", err);
                 if (isMounted) {
-                    // Validação estrita de tipo para extrair a mensagem
                     const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido ao carregar os dados.';
                     setError(errorMessage);
                 }

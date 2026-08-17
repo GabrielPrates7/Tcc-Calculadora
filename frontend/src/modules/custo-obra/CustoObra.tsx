@@ -61,7 +61,6 @@ export function CustoObra() {
                 onCancelarEdicao={cancelarEdicao} 
             />
 
-            {/* SEÇÃO HISTÓRICO - VISUAL CLEAN / CARD BRANCO PADRÃO ERP */}
             <section style={{ marginTop: '40px', backgroundColor: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.08)' }}>
                 
                 <div style={{ padding: '20px', backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
@@ -173,7 +172,6 @@ export function CustoObra() {
                                             
                                             <td style={{ padding: '16px 20px' }}>
                                                 <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                                                    {/* BOTÃO EDITAR - AMARELO/DOURADO PASTEL */}
                                                     <button
                                                         onClick={() => iniciarEdicao(item)}
                                                         style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fef9c3', color: '#ca8a04', border: '1px solid #fde047', padding: '8px', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s' }}
@@ -182,7 +180,6 @@ export function CustoObra() {
                                                         <Edit size={17} />
                                                     </button>
 
-                                                    {/* BOTÃO PDF - AZUL PASTEL */}
                                                     <button
                                                         onClick={() => handleDownloadPDF(item)}
                                                         disabled={baixandoId === item.id}
@@ -196,7 +193,6 @@ export function CustoObra() {
                                                         )}
                                                     </button>
 
-                                                    {/* BOTÃO EXCLUIR - VERMELHO PASTEL */}
                                                     <button
                                                         onClick={() => deleteModal.open(item.id)}
                                                         style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', padding: '8px', borderRadius: '6px', cursor: 'pointer', transition: 'all 0.2s' }}

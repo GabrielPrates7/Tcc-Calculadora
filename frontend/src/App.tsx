@@ -2,12 +2,13 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-// Componentes de Autenticação
 import { AuthProvider } from './contexts/AuthContext';
 import { PrivateRoute } from './components/PrivateRoute';
-
-// Estrutura
 import { Sidebar } from './components/Sidebar';
+
+// Telas de Autenticação (Agora no padrão modular)
+import { Login } from './modules/auth/Login';
+import { Registro } from './modules/auth/Registro';
 
 // Telas do Sistema
 import { Orcamentos } from './modules/orcamentos/Orcamentos';
@@ -18,17 +19,12 @@ import { OrdemServicoKanban } from './modules/ordemServico/ordemServico';
 import { Dashboard } from './modules/dashboard/Dashboard'; 
 import { Configuracoes } from './modules/configuracoes/Configuracoes';
 
-// Componentes temporários de Login e Registro (Criaremos a UI no próximo passo)
-const LoginTemp = () => <div style={{ padding: '2rem' }}><h1>Tela de Login em construção</h1></div>;
-const RegistroTemp = () => <div style={{ padding: '2rem' }}><h1>Tela de Registro em construção</h1></div>;
-
-// Layout exclusivo para usuários autenticados (impede que a Sidebar apareça na tela de login)
 const PrivateLayout = () => {
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
       <Sidebar />
       <main style={{ flex: 1, overflowY: 'auto' }}>
-        <Outlet /> {/* Aqui o React injeta a rota filha (Dashboard, Orçamentos, etc) */}
+        <Outlet />
       </main>
     </div>
   );
@@ -45,15 +41,11 @@ function App() {
         />
         
         <Routes>
-          {/* ============================== */}
-          {/* ROTAS PÚBLICAS (Sem Sidebar) */}
-          {/* ============================== */}
-          <Route path="/login" element={<LoginTemp />} />
-          <Route path="/registro" element={<RegistroTemp />} />
+          {/* Rotas Públicas */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/registro" element={<Registro />} />
 
-          {/* ============================== */}
-          {/* ROTAS PROTEGIDAS (Com Sidebar) */}
-          {/* ============================== */}
+          {/* Rotas Protegidas */}
           <Route element={<PrivateRoute />}>
             <Route element={<PrivateLayout />}>
               <Route path="/" element={<Dashboard />} /> 
@@ -66,7 +58,6 @@ function App() {
             </Route>
           </Route>
 
-          {/* Fallback de rotas não encontradas */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

@@ -1,8 +1,10 @@
 import { createContext, useState, useContext, type ReactNode } from 'react';
 
+// Tipagem expandida para capturar o formato exato que o Node.js envia
 interface Usuario {
-    nome: string;
-    email: string;
+    nome?: string;
+    nome_usuario?: string;
+    email?: string;
 }
 
 interface AuthContextData {
@@ -17,7 +19,6 @@ interface AuthContextData {
 export const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-    // Lazy Initialization: Lê o localStorage no momento em que o estado nasce
     const [usuario, setUsuario] = useState<Usuario | null>(() => {
         const tokenSalvo = localStorage.getItem('@Denarius:token');
         const usuarioSalvo = localStorage.getItem('@Denarius:usuario');
@@ -28,8 +29,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return null;
     });
 
-    // Como a leitura do localStorage é síncrona, a aplicação já sabe se 
-    // o usuário está logado ou não antes da primeira renderização.
     const [carregando] = useState(false);
 
     const login = (token: string, dadosUsuario: Usuario) => {

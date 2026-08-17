@@ -23,12 +23,21 @@ authRoutes.post('/registro', async (req: Request, res: Response): Promise<void> 
         const usuarioQuery = `
             INSERT INTO usuarios (empresa_id, nome, email, senha_hash, ativo) 
             VALUES ($1, $2, $3, $4, false) RETURNING id`;
+        
+        // O nome_usuario recebido no body é inserido na coluna 'nome'
         await client.query(usuarioQuery, [novaEmpresaId, nome_usuario, email, hashSenha]);
 
         await client.query('COMMIT');
         res.status(201).json({ message: 'Cadastro realizado. Aguarde a aprovação do administrador.' });
-    } catch (error) {
+    } catch (error: any) {
         await client.query('ROLLBACK');
+        
+        // Tratamento para violação da constraint UNIQUE (nome de usuário já existente)
+        if (error.code === '23505') {
+            res.status(409).json({ error: 'Este nome de usuário ou e-mail já está em uso.' });
+            return;
+        }
+        
         res.status(500).json({ error: 'Erro ao realizar cadastro.' });
     } finally {
         client.release();
@@ -36,14 +45,16 @@ authRoutes.post('/registro', async (req: Request, res: Response): Promise<void> 
 });
 
 authRoutes.post('/login', async (req: Request, res: Response): Promise<void> => {
-    const { email, senha } = req.body;
+    // 1. Extração da nova credencial mapeada no frontend
+    const { nome_usuario, senha } = req.body;
 
     try {
-        const result = await db.query('SELECT * FROM usuarios WHERE email = $1', [email]);
+        // 2. Busca no banco filtrando pela coluna 'nome'
+        const result = await db.query('SELECT * FROM usuarios WHERE nome = $1', [nome_usuario]);
         const usuario = result.rows[0];
 
         if (!usuario) {
-            res.status(401).json({ error: 'Credenciais inválidas.' });
+            res.status(401).json({ error: 'Usuário não encontrado ou credenciais inválidas.' });
             return;
         }
 

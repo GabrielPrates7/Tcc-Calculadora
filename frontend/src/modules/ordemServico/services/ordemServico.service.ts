@@ -1,101 +1,78 @@
 import type { OrdemServico } from '../types';
+import { api } from '../../../services/api'; // <-- Injeção do Interceptador Axios
 
-const API_URL = 'http://localhost:3000/api/ordens-servico';
-
-// Helper privado para extrair a mensagem de erro real enviada pelo Node.js
-async function extrairErroAPI(response: Response, mensagemPadrao: string): Promise<never> {
-    try {
-        const err = await response.json();
-        throw new Error(err.error || err.message || mensagemPadrao);
-    } catch (e: unknown) {
-        if (e instanceof Error && e.message !== 'Unexpected end of JSON input') {
-            throw e;
-        }
-        throw new Error(mensagemPadrao);
-    }
+// Helper privado ajustado para o formato de erro do Axios
+function extrairErroAxios(error: unknown, mensagemPadrao: string): never {
+    const err = error as { response?: { data?: { error?: string, message?: string } } };
+    const mensagemReal = err.response?.data?.error || err.response?.data?.message || mensagemPadrao;
+    throw new Error(mensagemReal);
 }
 
 export const OrdemServicoService = {
     listarTodas: async (): Promise<OrdemServico[]> => {
-        const response = await fetch(API_URL);
-        if (!response.ok) {
-            await extrairErroAPI(response, 'Erro ao buscar Ordens de Serviço no servidor.');
+        try {
+            const response = await api.get('/ordens-servico');
+            return response.data;
+        } catch (error) {
+            return extrairErroAxios(error, 'Erro ao buscar Ordens de Serviço no servidor.');
         }
-        return response.json();
     },
 
     criarDeOrcamento: async (orcamentoId: number, dataEntrega?: string): Promise<OrdemServico> => {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ orcamento_id: orcamentoId, data_entrega: dataEntrega || null })
-        });
-        
-        if (!response.ok) {
-            await extrairErroAPI(response, 'Erro ao criar Ordem de Serviço.');
+        try {
+            const response = await api.post('/ordens-servico', { 
+                orcamento_id: orcamentoId, 
+                data_entrega: dataEntrega || null 
+            });
+            return response.data;
+        } catch (error) {
+            return extrairErroAxios(error, 'Erro ao criar Ordem de Serviço.');
         }
-        return response.json();
     },
 
     atualizarStatus: async (id: number, status_producao?: string): Promise<OrdemServico> => {
-        const response = await fetch(`${API_URL}/${id}/status`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status_producao })
-        });
-        
-        if (!response.ok) {
-            await extrairErroAPI(response, 'Erro ao atualizar status da Ordem de Serviço.');
+        try {
+            const response = await api.patch(`/ordens-servico/${id}/status`, { status_producao });
+            return response.data;
+        } catch (error) {
+            return extrairErroAxios(error, 'Erro ao atualizar status da Ordem de Serviço.');
         }
-        return response.json();
     },
 
     atualizarDados: async (id: number, dados: Partial<OrdemServico>): Promise<OrdemServico> => {
-        const response = await fetch(`${API_URL}/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dados)
-        });
-        
-        if (!response.ok) {
-            await extrairErroAPI(response, 'Erro ao atualizar dados operacionais da O.S.');
+        try {
+            const response = await api.put(`/ordens-servico/${id}`, dados);
+            return response.data;
+        } catch (error) {
+            return extrairErroAxios(error, 'Erro ao atualizar dados operacionais da O.S.');
         }
-        return response.json();
     },
 
     excluir: async (id: number): Promise<boolean> => {
-        const response = await fetch(`${API_URL}/${id}`, {
-            method: 'DELETE'
-        });
-        
-        if (!response.ok) {
-            await extrairErroAPI(response, 'Erro ao excluir Ordem de Serviço no servidor.');
+        try {
+            await api.delete(`/ordens-servico/${id}`);
+            return true;
+        } catch (error) {
+            return extrairErroAxios(error, 'Erro ao excluir Ordem de Serviço no servidor.');
         }
-        return true;
     },
 
     // --- MÓDULO FINANCEIRO (TRANSAÇÕES) ---
     registrarPagamento: async (osId: number, dados: { valor: number, forma_pagamento: string, data_pagamento: string }): Promise<OrdemServico> => {
-        const response = await fetch(`${API_URL}/${osId}/pagamentos`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dados)
-        });
-        
-        if (!response.ok) {
-            await extrairErroAPI(response, 'Erro ao registrar pagamento.');
+        try {
+            const response = await api.post(`/ordens-servico/${osId}/pagamentos`, dados);
+            return response.data; // Retorna a O.S. com a lista de pagamentos e totalizados atualizados
+        } catch (error) {
+            return extrairErroAxios(error, 'Erro ao registrar pagamento.');
         }
-        return response.json(); // Retorna a O.S. com a lista de pagamentos e totalizados atualizados
     },
 
     excluirPagamento: async (pagamentoId: number): Promise<OrdemServico> => {
-        const response = await fetch(`${API_URL}/pagamentos/${pagamentoId}`, {
-            method: 'DELETE'
-        });
-        
-        if (!response.ok) {
-            await extrairErroAPI(response, 'Erro ao excluir pagamento.');
+        try {
+            const response = await api.delete(`/ordens-servico/pagamentos/${pagamentoId}`);
+            return response.data; // Retorna a O.S. atualizada
+        } catch (error) {
+            return extrairErroAxios(error, 'Erro ao excluir pagamento.');
         }
-        return response.json(); // Retorna a O.S. atualizada
     }
 };

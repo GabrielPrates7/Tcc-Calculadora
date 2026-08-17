@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Settings, Briefcase, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { api } from '../../services/api'; // <-- Injeção do Interceptador Axios
 import './Configuracoes.css';
 
 interface Funcao {
@@ -20,10 +21,9 @@ export function Configuracoes() {
     useEffect(() => {
         const fetchFuncoes = async () => {
             try {
-                const res = await fetch('http://localhost:3000/api/funcoes');
-                if (!res.ok) throw new Error("Erro de rede");
-                const data = await res.json();
-                setFuncoes(data);
+                // CORREÇÃO: Usando a api do Axios (GET)
+                const res = await api.get('/funcoes');
+                setFuncoes(res.data);
             } catch (error) {
                 console.error("Erro na API:", error);
                 toast.error("Erro ao carregar funções do servidor.");
@@ -38,22 +38,18 @@ export function Configuracoes() {
         
         setLoading(true);
         try {
-            const res = await fetch('http://localhost:3000/api/funcoes', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nome: novaFuncao.trim() })
-            });
-
-            if (!res.ok) throw new Error("Falha no POST");
+            // CORREÇÃO: Usando a api do Axios (POST)
+            await api.post('/funcoes', { nome: novaFuncao.trim() });
             
             toast.success("Função cadastrada com sucesso!");
             setNovaFuncao('');
             
             // Aciona o gatilho para o useEffect rodar novamente e atualizar a lista
             setRefreshTrigger(prev => prev + 1);
-        } catch (error) {
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { error?: string } } };
             console.error(error);
-            toast.error("Falha ao cadastrar função.");
+            toast.error(err.response?.data?.error || "Falha ao cadastrar função.");
         } finally {
             setLoading(false);
         }
@@ -63,16 +59,17 @@ export function Configuracoes() {
         if (!window.confirm("Excluir este departamento? Funcionários vinculados podem perder a referência.")) return;
         
         try {
-            const res = await fetch(`http://localhost:3000/api/funcoes/${id}`, { method: 'DELETE' });
-            if (!res.ok) throw new Error("Falha no DELETE");
+            // CORREÇÃO: Usando a api do Axios (DELETE)
+            await api.delete(`/funcoes/${id}`);
             
             toast.success("Função removida.");
             
             // Aciona o gatilho para o useEffect rodar novamente e atualizar a lista
             setRefreshTrigger(prev => prev + 1);
-        } catch (error) {
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { error?: string } } };
             console.error(error);
-            toast.error("Erro ao excluir. Verifique se há funcionários usando este cargo.");
+            toast.error(err.response?.data?.error || "Erro ao excluir. Verifique se há funcionários usando este cargo.");
         }
     };
 
