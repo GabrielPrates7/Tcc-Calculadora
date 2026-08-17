@@ -22,28 +22,28 @@ export interface ICenarioMaoObraDTO {
 
 export class OrcamentoService {
     
-    async obterTaxaFixoAtual(): Promise<number> {
+    async obterTaxaFixoAtual(empresa_id: number): Promise<number> {
         const query = `
             WITH despesas AS (
                 SELECT COALESCE(SUM(valor), 0) AS total 
                 FROM public.despesas_fixas 
-                WHERE ativo = true
+                WHERE ativo = true AND empresa_id = $1
             ),
             faturamento AS (
                 SELECT COALESCE(valor, 1) AS total 
                 FROM public.faturamentos_mensais 
-                WHERE valor > 100
+                WHERE valor > 100 AND empresa_id = $1
                 ORDER BY ano DESC, mes DESC 
                 LIMIT 1
             )
             SELECT ROUND((d.total / GREATEST(f.total, 1)) * 100, 2) AS taxa_atual
             FROM despesas d CROSS JOIN faturamento f;
         `;
-        const result = await db.query(query);
+        const result = await db.query(query, [empresa_id]);
         return result.rows.length > 0 ? Number(result.rows[0].taxa_atual) : 0;
     }
 
-    async listarCenariosMaoObra(): Promise<ICenarioMaoObraDTO[]> {
+    async listarCenariosMaoObra(empresa_id: number): Promise<ICenarioMaoObraDTO[]> {
         const query = `
             SELECT 
                 o.id,
@@ -53,10 +53,10 @@ export class OrcamentoService {
                 COALESCE(o.tipo_tempo, 'horas') AS "tipoTempo",
                 TO_CHAR(o.criado_em, 'YYYY-MM-DD') AS "dataCriacao"
             FROM public.obras o
-            WHERE o.custo_total_estimado IS NOT NULL
+            WHERE o.custo_total_estimado IS NOT NULL AND o.empresa_id = $1
             ORDER BY o.id DESC;
         `;
-        const result = await db.query(query);
+        const result = await db.query(query, [empresa_id]);
         return result.rows.map(row => ({
             id: Number(row.id),
             titulo: String(row.titulo),
@@ -67,8 +67,7 @@ export class OrcamentoService {
         }));
     }
 
-    // CORREÇÃO: LEFT JOIN com ordens_servico para retornar a coluna os_id
-    async listarOrcamentos() {
+    async listarOrcamentos(empresa_id: number) {
         const query = `
             SELECT 
                 o.id, o.cliente, o.nome_produto, o.custo_mercadoria AS custo_materiais,
@@ -79,14 +78,15 @@ export class OrcamentoService {
                 os.id AS os_id
             FROM public.orcamentos o
             LEFT JOIN public.ordens_servico os ON os.orcamento_id = o.id
+            WHERE o.empresa_id = $1
             ORDER BY o.id DESC;
         `;
-        const result = await db.query(query);
+        const result = await db.query(query, [empresa_id]);
         return result.rows;
     }
 
-    private async calcularPrecoVenda(dados: IOrcamentoPayload): Promise<{ precoVenda: number, taxaFixa: number, custoMaoObraTotal: number }> {
-        const taxaFixa = await this.obterTaxaFixoAtual();
+    private async calcularPrecoVenda(dados: IOrcamentoPayload, empresa_id: number): Promise<{ precoVenda: number, taxaFixa: number, custoMaoObraTotal: number }> {
+        const taxaFixa = await this.obterTaxaFixoAtual(empresa_id);
         const custoMaoObraTotal = dados.tempoGasto * dados.valorHoraSelecionado;
         const custoProducao = dados.custoMercadoria + custoMaoObraTotal;
 
@@ -101,34 +101,34 @@ export class OrcamentoService {
         return { precoVenda, taxaFixa, custoMaoObraTotal };
     }
 
-    async criarOrcamento(dados: IOrcamentoPayload) {
-        const calculo = await this.calcularPrecoVenda(dados);
+    async criarOrcamento(dados: IOrcamentoPayload, empresa_id: number) {
+        const calculo = await this.calcularPrecoVenda(dados, empresa_id);
         const query = `
             INSERT INTO public.orcamentos (
                 cliente, nome_produto, custo_mercadoria, tempo_gasto, 
                 lucro_desejado_pct, imposto_pct, custo_fixo_pct_snapshot, 
-                custo_mao_obra_unitario, custo_mao_obra_total, preco_venda, id_cenario_mo
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                custo_mao_obra_unitario, custo_mao_obra_total, preco_venda, id_cenario_mo, empresa_id
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
             RETURNING *;
         `;
         const values = [
             dados.cliente || null, dados.nomeProduto, dados.custoMercadoria, dados.tempoGasto,
             dados.lucroPct, dados.impostoPct, calculo.taxaFixa, 
             dados.valorHoraSelecionado, calculo.custoMaoObraTotal, calculo.precoVenda, 
-            dados.idCenarioMo || null
+            dados.idCenarioMo || null, empresa_id
         ];
         const result = await db.query(query, values);
         return result.rows[0];
     }
 
-    async atualizarOrcamento(id: number, dados: IOrcamentoPayload) {
-        const calculo = await this.calcularPrecoVenda(dados);
+    async atualizarOrcamento(id: number, dados: IOrcamentoPayload, empresa_id: number) {
+        const calculo = await this.calcularPrecoVenda(dados, empresa_id);
         const query = `
             UPDATE public.orcamentos
             SET cliente = $1, nome_produto = $2, custo_mercadoria = $3, tempo_gasto = $4,
                 lucro_desejado_pct = $5, imposto_pct = $6, custo_fixo_pct_snapshot = $7,
                 custo_mao_obra_unitario = $8, custo_mao_obra_total = $9, preco_venda = $10, id_cenario_mo = $11
-            WHERE id = $12
+            WHERE id = $12 AND empresa_id = $13
             RETURNING *;
         `;
         const values = [
@@ -136,16 +136,16 @@ export class OrcamentoService {
             dados.lucroPct, dados.impostoPct, calculo.taxaFixa, 
             dados.valorHoraSelecionado, calculo.custoMaoObraTotal, calculo.precoVenda, 
             dados.idCenarioMo || null,
-            id
+            id, empresa_id
         ];
         const result = await db.query(query, values);
         if (result.rowCount === 0) throw new Error("Orçamento não encontrado para atualização.");
         return result.rows[0];
     }
 
-    async deletarOrcamento(id: number): Promise<boolean> {
-        const query = `DELETE FROM public.orcamentos WHERE id = $1`;
-        await db.query(query, [id]);
+    async deletarOrcamento(id: number, empresa_id: number): Promise<boolean> {
+        const query = `DELETE FROM public.orcamentos WHERE id = $1 AND empresa_id = $2`;
+        await db.query(query, [id, empresa_id]);
         return true;
     }
 }

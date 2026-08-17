@@ -10,7 +10,7 @@ export interface TaxaFuncao {
 
 export const ObraService = {
     // Retorna o catálogo de custos por hora atualizado
-    async obterTaxasPorFuncao(): Promise<TaxaFuncao[]> {
+    async obterTaxasPorFuncao(empresa_id: number): Promise<TaxaFuncao[]> {
         const query = `
             SELECT 
                 func.id AS funcao_id,
@@ -23,13 +23,14 @@ export const ObraService = {
                         func.custo_hora_mercado
                 END AS custo_hora_calculado
             FROM public.funcoes func
-            LEFT JOIN public.funcionarios f ON f.funcao_id = func.id AND f.ativo = true
+            LEFT JOIN public.funcionarios f ON f.funcao_id = func.id AND f.ativo = true AND f.empresa_id = $1
+            WHERE func.empresa_id = $1
             GROUP BY func.id, func.nome, func.base_horas_mensais, func.custo_hora_mercado
             ORDER BY func.nome;
         `;
         
-        const result = await pool.query<TaxaFuncao>(query);
-        // O node-postgres retorna numéricos como string, precisamos converter.
+        const result = await pool.query<TaxaFuncao>(query, [empresa_id]);
+        
         return result.rows.map(row => ({
             ...row,
             total_funcionarios_ativos: Number(row.total_funcionarios_ativos),

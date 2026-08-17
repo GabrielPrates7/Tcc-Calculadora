@@ -1,7 +1,11 @@
 import { Router, Request, Response } from 'express';
 import { pool } from '../services/db';
+import { verificarToken } from '../middlewares/auth.middleware';
 
 const router = Router();
+
+// Protege todas as rotas de obras
+router.use(verificarToken);
 
 // ============================================================================
 // INTERFACES (Tipagem Estrita)
@@ -22,7 +26,7 @@ interface RecursoObraInput {
     qtd_profissionais: number;
     horas_estimadas: number;
     custo_hora_aplicado: number;
-    unidade_tempo?: 'horas' | 'dias'; // ✅ ADICIONADO: O contrato agora aceita a unidade de tempo por profissional
+    unidade_tempo?: 'horas' | 'dias';
 }
 
 interface NovaObraBody {
@@ -38,6 +42,8 @@ interface NovaObraBody {
 // ============================================================================
 router.get('/taxas', async (req: Request, res: Response) => {
     try {
+        const empresaId = req.usuario!.empresa_id;
+
         const query = `
             SELECT 
                 func.id AS funcao_id,
@@ -63,11 +69,12 @@ router.get('/taxas', async (req: Request, res: Response) => {
                 END AS custo_dia_calculado
 
             FROM public.funcoes func
-            LEFT JOIN public.funcionarios f ON f.funcao_id = func.id AND f.ativo = true
+            LEFT JOIN public.funcionarios f ON f.funcao_id = func.id AND f.ativo = true AND f.empresa_id = $1
+            WHERE func.empresa_id = $1
             GROUP BY func.id, func.nome, func.base_horas_mensais, func.custo_hora_mercado
             ORDER BY func.nome;
         `;
-        const result = await pool.query<TaxaFuncaoRow>(query);
+        const result = await pool.query<TaxaFuncaoRow>(query, [empresaId]);
         const taxasLimpas = result.rows.map(row => ({
             funcao_id: row.funcao_id,
             funcao_nome: row.funcao_nome,
@@ -88,6 +95,8 @@ router.get('/taxas', async (req: Request, res: Response) => {
 // ============================================================================
 router.post('/', async (req: Request<{}, {}, NovaObraBody>, res: Response): Promise<void> => {
     const { titulo, cliente, data_entrega, tipo_tempo, recursos } = req.body;
+    const empresaId = req.usuario!.empresa_id;
+
     if (!titulo || !cliente || !recursos || recursos.length === 0) {
         res.status(400).json({ error: 'Título, cliente e ao menos um recurso são obrigatórios.' });
         return;
@@ -100,8 +109,8 @@ router.post('/', async (req: Request<{}, {}, NovaObraBody>, res: Response): Prom
         }, 0);
 
         const insertObraQuery = `
-            INSERT INTO public.obras (titulo, cliente, data_entrega, custo_total_estimado, tipo_tempo) 
-            VALUES ($1, $2, $3, $4, $5) 
+            INSERT INTO public.obras (titulo, cliente, data_entrega, custo_total_estimado, tipo_tempo, empresa_id) 
+            VALUES ($1, $2, $3, $4, $5, $6) 
             RETURNING id;
         `;
         const obraResult = await client.query(insertObraQuery, [
@@ -109,15 +118,15 @@ router.post('/', async (req: Request<{}, {}, NovaObraBody>, res: Response): Prom
             cliente, 
             data_entrega || null, 
             custoTotalEstimado, 
-            tipo_tempo || 'horas'
+            tipo_tempo || 'horas',
+            empresaId
         ]);
         const obraId = obraResult.rows[0].id;
 
-        // ✅ ADICIONADO: Query atualizada para incluir a coluna unidade_tempo
         const insertRecursoQuery = `
             INSERT INTO public.obra_recursos_humanos 
-            (obra_id, funcao_id, qtd_profissionais, horas_estimadas, custo_hora_aplicado, unidade_tempo) 
-            VALUES ($1, $2, $3, $4, $5, $6);
+            (obra_id, funcao_id, qtd_profissionais, horas_estimadas, custo_hora_aplicado, unidade_tempo, empresa_id) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7);
         `;
         for (const recurso of recursos) {
             await client.query(insertRecursoQuery, [
@@ -126,7 +135,8 @@ router.post('/', async (req: Request<{}, {}, NovaObraBody>, res: Response): Prom
                 recurso.qtd_profissionais, 
                 recurso.horas_estimadas, 
                 recurso.custo_hora_aplicado,
-                recurso.unidade_tempo || 'horas' // Faz o bind do valor vindo do front
+                recurso.unidade_tempo || 'horas',
+                empresaId
             ]);
         }
         await client.query('COMMIT');
@@ -146,6 +156,7 @@ router.post('/', async (req: Request<{}, {}, NovaObraBody>, res: Response): Prom
 router.put('/:id', async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
     const { titulo, cliente, data_entrega, tipo_tempo, recursos } = req.body;
+    const empresaId = req.usuario!.empresa_id;
 
     if (!titulo || !cliente || !recursos || recursos.length === 0) {
         res.status(400).json({ error: 'Dados incompletos para atualização.' });
@@ -162,17 +173,16 @@ router.put('/:id', async (req: Request, res: Response): Promise<void> => {
         await client.query(
             `UPDATE public.obras 
              SET titulo = $1, cliente = $2, data_entrega = $3, custo_total_estimado = $4, tipo_tempo = $5 
-             WHERE id = $6`,
-            [titulo, cliente, data_entrega || null, custoTotalEstimado, tipo_tempo || 'horas', id]
+             WHERE id = $6 AND empresa_id = $7`,
+            [titulo, cliente, data_entrega || null, custoTotalEstimado, tipo_tempo || 'horas', id, empresaId]
         );
 
-        await client.query(`DELETE FROM public.obra_recursos_humanos WHERE obra_id = $1`, [id]);
+        await client.query(`DELETE FROM public.obra_recursos_humanos WHERE obra_id = $1 AND empresa_id = $2`, [id, empresaId]);
 
-        // ✅ ADICIONADO: Query atualizada também no bloco de Update para reconstruir a tabela com a unidade correta
         const insertRecursoQuery = `
             INSERT INTO public.obra_recursos_humanos 
-            (obra_id, funcao_id, qtd_profissionais, horas_estimadas, custo_hora_aplicado, unidade_tempo) 
-            VALUES ($1, $2, $3, $4, $5, $6);
+            (obra_id, funcao_id, qtd_profissionais, horas_estimadas, custo_hora_aplicado, unidade_tempo, empresa_id) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7);
         `;
         for (const recurso of recursos) {
             await client.query(insertRecursoQuery, [
@@ -181,7 +191,8 @@ router.put('/:id', async (req: Request, res: Response): Promise<void> => {
                 recurso.qtd_profissionais, 
                 recurso.horas_estimadas, 
                 recurso.custo_hora_aplicado,
-                recurso.unidade_tempo || 'horas'
+                recurso.unidade_tempo || 'horas',
+                empresaId
             ]);
         }
 
@@ -201,6 +212,8 @@ router.put('/:id', async (req: Request, res: Response): Promise<void> => {
 // ============================================================================
 router.get('/', async (req: Request, res: Response) => {
     try {
+        const empresaId = req.usuario!.empresa_id;
+
         const query = `
             SELECT o.id, o.titulo, o.cliente, o.data_inicio, o.data_entrega, o.status, o.custo_total_estimado, o.criado_em, o.tipo_tempo,
                 COALESCE(
@@ -211,17 +224,18 @@ router.get('/', async (req: Request, res: Response) => {
                             'qtd_profissionais', orh.qtd_profissionais,
                             'horas_estimadas', orh.horas_estimadas,
                             'custo_hora_aplicado', orh.custo_hora_aplicado,
-                            'unidade_tempo', COALESCE(orh.unidade_tempo, 'horas') -- ✅ ADICIONADO: Retornando para o frontend
+                            'unidade_tempo', COALESCE(orh.unidade_tempo, 'horas')
                         )
                     ) FILTER (WHERE orh.id IS NOT NULL), '[]'
                 ) AS recursos
             FROM public.obras o
             LEFT JOIN public.obra_recursos_humanos orh ON o.id = orh.obra_id
             LEFT JOIN public.funcoes f ON orh.funcao_id = f.id
+            WHERE o.empresa_id = $1
             GROUP BY o.id
             ORDER BY o.criado_em ASC;
         `;
-        const result = await pool.query(query);
+        const result = await pool.query(query, [empresaId]);
         res.json(result.rows);
     } catch (err) {
         console.error("Erro ao listar obras:", err);
@@ -234,8 +248,10 @@ router.get('/', async (req: Request, res: Response) => {
 // ============================================================================
 router.delete('/:id', async (req: Request, res: Response) => {
     const { id } = req.params;
+    const empresaId = req.usuario!.empresa_id;
+
     try {
-        await pool.query('DELETE FROM public.obras WHERE id = $1', [id]);
+        await pool.query('DELETE FROM public.obras WHERE id = $1 AND empresa_id = $2', [id, empresaId]);
         res.json({ message: 'Obra excluída.' });
     } catch (err) {
         console.error("Erro ao excluir obra:", err);

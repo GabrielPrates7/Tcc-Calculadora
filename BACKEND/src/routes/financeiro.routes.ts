@@ -2,18 +2,27 @@ import { Router, Request, Response } from 'express';
 import { pool } from '../services/db';
 import { FaturamentoService } from '../services/faturamentoService';
 import { FinanceiroService, ItemFinanceiroInput } from '../services/financeiro.service';
+import { verificarToken } from '../middlewares/auth.middleware';
 
 const router = Router();
 
-// CONSTANTE DE SEGURANÇA: Limite de 9 Trilhões (Compatível com NUMERIC(15,2))
+// CONSTANTE DE SEGURANÇA
 const MAX_VALOR_PERMITIDO = 9999999999999.99;
 
+// Protege todas as rotas financeiras
+router.use(verificarToken);
+
 // ==========================================
-// 1. DASHBOARD
+// 1. DASHBOARD (Financeiro)
 // ==========================================
 router.get('/dashboard', async (req: Request, res: Response): Promise<void> => {
     try {
-        const fatRes = await pool.query('SELECT mes, ano, valor FROM faturamentos_mensais ORDER BY ano DESC, mes DESC LIMIT 1');
+        const empresaId = req.usuario!.empresa_id;
+
+        const fatRes = await pool.query(
+            'SELECT mes, ano, valor FROM faturamentos_mensais WHERE empresa_id = $1 ORDER BY ano DESC, mes DESC LIMIT 1',
+            [empresaId]
+        );
         const faturamentoData = fatRes.rows[0];
         const faturamento = Number(faturamentoData?.valor) || 0;
         
@@ -26,7 +35,8 @@ router.get('/dashboard', async (req: Request, res: Response): Promise<void> => {
             WHERE ativo = true 
             AND EXTRACT(MONTH FROM data_vencimento) = $1 
             AND EXTRACT(YEAR FROM data_vencimento) = $2
-        `, [mesFiltro, anoFiltro]);
+            AND empresa_id = $3
+        `, [mesFiltro, anoFiltro, empresaId]);
         const totalDespesas = Number(despesasRes.rows[0]?.total) || 0;
 
         const investRes = await pool.query(`
@@ -35,7 +45,8 @@ router.get('/dashboard', async (req: Request, res: Response): Promise<void> => {
             WHERE ativo = true
             AND EXTRACT(MONTH FROM data_vencimento) = $1 
             AND EXTRACT(YEAR FROM data_vencimento) = $2
-        `, [mesFiltro, anoFiltro]);
+            AND empresa_id = $3
+        `, [mesFiltro, anoFiltro, empresaId]);
         const totalInvestimentos = Number(investRes.rows[0]?.total) || 0;
 
         const taxaCustoFixo = faturamento > 0 ? (totalDespesas / faturamento) * 100 : 0;
@@ -53,11 +64,14 @@ router.get('/dashboard', async (req: Request, res: Response): Promise<void> => {
 router.post('/faturamento/soma', async (req: Request, res: Response): Promise<void> => {
     try {
         const { meses, ano } = req.body;
+        const empresaId = req.usuario!.empresa_id;
+
         if (!meses || !ano) {
             res.json({ valor: 0 });
             return;
         }
-        const total = await FaturamentoService.somarPorMeses(meses, Number(ano));
+        // ATENÇÃO: Você precisará atualizar o FaturamentoService para receber o empresaId
+        const total = await FaturamentoService.somarPorMeses(meses, Number(ano), empresaId);
         res.json({ valor: total });
     } catch (error) {
         console.error("Erro soma:", error);
@@ -68,7 +82,9 @@ router.post('/faturamento/soma', async (req: Request, res: Response): Promise<vo
 router.get('/faturamento/:mes/:ano', async (req: Request, res: Response): Promise<void> => {
     try {
         const { mes, ano } = req.params;
-        const valor = await FaturamentoService.obterPorMes(Number(mes), Number(ano));
+        const empresaId = req.usuario!.empresa_id;
+        // ATENÇÃO: Você precisará atualizar o FaturamentoService para receber o empresaId
+        const valor = await FaturamentoService.obterPorMes(Number(mes), Number(ano), empresaId);
         res.json({ valor });
     } catch (error) {
         res.status(500).json({ error: 'Erro ao buscar faturamento' });
@@ -78,14 +94,15 @@ router.get('/faturamento/:mes/:ano', async (req: Request, res: Response): Promis
 router.post('/faturamento', async (req: Request, res: Response): Promise<void> => {
     try {
         const { mes, ano, valor } = req.body;
+        const empresaId = req.usuario!.empresa_id;
         
-        // VALIDAÇÃO DE SEGURANÇA
         if (Number(valor) > MAX_VALOR_PERMITIDO) {
             res.status(400).json({ error: 'Faturamento excede o limite numérico permitido.' });
             return;
         }
 
-        const novoValor = await FaturamentoService.salvar(Number(mes), Number(ano), Number(valor));
+        // ATENÇÃO: Você precisará atualizar o FaturamentoService para receber o empresaId
+        const novoValor = await FaturamentoService.salvar(Number(mes), Number(ano), Number(valor), empresaId);
         res.status(201).json({ valor: novoValor });
     } catch (error) {
         res.status(500).json({ error: 'Erro ao salvar faturamento' });
@@ -97,7 +114,8 @@ router.post('/faturamento', async (req: Request, res: Response): Promise<void> =
 // ==========================================
 router.get('/despesas', async (req: Request, res: Response): Promise<void> => {
     try {
-        const despesas = await FinanceiroService.listarDespesas();
+        const empresaId = req.usuario!.empresa_id;
+        const despesas = await FinanceiroService.listarDespesas(empresaId);
         res.json(despesas);
     } catch (error) {
         res.status(500).json({ error: 'Erro ao listar despesas' });
@@ -107,14 +125,14 @@ router.get('/despesas', async (req: Request, res: Response): Promise<void> => {
 router.post('/despesas', async (req: Request, res: Response): Promise<void> => {
     try {
         const dados: ItemFinanceiroInput = req.body;
+        const empresaId = req.usuario!.empresa_id;
         
-        // VALIDAÇÃO DE SEGURANÇA
         if (Number(dados.valor) > MAX_VALOR_PERMITIDO) {
             res.status(400).json({ error: 'Valor da despesa excede o limite numérico.' });
             return;
         }
 
-        await FinanceiroService.salvarDespesa(dados);
+        await FinanceiroService.salvarDespesa(dados, empresaId);
         res.status(201).json({ message: 'Despesa salva com sucesso' });
     } catch (error) {
         console.error("Erro backend (Salvar Despesa):", error);
@@ -126,14 +144,14 @@ router.put('/despesas/:id', async (req: Request, res: Response): Promise<void> =
     try {
         const id = parseInt(req.params.id, 10);
         const dados: ItemFinanceiroInput = req.body;
+        const empresaId = req.usuario!.empresa_id;
 
-        // VALIDAÇÃO DE SEGURANÇA
         if (Number(dados.valor) > MAX_VALOR_PERMITIDO) {
             res.status(400).json({ error: 'Valor da despesa excede o limite numérico.' });
             return;
         }
 
-        await FinanceiroService.atualizarDespesa(id, dados);
+        await FinanceiroService.atualizarDespesa(id, dados, empresaId);
         res.json({ message: 'Despesa atualizada com sucesso' });
     } catch (error) {
         res.status(500).json({ error: 'Erro ao atualizar despesa' });
@@ -143,7 +161,8 @@ router.put('/despesas/:id', async (req: Request, res: Response): Promise<void> =
 router.delete('/despesas/:id', async (req: Request, res: Response): Promise<void> => {
     try {
         const id = parseInt(req.params.id, 10);
-        await FinanceiroService.deletarDespesa(id);
+        const empresaId = req.usuario!.empresa_id;
+        await FinanceiroService.deletarDespesa(id, empresaId);
         res.json({ message: 'Despesa deletada com sucesso' });
     } catch (error) {
         res.status(500).json({ error: 'Erro ao deletar despesa' });
@@ -155,7 +174,8 @@ router.delete('/despesas/:id', async (req: Request, res: Response): Promise<void
 // ==========================================
 router.get('/investimentos', async (req: Request, res: Response): Promise<void> => {
     try {
-        const investimentos = await FinanceiroService.listarInvestimentos();
+        const empresaId = req.usuario!.empresa_id;
+        const investimentos = await FinanceiroService.listarInvestimentos(empresaId);
         res.json(investimentos);
     } catch (error) {
         res.status(500).json({ error: 'Erro ao listar investimentos' });
@@ -165,14 +185,14 @@ router.get('/investimentos', async (req: Request, res: Response): Promise<void> 
 router.post('/investimentos', async (req: Request, res: Response): Promise<void> => {
     try {
         const dados: ItemFinanceiroInput = req.body;
+        const empresaId = req.usuario!.empresa_id;
 
-        // VALIDAÇÃO DE SEGURANÇA
         if (Number(dados.valor) > MAX_VALOR_PERMITIDO) {
             res.status(400).json({ error: 'Valor do investimento excede o limite numérico.' });
             return;
         }
 
-        await FinanceiroService.salvarInvestimento(dados);
+        await FinanceiroService.salvarInvestimento(dados, empresaId);
         res.status(201).json({ message: 'Investimento salvo com sucesso' });
     } catch (error) {
         res.status(500).json({ error: 'Erro ao salvar investimento' });
@@ -183,14 +203,14 @@ router.put('/investimentos/:id', async (req: Request, res: Response): Promise<vo
     try {
         const id = parseInt(req.params.id, 10);
         const dados: ItemFinanceiroInput = req.body;
+        const empresaId = req.usuario!.empresa_id;
 
-        // VALIDAÇÃO DE SEGURANÇA
         if (Number(dados.valor) > MAX_VALOR_PERMITIDO) {
             res.status(400).json({ error: 'Valor do investimento excede o limite numérico.' });
             return;
         }
 
-        await FinanceiroService.atualizarInvestimento(id, dados);
+        await FinanceiroService.atualizarInvestimento(id, dados, empresaId);
         res.json({ message: 'Investimento atualizado com sucesso' });
     } catch (error) {
         res.status(500).json({ error: 'Erro ao atualizar investimento' });
@@ -200,7 +220,8 @@ router.put('/investimentos/:id', async (req: Request, res: Response): Promise<vo
 router.delete('/investimentos/:id', async (req: Request, res: Response): Promise<void> => {
     try {
         const id = parseInt(req.params.id, 10);
-        await FinanceiroService.deletarInvestimento(id);
+        const empresaId = req.usuario!.empresa_id;
+        await FinanceiroService.deletarInvestimento(id, empresaId);
         res.json({ message: 'Investimento deletado com sucesso' });
     } catch (error) {
         res.status(500).json({ error: 'Erro ao deletar investimento' });
@@ -216,15 +237,16 @@ router.post('/snapshots', async (req: Request, res: Response): Promise<void> => 
     const totalDespesas = req.body.total_despesas ?? req.body.totalDespesas ?? 0;
     const totalInvestimentos = req.body.total_investimentos ?? req.body.totalInvestimentos ?? 0;
     const taxaCustoFixo = req.body.taxa_custo_fixo ?? req.body.taxaCustoFixo ?? 0;
-
     const dadosBackup = req.body.dados_backup ?? req.body.dadosBackup ?? { despesas: [], investimentos: [] };
+    
+    const empresaId = req.usuario!.empresa_id;
 
     try {
         await pool.query(
             `INSERT INTO snapshots_financeiros 
-            (descricao, faturamento, total_despesas, total_investimentos, taxa_custo_fixo, dados_backup) 
-            VALUES ($1, $2, $3, $4, $5, $6)`,
-            [descricao, faturamento, totalDespesas, totalInvestimentos, taxaCustoFixo, JSON.stringify(dadosBackup)]
+            (descricao, faturamento, total_despesas, total_investimentos, taxa_custo_fixo, dados_backup, empresa_id) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [descricao, faturamento, totalDespesas, totalInvestimentos, taxaCustoFixo, JSON.stringify(dadosBackup), empresaId]
         );
         res.status(201).json({ message: 'Snapshot salvo com sucesso!' });
     } catch (err) {
@@ -235,7 +257,11 @@ router.post('/snapshots', async (req: Request, res: Response): Promise<void> => 
 
 router.get('/snapshots', async (req: Request, res: Response): Promise<void> => {
     try {
-        const result = await pool.query(`SELECT id, criado_em, descricao, faturamento, total_despesas, taxa_custo_fixo FROM snapshots_financeiros ORDER BY criado_em DESC`);
+        const empresaId = req.usuario!.empresa_id;
+        const result = await pool.query(
+            `SELECT id, criado_em, descricao, faturamento, total_despesas, taxa_custo_fixo FROM snapshots_financeiros WHERE empresa_id = $1 ORDER BY criado_em DESC`,
+            [empresaId]
+        );
         res.json(result.rows);
     } catch (err) {
         console.error(err);
@@ -246,7 +272,8 @@ router.get('/snapshots', async (req: Request, res: Response): Promise<void> => {
 router.get('/snapshots/:id', async (req: Request, res: Response): Promise<void> => {
     try {
         const id = parseInt(req.params.id, 10);
-        const result = await pool.query('SELECT * FROM snapshots_financeiros WHERE id = $1', [id]);
+        const empresaId = req.usuario!.empresa_id;
+        const result = await pool.query('SELECT * FROM snapshots_financeiros WHERE id = $1 AND empresa_id = $2', [id, empresaId]);
         
         if (result.rows.length > 0) {
             const row = result.rows[0];
@@ -279,7 +306,8 @@ router.get('/snapshots/:id', async (req: Request, res: Response): Promise<void> 
 router.delete('/snapshots/:id', async (req: Request, res: Response): Promise<void> => {
     try {
         const id = parseInt(req.params.id, 10);
-        await pool.query('DELETE FROM snapshots_financeiros WHERE id = $1', [id]);
+        const empresaId = req.usuario!.empresa_id;
+        await pool.query('DELETE FROM snapshots_financeiros WHERE id = $1 AND empresa_id = $2', [id, empresaId]);
         res.json({ message: 'Deletado com sucesso' });
     } catch (err) {
         console.error(err);

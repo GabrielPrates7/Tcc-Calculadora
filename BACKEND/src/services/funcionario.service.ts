@@ -53,16 +53,16 @@ export interface FiltrosPesquisa {
 export class FuncionarioService {
 
     // 1. Agregação Direta via Banco de Dados (Evita memory leak no Node)
-async obterResumoFinanceiro() {
+    async obterResumoFinanceiro(empresa_id: number) {
         const query = `
             SELECT 
                 COUNT(*) FILTER (WHERE ativo = true) as total_ativos,
                 SUM(custo_total_mensal) FILTER (WHERE ativo = true) as custo_folha,
-                -- Correção: ILIKE 'produ%' captura "Produção", "PRODUÇÃO" ou "producao" de bases legadas
                 SUM(custo_total_mensal) FILTER (WHERE ativo = true AND setor ILIKE 'produ%') as custo_producao
             FROM funcionarios
+            WHERE empresa_id = $1
         `;
-        const resultado = await pool.query(query);
+        const resultado = await pool.query(query, [empresa_id]);
         const row = resultado.rows[0];
         
         return {
@@ -73,10 +73,11 @@ async obterResumoFinanceiro() {
     }
 
     // 2. Paginação Server-Side (Substitui listarTodos)
-    async listarPaginado(filtros: FiltrosPesquisa) {
-        const whereClauses = [];
-        const values: any[] = [];
-        let paramCount = 1;
+    async listarPaginado(filtros: FiltrosPesquisa, empresa_id: number) {
+        // Inicializa forçando o vínculo com a empresa
+        const whereClauses = [`f.empresa_id = $1`];
+        const values: any[] = [empresa_id];
+        let paramCount = 2; // Começa em 2 pois o $1 já é a empresa
 
         if (filtros.busca) {
             whereClauses.push(`(f.nome ILIKE $${paramCount} OR fun.nome ILIKE $${paramCount})`);
@@ -100,7 +101,7 @@ async obterResumoFinanceiro() {
             paramCount++;
         }
 
-        const whereSQL = whereClauses.length > 0 ? `WHERE ` + whereClauses.join(' AND ') : '';
+        const whereSQL = `WHERE ` + whereClauses.join(' AND ');
 
         // Proteção contra SQL Injection dinâmico no ORDER BY
         const colunasPermitidas: Record<string, string> = {
@@ -146,26 +147,26 @@ async obterResumoFinanceiro() {
     }
 
     // 3. Single Source of Truth na inserção (Tabela agora guarda as provisões)
-    async criarFuncionario(dados: { nome: string; funcao_id: number; setor: string; salarioBase: number; epi: number }) {
+    async criarFuncionario(dados: { nome: string; funcao_id: number; setor: string; salarioBase: number; epi: number }, empresa_id: number) {
         const calc = calcularEncargos(dados.salarioBase, dados.epi);
         const query = `
             INSERT INTO funcionarios (
                 nome, funcao_id, setor, salario_base, epi, 
                 decimo_terceiro, um_terco_ferias, ferias, inss, multa_fgts, custo_total_mensal, 
-                ativo, data_admissao
+                ativo, data_admissao, empresa_id
             ) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW()) RETURNING *
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), $13) RETURNING *
         `;
         const values = [
             dados.nome, dados.funcao_id, dados.setor, calc.salarioBase, calc.epi,
             calc.decimoTerceiro, calc.umTercoFerias, calc.ferias, calc.inss, calc.multaFgts, calc.custoTotal, 
-            true
+            true, empresa_id
         ];
         const resultado = await pool.query(query, values);
         return resultado.rows[0];
     }
 
-    async atualizarFuncionario(id: number, dados: any) {
+    async atualizarFuncionario(id: number, dados: any, empresa_id: number) {
         let updateFills = '';
         const values: any[] = [];
         let index = 1;
@@ -189,13 +190,14 @@ async obterResumoFinanceiro() {
         }
 
         updateFills = updateFills.replace(/,\s*$/, ''); // Limpa a última vírgula
-        values.push(id);
+        
+        values.push(id, empresa_id); // Injeta o ID do funcionário e da empresa no final do array
 
-        const query = `UPDATE funcionarios SET ${updateFills} WHERE id = $${index}`;
+        const query = `UPDATE funcionarios SET ${updateFills} WHERE id = $${index} AND empresa_id = $${index + 1}`;
         await pool.query(query, values);
     }
 
-    async excluirFuncionario(id: number) {
-        await pool.query('DELETE FROM funcionarios WHERE id = $1', [id]);
+    async excluirFuncionario(id: number, empresa_id: number) {
+        await pool.query('DELETE FROM funcionarios WHERE id = $1 AND empresa_id = $2', [id, empresa_id]);
     }
 }

@@ -1,12 +1,17 @@
 import { Router } from 'express';
 import { FuncaoService } from '../services/funcao.service';
+import { verificarToken } from '../middlewares/auth.middleware';
 
 export const funcaoRoutes = Router();
 const service = new FuncaoService();
 
+// Protege todas as rotas de funções
+funcaoRoutes.use(verificarToken);
+
 funcaoRoutes.get('/', async (req, res) => {
     try {
-        const funcoes = await service.listar();
+        const empresaId = req.usuario!.empresa_id;
+        const funcoes = await service.listar(empresaId);
         res.json(funcoes);
     } catch (erro) {
         res.status(500).json({ error: 'Erro ao buscar funções' });
@@ -15,11 +20,12 @@ funcaoRoutes.get('/', async (req, res) => {
 
 funcaoRoutes.post('/', async (req, res) => {
     try {
-        // Agora a rota intercepta a variável baseHorasMensais do corpo da requisição
         const { nome, baseHorasMensais } = req.body;
+        const empresaId = req.usuario!.empresa_id;
+
         if (!nome) return res.status(400).json({ error: 'Nome da função é obrigatório' });
         
-        const novaFuncao = await service.criar(nome, baseHorasMensais);
+        const novaFuncao = await service.criar(nome, baseHorasMensais, empresaId);
         res.status(201).json(novaFuncao);
     } catch (erro: any) {
         if (erro.message && erro.message.includes('já existe')) {
@@ -32,9 +38,11 @@ funcaoRoutes.post('/', async (req, res) => {
 funcaoRoutes.delete('/:id', async (req, res) => {
     try {
         const id = parseInt(req.params.id);
+        const empresaId = req.usuario!.empresa_id;
+
         if (isNaN(id)) return res.status(400).json({ error: 'ID inválido' });
 
-        await service.excluir(id);
+        await service.excluir(id, empresaId);
         res.status(204).send();
     } catch (erro: any) {
         if (erro.message && erro.message.includes('Não é possível excluir')) {

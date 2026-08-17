@@ -63,28 +63,29 @@ export class OrdemServicoService {
         FROM public.ordens_servico os
         INNER JOIN public.orcamentos o ON o.id = os.orcamento_id
         LEFT JOIN pagamentos_agg p ON p.os_id = os.id
+        WHERE os.empresa_id = $1
     `;
 
-    async listarTodas() {
+    async listarTodas(empresa_id: number) {
         const query = `${this.queryBaseOS} ORDER BY os.id DESC;`;
-        const result = await db.query(query);
+        const result = await db.query(query, [empresa_id]);
         return result.rows;
     }
 
-    async criarDeOrcamento(orcamentoId: number, dataEntrega?: string) {
+    async criarDeOrcamento(orcamentoId: number, dataEntrega: string | undefined, empresa_id: number) {
         const insertQuery = `
-            INSERT INTO public.ordens_servico (orcamento_id, status_producao, status_financeiro, data_entrega, atualizado_em)
-            VALUES ($1, 'fila', 'pendente', $2, NOW())
+            INSERT INTO public.ordens_servico (orcamento_id, status_producao, status_financeiro, data_entrega, atualizado_em, empresa_id)
+            VALUES ($1, 'fila', 'pendente', $2, NOW(), $3)
             RETURNING id;
         `;
-        const insertResult = await db.query(insertQuery, [orcamentoId, dataEntrega || null]);
+        const insertResult = await db.query(insertQuery, [orcamentoId, dataEntrega || null, empresa_id]);
         
-        const query = `${this.queryBaseOS} WHERE os.id = $1`;
-        const result = await db.query(query, [insertResult.rows[0].id]);
+        const query = `${this.queryBaseOS} AND os.id = $2`;
+        const result = await db.query(query, [empresa_id, insertResult.rows[0].id]);
         return result.rows[0];
     }
 
-    async atualizarStatus(id: number, status_producao?: string) {
+    async atualizarStatus(id: number, status_producao: string | undefined, empresa_id: number) {
         const query = `
             UPDATE public.ordens_servico
             SET 
@@ -98,17 +99,17 @@ export class OrdemServicoService {
                     ELSE NULL 
                 END,
                 atualizado_em = NOW()
-            WHERE id = $2
+            WHERE id = $2 AND empresa_id = $3
         `;
-        await db.query(query, [status_producao || null, id]);
+        await db.query(query, [status_producao || null, id, empresa_id]);
         
-        const returnQuery = `${this.queryBaseOS} WHERE os.id = $1`;
-        const result = await db.query(returnQuery, [id]);
+        const returnQuery = `${this.queryBaseOS} AND os.id = $2`;
+        const result = await db.query(returnQuery, [empresa_id, id]);
         if (result.rowCount === 0) throw new Error('Ordem de Serviço não encontrada.');
         return result.rows[0];
     }
 
-    async atualizarDados(id: number, dados: IOrdemServicoEdicao) {
+    async atualizarDados(id: number, dados: IOrdemServicoEdicao, empresa_id: number) {
         const query = `
             UPDATE public.ordens_servico
             SET 
@@ -122,51 +123,56 @@ export class OrdemServicoService {
                 data_entregue = $8,
                 observacoes_cliente = $9,
                 atualizado_em = NOW()
-            WHERE id = $10
+            WHERE id = $10 AND empresa_id = $11
         `;
         const values = [
             dados.data_entrega || null, dados.responsaveis_execucao || null, dados.observacoes || null,
             dados.laudo_tecnico || null, Number(dados.custo_extra_materiais) || 0, dados.descricao_materiais_extras || null,
-            dados.data_finalizacao || null, dados.data_entregue || null, dados.observacoes_cliente || null, id
+            dados.data_finalizacao || null, dados.data_entregue || null, dados.observacoes_cliente || null, id, empresa_id
         ];
         await db.query(query, values);
 
-        const returnQuery = `${this.queryBaseOS} WHERE os.id = $1`;
-        const result = await db.query(returnQuery, [id]);
+        const returnQuery = `${this.queryBaseOS} AND os.id = $2`;
+        const result = await db.query(returnQuery, [empresa_id, id]);
         if (result.rowCount === 0) throw new Error('Ordem de Serviço não encontrada.');
         return result.rows[0];
     }
 
-    async excluir(id: number): Promise<boolean> {
-        const query = 'DELETE FROM public.ordens_servico WHERE id = $1';
-        const result = await db.query(query, [id]);
+    async excluir(id: number, empresa_id: number): Promise<boolean> {
+        const query = 'DELETE FROM public.ordens_servico WHERE id = $1 AND empresa_id = $2';
+        const result = await db.query(query, [id, empresa_id]);
         if (result.rowCount === 0) throw new Error('Ordem de Serviço não encontrada.');
         return true;
     }
 
-    async registrarPagamento(os_id: number, valor: number, forma_pagamento: string, data_pagamento: string) {
+    async registrarPagamento(os_id: number, valor: number, forma_pagamento: string, data_pagamento: string, empresa_id: number) {
+        // Verifica se a OS pertence à empresa antes de adicionar pagamento
+        const checkOsQuery = 'SELECT id FROM public.ordens_servico WHERE id = $1 AND empresa_id = $2';
+        const osResult = await db.query(checkOsQuery, [os_id, empresa_id]);
+        if (osResult.rowCount === 0) throw new Error('Ordem de Serviço não encontrada para esta empresa.');
+
         const query = `
-            INSERT INTO public.pagamentos_os (os_id, valor, forma_pagamento, data_pagamento)
-            VALUES ($1, $2, $3, $4) RETURNING *;
+            INSERT INTO public.pagamentos_os (os_id, valor, forma_pagamento, data_pagamento, empresa_id)
+            VALUES ($1, $2, $3, $4, $5) RETURNING *;
         `;
-        await db.query(query, [os_id, valor, forma_pagamento, data_pagamento]);
+        await db.query(query, [os_id, valor, forma_pagamento, data_pagamento, empresa_id]);
         
-        const returnQuery = `${this.queryBaseOS} WHERE os.id = $1`;
-        const result = await db.query(returnQuery, [os_id]);
+        const returnQuery = `${this.queryBaseOS} AND os.id = $2`;
+        const result = await db.query(returnQuery, [empresa_id, os_id]);
         return result.rows[0];
     }
 
-    async excluirPagamento(pagamento_id: number) {
-        const getOsIdQuery = 'SELECT os_id FROM public.pagamentos_os WHERE id = $1';
-        const osIdResult = await db.query(getOsIdQuery, [pagamento_id]);
+    async excluirPagamento(pagamento_id: number, empresa_id: number) {
+        const getOsIdQuery = 'SELECT os_id FROM public.pagamentos_os WHERE id = $1 AND empresa_id = $2';
+        const osIdResult = await db.query(getOsIdQuery, [pagamento_id, empresa_id]);
         if (osIdResult.rowCount === 0) throw new Error('Pagamento não encontrado.');
         const os_id = osIdResult.rows[0].os_id;
 
-        const deleteQuery = 'DELETE FROM public.pagamentos_os WHERE id = $1';
-        await db.query(deleteQuery, [pagamento_id]);
+        const deleteQuery = 'DELETE FROM public.pagamentos_os WHERE id = $1 AND empresa_id = $2';
+        await db.query(deleteQuery, [pagamento_id, empresa_id]);
 
-        const returnQuery = `${this.queryBaseOS} WHERE os.id = $1`;
-        const result = await db.query(returnQuery, [os_id]);
+        const returnQuery = `${this.queryBaseOS} AND os.id = $2`;
+        const result = await db.query(returnQuery, [empresa_id, os_id]);
         return result.rows[0];
     }
 }

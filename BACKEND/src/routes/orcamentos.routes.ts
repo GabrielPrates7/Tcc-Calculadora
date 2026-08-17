@@ -1,13 +1,18 @@
 import { Router, Request, Response } from 'express';
 import { OrcamentoService, IOrcamentoPayload } from '../services/orcamento.service';
+import { verificarToken } from '../middlewares/auth.middleware';
 
 const router = Router();
 const orcamentoService = new OrcamentoService();
 
+// Protege todas as rotas de orçamentos
+router.use(verificarToken);
+
 // --- 0. BUSCAR HISTÓRICO PARA O DROPDOWN ---
 router.get('/historico-obra', async (req: Request, res: Response) => {
     try {
-        const cenarios = await orcamentoService.listarCenariosMaoObra();
+        const empresaId = req.usuario!.empresa_id;
+        const cenarios = await orcamentoService.listarCenariosMaoObra(empresaId);
         res.json(cenarios);
     } catch (err: unknown) {
         console.error("Erro ao buscar cenários de mão de obra:", err);
@@ -18,7 +23,8 @@ router.get('/historico-obra', async (req: Request, res: Response) => {
 // --- 0.5 NOVA ROTA: BUSCAR TAXA DE CUSTO FIXO ---
 router.get('/taxa-fixa', async (req: Request, res: Response) => {
     try {
-        const taxa = await orcamentoService.obterTaxaFixoAtual();
+        const empresaId = req.usuario!.empresa_id;
+        const taxa = await orcamentoService.obterTaxaFixoAtual(empresaId);
         res.json({ taxaCustoFixo: taxa });
     } catch (err: unknown) {
         console.error("Erro ao buscar taxa fixa:", err);
@@ -29,7 +35,8 @@ router.get('/taxa-fixa', async (req: Request, res: Response) => {
 // --- 1. LISTAR TODOS ---
 router.get('/', async (req: Request, res: Response) => {
     try {
-        const orcamentos = await orcamentoService.listarOrcamentos();
+        const empresaId = req.usuario!.empresa_id;
+        const orcamentos = await orcamentoService.listarOrcamentos(empresaId);
         res.json(orcamentos);
     } catch (err: unknown) {
         console.error("Erro ao buscar orçamentos:", err);
@@ -40,6 +47,7 @@ router.get('/', async (req: Request, res: Response) => {
 // --- 2. SALVAR NOVO ---
 router.post('/', async (req: Request, res: Response) => {
     try {
+        const empresaId = req.usuario!.empresa_id;
         const dados: IOrcamentoPayload = {
             cliente: req.body.cliente,
             nomeProduto: req.body.nome_produto,
@@ -51,7 +59,7 @@ router.post('/', async (req: Request, res: Response) => {
             idCenarioMo: req.body.id_cenario_mo ? Number(req.body.id_cenario_mo) : null
         };
 
-        const novoOrcamento = await orcamentoService.criarOrcamento(dados);
+        const novoOrcamento = await orcamentoService.criarOrcamento(dados, empresaId);
         res.status(201).json(novoOrcamento);
     } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido ao salvar';
@@ -63,6 +71,7 @@ router.post('/', async (req: Request, res: Response) => {
 // --- 3. ATUALIZAR EXISTENTE ---
 router.put('/:id', async (req: Request, res: Response) => {
     try {
+        const empresaId = req.usuario!.empresa_id;
         const dados: IOrcamentoPayload = {
             cliente: req.body.cliente,
             nomeProduto: req.body.nome_produto,
@@ -74,7 +83,7 @@ router.put('/:id', async (req: Request, res: Response) => {
             idCenarioMo: req.body.id_cenario_mo ? Number(req.body.id_cenario_mo) : null
         };
 
-        const atualizado = await orcamentoService.atualizarOrcamento(Number(req.params.id), dados);
+        const atualizado = await orcamentoService.atualizarOrcamento(Number(req.params.id), dados, empresaId);
         res.json({ message: 'Orçamento atualizado com sucesso!', data: atualizado });
     } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido ao atualizar';
@@ -83,16 +92,16 @@ router.put('/:id', async (req: Request, res: Response) => {
     }
 });
 
-// --- 4. EXCLUIR (Com bloqueio 409 caso haja O.S. vinculada via ON DELETE RESTRICT) ---
+// --- 4. EXCLUIR ---
 router.delete('/:id', async (req: Request, res: Response) => {
     try {
-        await orcamentoService.deletarOrcamento(Number(req.params.id));
+        const empresaId = req.usuario!.empresa_id;
+        await orcamentoService.deletarOrcamento(Number(req.params.id), empresaId);
         res.json({ message: 'Orçamento excluído' });
     } catch (err: unknown) {
         const error = err as { code?: string; message?: string };
         console.error("Erro ao excluir:", error);
 
-        // Identifica violação de chave estrangeira do PostgreSQL (código 23503)
         if (error.code === '23503' || (error.message && error.message.includes('fk_os_orcamento'))) {
             return res.status(409).json({ 
                 error: 'Exclusão bloqueada: Este orçamento possui uma Ordem de Serviço vinculada a ele.' 

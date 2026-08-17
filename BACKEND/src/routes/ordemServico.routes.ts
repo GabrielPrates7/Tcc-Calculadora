@@ -1,15 +1,20 @@
 import { Router, Request, Response } from 'express';
 import { OrdemServicoService, IOrdemServicoEdicao } from '../services/ordemServico.service';
+import { verificarToken } from '../middlewares/auth.middleware';
 
 const router = Router();
 const osService = new OrdemServicoService();
 
 const STATUS_PRODUCAO_VALIDOS = ['fila', 'producao', 'pausado', 'pronto', 'entregue'];
 
-// GET: Buscar todas as O.S. (com cálculo de atraso processado no SQL)
+// Protege todas as rotas de ordem de serviço
+router.use(verificarToken);
+
+// GET: Buscar todas as O.S.
 router.get('/', async (req: Request, res: Response) => {
     try {
-        const ordens = await osService.listarTodas();
+        const empresaId = req.usuario!.empresa_id;
+        const ordens = await osService.listarTodas(empresaId);
         res.status(200).json(ordens);
     } catch (error: unknown) {
         const err = error instanceof Error ? error : new Error('Erro ao listar Ordens de Serviço');
@@ -22,13 +27,14 @@ router.get('/', async (req: Request, res: Response) => {
 router.post('/', async (req: Request, res: Response) => {
     try {
         const { orcamento_id, data_entrega } = req.body;
+        const empresaId = req.usuario!.empresa_id;
         
         const idNumerico = Number(orcamento_id);
         if (!orcamento_id || isNaN(idNumerico) || idNumerico <= 0) {
             return res.status(400).json({ error: 'ID do orçamento é obrigatório e deve ser numérico.' });
         }
 
-        const novaOS = await osService.criarDeOrcamento(idNumerico, data_entrega);
+        const novaOS = await osService.criarDeOrcamento(idNumerico, data_entrega, empresaId);
         res.status(201).json(novaOS);
     } catch (error: unknown) {
         const err = error instanceof Error ? error : new Error('Erro ao criar Ordem de Serviço');
@@ -48,6 +54,8 @@ router.post('/', async (req: Request, res: Response) => {
 router.patch('/:id/status', async (req: Request, res: Response) => {
     try {
         const id = Number(req.params.id);
+        const empresaId = req.usuario!.empresa_id;
+
         if (isNaN(id) || id <= 0) {
             return res.status(400).json({ error: 'ID da Ordem de Serviço inválido.' });
         }
@@ -58,8 +66,7 @@ router.patch('/:id/status', async (req: Request, res: Response) => {
             return res.status(400).json({ error: `Status de produção inválido. Permitidos: ${STATUS_PRODUCAO_VALIDOS.join(', ')}` });
         }
 
-        // CORREÇÃO: Removido o envio do status_financeiro, pois a API agora calcula via banco de dados
-        const osAtualizada = await osService.atualizarStatus(id, status_producao);
+        const osAtualizada = await osService.atualizarStatus(id, status_producao, empresaId);
         res.status(200).json(osAtualizada);
     } catch (error: unknown) {
         const err = error instanceof Error ? error : new Error('Erro ao atualizar status');
@@ -70,12 +77,11 @@ router.patch('/:id/status', async (req: Request, res: Response) => {
 });
 
 // PUT: Atualizar dados completos da O.S. (com sanitização explícita do payload)
-// (Mantenha as importações e outras rotas iguais...)
-
-// PUT: Atualizar dados completos da O.S. (com sanitização explícita do payload)
 router.put('/:id', async (req: Request, res: Response) => {
     try {
         const id = Number(req.params.id);
+        const empresaId = req.usuario!.empresa_id;
+
         if (isNaN(id) || id <= 0) {
             return res.status(400).json({ error: 'ID da Ordem de Serviço inválido.' });
         }
@@ -92,7 +98,7 @@ router.put('/:id', async (req: Request, res: Response) => {
             observacoes_cliente: req.body.observacoes_cliente
         };
 
-        const osAtualizada = await osService.atualizarDados(id, dadosSanitizados);
+        const osAtualizada = await osService.atualizarDados(id, dadosSanitizados, empresaId);
         res.status(200).json(osAtualizada);
     } catch (error: unknown) {
         const err = error instanceof Error ? error : new Error('Erro ao atualizar dados da O.S.');
@@ -102,17 +108,17 @@ router.put('/:id', async (req: Request, res: Response) => {
     }
 });
 
-// (Mantenha as outras rotas iguais...)
-
 // DELETE: Excluir uma Ordem de Serviço
 router.delete('/:id', async (req: Request, res: Response) => {
     try {
         const id = Number(req.params.id);
+        const empresaId = req.usuario!.empresa_id;
+
         if (isNaN(id) || id <= 0) {
             return res.status(400).json({ error: 'ID inválido para exclusão.' });
         }
 
-        await osService.excluir(id);
+        await osService.excluir(id, empresaId);
         res.status(204).send();
     } catch (error: unknown) {
         const err = error instanceof Error ? error : new Error('Erro ao excluir O.S.');
@@ -126,13 +132,14 @@ router.delete('/:id', async (req: Request, res: Response) => {
 router.post('/:id/pagamentos', async (req: Request, res: Response) => {
     try {
         const os_id = Number(req.params.id);
+        const empresaId = req.usuario!.empresa_id;
         const { valor, forma_pagamento, data_pagamento } = req.body;
 
         if (isNaN(os_id) || os_id <= 0) return res.status(400).json({ error: 'ID da O.S. inválido.' });
         if (!valor || isNaN(Number(valor)) || Number(valor) <= 0) return res.status(400).json({ error: 'Valor inválido.' });
         if (!forma_pagamento) return res.status(400).json({ error: 'Forma de pagamento obrigatória.' });
 
-        const osAtualizada = await osService.registrarPagamento(os_id, Number(valor), forma_pagamento, data_pagamento);
+        const osAtualizada = await osService.registrarPagamento(os_id, Number(valor), forma_pagamento, data_pagamento, empresaId);
         res.status(201).json(osAtualizada);
     } catch (error: unknown) {
         const err = error instanceof Error ? error : new Error('Erro ao registrar pagamento');
@@ -145,9 +152,11 @@ router.post('/:id/pagamentos', async (req: Request, res: Response) => {
 router.delete('/pagamentos/:pagamentoId', async (req: Request, res: Response) => {
     try {
         const pagamentoId = Number(req.params.pagamentoId);
+        const empresaId = req.usuario!.empresa_id;
+
         if (isNaN(pagamentoId) || pagamentoId <= 0) return res.status(400).json({ error: 'ID de pagamento inválido.' });
 
-        const osAtualizada = await osService.excluirPagamento(pagamentoId);
+        const osAtualizada = await osService.excluirPagamento(pagamentoId, empresaId);
         res.status(200).json(osAtualizada);
     } catch (error: unknown) {
         const err = error instanceof Error ? error : new Error('Erro ao excluir pagamento');

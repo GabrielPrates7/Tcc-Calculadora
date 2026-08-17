@@ -1,32 +1,36 @@
 import express from 'express';
 import cors from 'cors';
 
-// Importação das rotas existentes
+// Importação das rotas existentes e de autenticação
+import authRoutes from './routes/auth.routes'; // <-- NOVA ROTA DE LOGIN/REGISTRO
 import { funcaoRoutes } from './routes/funcao.routes';
 import { funcionarioRoutes } from './routes/funcionario.routes';
 import { financeiroRoutes } from './routes/financeiro.routes';
 import obraRoutes from './routes/obra.routes';
 import orcamentosRoutes from './routes/orcamentos.routes'; 
 import dashboardRoutes from './routes/dashboard.routes';
-
-// 1. CORREÇÃO: Importação das rotas de Ordem de Serviço
 import ordemServicoRoutes from './routes/ordemServico.routes';
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
 
-// Registro dos middlewares de rotas
+// ==========================================
+// ROTAS PÚBLICAS (Não exigem Token)
+// ==========================================
+app.use('/api/auth', authRoutes);
+
+// ==========================================
+// ROTAS PROTEGIDAS (Exigem Token via Middleware interno)
+// ==========================================
 app.use('/api/funcoes', funcaoRoutes);
 app.use('/api/funcionarios', funcionarioRoutes);
 app.use('/api/financeiro', financeiroRoutes);
 app.use('/api/obras', obraRoutes);
 app.use('/api/orcamentos', orcamentosRoutes);
 app.use('/api/dashboard', dashboardRoutes);
-
-// 2. CORREÇÃO: Expondo a rota para responder em /api/ordens-servico
 app.use('/api/ordens-servico', ordemServicoRoutes);
 
 app.listen(PORT, () => {
