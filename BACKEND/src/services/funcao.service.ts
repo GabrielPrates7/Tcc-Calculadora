@@ -12,13 +12,29 @@ export class FuncaoService {
         return resultado.rows;
     }
 
-    async criar(nome: string, baseHorasMensais: number = 176.00, empresa_id: number) {
+    // Alterado: Removemos o valor fixo (176) do parâmetro
+    async criar(nome: string, baseHorasMensais: number | undefined, empresa_id: number) {
+        let horasMensais = baseHorasMensais;
+
+        // Se a rota não receber as horas, busca o padrão global atualizado da empresa
+        if (!horasMensais) {
+            const configQuery = `SELECT horas_trabalhadas_dia FROM configuracao_producao WHERE empresa_id = $1`;
+            const configResult = await pool.query(configQuery, [empresa_id]);
+            
+            if (configResult.rowCount && configResult.rowCount > 0) {
+                // A coluna no seu DB chama 'horas_trabalhadas_dia' mas armazena a base mensal (ex: 176)
+                horasMensais = Number(configResult.rows[0].horas_trabalhadas_dia);
+            } else {
+                horasMensais = 176.00; // Fallback de segurança caso a tabela de configuração esteja vazia
+            }
+        }
+
         const query = `
             INSERT INTO funcoes (nome, base_horas_mensais, empresa_id) 
             VALUES ($1, $2, $3) RETURNING *
         `;
         try {
-            const resultado = await pool.query(query, [nome, baseHorasMensais, empresa_id]);
+            const resultado = await pool.query(query, [nome, horasMensais, empresa_id]);
             return resultado.rows[0];
         } catch (erro: any) {
             if (erro.code === '23505') {

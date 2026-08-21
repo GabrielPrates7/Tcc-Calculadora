@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../../services/api';
 import { toast } from 'react-toastify';
+import { Eye, EyeOff } from 'lucide-react';
 
 export function Registro() {
     const [nomeEmpresa, setNomeEmpresa] = useState('');
@@ -9,6 +10,7 @@ export function Registro() {
     const [nomeUsuario, setNomeUsuario] = useState('');
     const [email, setEmail] = useState('');
     const [senha, setSenha] = useState('');
+    const [mostrarSenha, setMostrarSenha] = useState(false);
     const [carregando, setCarregando] = useState(false);
 
     const navigate = useNavigate();
@@ -95,15 +97,22 @@ export function Registro() {
                     />
                 </div>
 
-                <div style={{ marginBottom: '1.25rem' }}>
+                <div style={{ marginBottom: '1.25rem', position: 'relative' }}>
                     <label style={{ display: 'block', marginBottom: '0.25rem', fontSize: '0.8125rem' }}>Senha</label>
                     <input 
-                        type="password" 
+                        type={mostrarSenha ? "text" : "password"} 
                         value={senha} 
                         onChange={e => setSenha(e.target.value)}
-                        style={{ width: '100%', padding: '0.5rem', borderRadius: '4px', border: '1px solid #334155', background: '#0f172a', color: '#fff', boxSizing: 'border-box' }}
+                        style={{ width: '100%', padding: '0.5rem', paddingRight: '40px', borderRadius: '4px', border: '1px solid #334155', background: '#0f172a', color: '#fff', boxSizing: 'border-box' }}
                         required 
                     />
+                    <button 
+                        type="button" 
+                        onClick={() => setMostrarSenha(!mostrarSenha)} 
+                        style={{ position: 'absolute', right: '10px', top: '26px', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                    >
+                        {mostrarSenha ? <EyeOff size={18} /> : <Eye size={18} />}
+                    </button>
                 </div>
 
                 <button 

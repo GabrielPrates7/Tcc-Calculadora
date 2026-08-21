@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Users, HardHat, DollarSign, Calculator,
-  ChevronLeft, ChevronRight, ClipboardList, Settings, LogOut,
+  ChevronLeft, ChevronRight, ClipboardList, Settings, LogOut, 
+  ShieldCheck,
   type LucideIcon
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext'; 
@@ -32,15 +33,20 @@ const MENU_SISTEMA: MenuItem[] = [
   { id: 'configuracoes', label: 'Configurações', icon: Settings, path: '/configuracoes' },
 ];
 
+const MENU_ADMIN: MenuItem[] = [
+  { id: 'admin', label: 'Painel Admin', icon: ShieldCheck, path: '/admin' },
+];
+
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const { usuario, logout } = useAuth(); 
 
   const toggleSidebar = () => setIsCollapsed((prev) => !prev);
 
-  // Extração flexível para lidar com chaves diferentes enviadas pelo Node.js
   const nomeExibicao = usuario?.nome || usuario?.nome_usuario || 'Usuário';
   const inicialAvatar = nomeExibicao.charAt(0).toUpperCase();
+
+  const isSuperAdmin = nomeExibicao === 'Gabriel Prates';
 
   const renderLinks = (items: MenuItem[]) => (
     items.map((item) => (
@@ -92,6 +98,13 @@ export function Sidebar() {
             {renderLinks(MENU_SISTEMA)}
           </nav>
           
+          {isSuperAdmin && (
+            <nav className="nav-group" style={{ marginTop: '10px' }}>
+              {!isCollapsed && <span className="nav-group-title" style={{ color: '#f97316' }}>ADMINISTRAÇÃO</span>}
+              {renderLinks(MENU_ADMIN)}
+            </nav>
+          )}
+          
           <div className="user-profile">
             <div className="avatar">
               {inicialAvatar}
@@ -100,7 +113,7 @@ export function Sidebar() {
             {!isCollapsed && (
               <div className="user-info">
                 <span className="user-name">{nomeExibicao}</span>
-                <span className="user-role">Administrador</span>
+                <span className="user-role">{isSuperAdmin ? 'Administrador do Sistema' : 'Usuário'}</span>
               </div>
             )}
             {!isCollapsed && (

@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Edit2, Calculator, User, Package, DollarSign, FileText, Save, XCircle, Percent, Info, AlertCircle } from 'lucide-react';
 import type { IOrcamento, ICenarioMaoObra, IOrcamentoPayload } from '../types';
 import { formatarBRL } from '../../../utils/formatters';
 import { CustoObraOrcamentos } from './CustoObraOrcamentos';
+import { api } from '../../../services/api'; // <-- Injetado para buscar os parâmetros globais
 import './CalculadoraOrcamento.css';
 
 interface Props {
@@ -27,8 +28,25 @@ export function CalculadoraOrcamento({
     const [lucro, setLucro] = useState<number | string>(orcamentoEdicao?.lucro_desejado || 30); 
     const [imposto, setImposto] = useState<number | string>(orcamentoEdicao?.imposto || 5); 
 
-    // ESTADO PARA CONTROLE DO MODAL DE ERRO DE VALIDAÇÃO (SUBSTITUTO DO ALERT NATIVO)
     const [erroValidacao, setErroValidacao] = useState<string | null>(null);
+
+    // EFEITO NOVO: Busca os padrões globais da empresa se for um Novo Orçamento
+    useEffect(() => {
+        if (!orcamentoEdicao) {
+            const carregarTaxasGlobais = async () => {
+                try {
+                    const response = await api.get('/configuracoes');
+                    if (response.data) {
+                        setLucro(response.data.margemLucroPadrao);
+                        setImposto(response.data.impostoPadrao);
+                    }
+                } catch (error) {
+                    console.error("Erro ao carregar padrões de orçamento da empresa:", error);
+                }
+            };
+            carregarTaxasGlobais();
+        }
+    }, [orcamentoEdicao]);
 
     const [idCenarioSelecionado, setIdCenarioSelecionado] = useState<number | null>(() => {
         if (orcamentoEdicao?.id_cenario_mo !== undefined) return orcamentoEdicao.id_cenario_mo ?? null;

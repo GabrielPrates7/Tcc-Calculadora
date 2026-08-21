@@ -52,7 +52,7 @@ export interface FiltrosPesquisa {
 
 export class FuncionarioService {
 
-    // 1. Agregação Direta via Banco de Dados (Evita memory leak no Node)
+    // 1. Agregação Direta via Banco de Dados
     async obterResumoFinanceiro(empresa_id: number) {
         const query = `
             SELECT 
@@ -72,12 +72,11 @@ export class FuncionarioService {
         };
     }
 
-    // 2. Paginação Server-Side (Substitui listarTodos)
+    // 2. Paginação Server-Side
     async listarPaginado(filtros: FiltrosPesquisa, empresa_id: number) {
-        // Inicializa forçando o vínculo com a empresa
         const whereClauses = [`f.empresa_id = $1`];
         const values: any[] = [empresa_id];
-        let paramCount = 2; // Começa em 2 pois o $1 já é a empresa
+        let paramCount = 2;
 
         if (filtros.busca) {
             whereClauses.push(`(f.nome ILIKE $${paramCount} OR fun.nome ILIKE $${paramCount})`);
@@ -103,7 +102,6 @@ export class FuncionarioService {
 
         const whereSQL = `WHERE ` + whereClauses.join(' AND ');
 
-        // Proteção contra SQL Injection dinâmico no ORDER BY
         const colunasPermitidas: Record<string, string> = {
             'nome': 'f.nome',
             'salario': 'f.custo_total_mensal',
@@ -115,7 +113,6 @@ export class FuncionarioService {
         const limite = filtros.limite || 8;
         const offset = ((filtros.pagina || 1) - 1) * limite;
 
-        // Query 1: Contagem Total para Paginação
         const countQuery = `
             SELECT COUNT(*) 
             FROM funcionarios f 
@@ -125,10 +122,10 @@ export class FuncionarioService {
         const totalResult = await pool.query(countQuery, values);
         const totalRegistros = parseInt(totalResult.rows[0].count, 10);
 
-        // Query 2: Dados Fatiados
+        // Adicionado 'f.custo_hora' no select para disponibilidade no frontend caso necessário no futuro
         const dataQuery = `
             SELECT f.id, f.nome, fun.nome AS funcao, f.funcao_id, f.setor, 
-                   f.salario_base, f.epi, f.custo_total_mensal, f.ativo, f.data_admissao,
+                   f.salario_base, f.epi, f.custo_total_mensal, f.custo_hora, f.ativo, f.data_admissao,
                    f.decimo_terceiro, f.um_terco_ferias, f.ferias, f.inss, f.multa_fgts
             FROM funcionarios f
             LEFT JOIN funcoes fun ON f.funcao_id = fun.id
@@ -146,20 +143,26 @@ export class FuncionarioService {
         };
     }
 
-    // 3. Single Source of Truth na inserção (Tabela agora guarda as provisões)
+    // 3. Single Source of Truth na inserção
     async criarFuncionario(dados: { nome: string; funcao_id: number; setor: string; salarioBase: number; epi: number }, empresa_id: number) {
         const calc = calcularEncargos(dados.salarioBase, dados.epi);
+        
+        // INTERCEPTAÇÃO GLOBAL: Busca a base de horas da empresa para derivar o Custo Hora Real
+        const configRes = await pool.query('SELECT horas_trabalhadas_dia FROM configuracao_producao WHERE empresa_id = $1', [empresa_id]);
+        const baseHoras = configRes.rows[0]?.horas_trabalhadas_dia || 176;
+        const custoHoraReal = Number((calc.custoTotal / baseHoras).toFixed(2));
+
         const query = `
             INSERT INTO funcionarios (
                 nome, funcao_id, setor, salario_base, epi, 
-                decimo_terceiro, um_terco_ferias, ferias, inss, multa_fgts, custo_total_mensal, 
+                decimo_terceiro, um_terco_ferias, ferias, inss, multa_fgts, custo_total_mensal, custo_hora,
                 ativo, data_admissao, empresa_id
             ) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), $13) RETURNING *
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), $14) RETURNING *
         `;
         const values = [
             dados.nome, dados.funcao_id, dados.setor, calc.salarioBase, calc.epi,
-            calc.decimoTerceiro, calc.umTercoFerias, calc.ferias, calc.inss, calc.multaFgts, calc.custoTotal, 
+            calc.decimoTerceiro, calc.umTercoFerias, calc.ferias, calc.inss, calc.multaFgts, calc.custoTotal, custoHoraReal, 
             true, empresa_id
         ];
         const resultado = await pool.query(query, values);
@@ -171,7 +174,6 @@ export class FuncionarioService {
         const values: any[] = [];
         let index = 1;
 
-        // Montagem dinâmica para não sobrescrever com null os dados não enviados
         if (dados.nome !== undefined) { updateFills += `nome = $${index++}, `; values.push(dados.nome); }
         if (dados.funcao_id !== undefined) { updateFills += `funcao_id = $${index++}, `; values.push(dados.funcao_id); }
         if (dados.setor !== undefined) { updateFills += `setor = $${index++}, `; values.push(dados.setor); }
@@ -181,17 +183,23 @@ export class FuncionarioService {
 
         if (dados.salarioBase !== undefined && dados.epi !== undefined) {
             const calc = calcularEncargos(dados.salarioBase, dados.epi);
+            
+            // REPROCESSAMENTO DO CUSTO HORA GLOBAL EM CASO DE AUMENTO DE SALÁRIO
+            const configRes = await pool.query('SELECT horas_trabalhadas_dia FROM configuracao_producao WHERE empresa_id = $1', [empresa_id]);
+            const baseHoras = configRes.rows[0]?.horas_trabalhadas_dia || 176;
+            const custoHoraReal = Number((calc.custoTotal / baseHoras).toFixed(2));
+
             updateFills += `
                 salario_base = $${index++}, epi = $${index++}, decimo_terceiro = $${index++}, 
                 um_terco_ferias = $${index++}, ferias = $${index++}, inss = $${index++}, 
-                multa_fgts = $${index++}, custo_total_mensal = $${index++}, 
+                multa_fgts = $${index++}, custo_total_mensal = $${index++}, custo_hora = $${index++}, 
             `;
-            values.push(calc.salarioBase, calc.epi, calc.decimoTerceiro, calc.umTercoFerias, calc.ferias, calc.inss, calc.multaFgts, calc.custoTotal);
+            values.push(calc.salarioBase, calc.epi, calc.decimoTerceiro, calc.umTercoFerias, calc.ferias, calc.inss, calc.multaFgts, calc.custoTotal, custoHoraReal);
         }
 
-        updateFills = updateFills.replace(/,\s*$/, ''); // Limpa a última vírgula
+        updateFills = updateFills.replace(/,\s*$/, ''); 
         
-        values.push(id, empresa_id); // Injeta o ID do funcionário e da empresa no final do array
+        values.push(id, empresa_id); 
 
         const query = `UPDATE funcionarios SET ${updateFills} WHERE id = $${index} AND empresa_id = $${index + 1}`;
         await pool.query(query, values);

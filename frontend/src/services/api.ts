@@ -1,18 +1,37 @@
+// ARQUIVO: src/services/api.ts
+
 import axios from 'axios';
 
 export const api = axios.create({
-    baseURL: 'http://localhost:3000/api', // Porta padrão definida no seu index.ts do backend
+    baseURL: 'http://localhost:3000/api',
 });
 
-// Interceptador de Requisição: Injeta o token antes de enviar ao Node.js
+// Interceptador de Requisição: Antes de enviar qualquer requisição, anexa o Token JWT
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem('@Denarius:token');
-    
-    if (token && config.headers) {
+
+    if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
-    
+
     return config;
 }, (error) => {
     return Promise.reject(error);
 });
+
+// Interceptador de Resposta (Opcional, mas recomendado para deslogar caso o token expire)
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            // Se o servidor avisar que o token é inválido ou expirou:
+            localStorage.removeItem('@Denarius:token');
+            localStorage.removeItem('@Denarius:usuario');
+            // Redireciona para o login (caso use React Router e janela inteira)
+            if (window.location.pathname !== '/login') {
+                window.location.href = '/login';
+            }
+        }
+        return Promise.reject(error);
+    }
+);

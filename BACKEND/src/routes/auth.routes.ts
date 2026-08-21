@@ -11,33 +11,46 @@ authRoutes.post('/registro', async (req: Request, res: Response): Promise<void> 
     const client = await db.connect();
 
     try {
+        // 1. Verificações de Duplicidade (Bloqueio prévio)
+        if (cnpj) {
+            const cnpjExistente = await client.query('SELECT id FROM empresas WHERE cnpj = $1', [cnpj]);
+            if (cnpjExistente.rowCount && cnpjExistente.rowCount > 0) {
+                res.status(409).json({ error: 'Este CNPJ já está cadastrado no sistema.' });
+                return;
+            }
+        }
+
+        const emailExistente = await client.query('SELECT id FROM usuarios WHERE email = $1', [email]);
+        if (emailExistente.rowCount && emailExistente.rowCount > 0) {
+            res.status(409).json({ error: 'Este E-mail já está em uso.' });
+            return;
+        }
+
+        const usuarioExistente = await client.query('SELECT id FROM usuarios WHERE nome = $1', [nome_usuario]);
+        if (usuarioExistente.rowCount && usuarioExistente.rowCount > 0) {
+            res.status(409).json({ error: 'Este Nome de Usuário já está em uso.' });
+            return;
+        }
+
+        // 2. Início da Inserção Segura
         await client.query('BEGIN');
         
-        // 1. Cria a empresa
         const empresaQuery = `INSERT INTO empresas (nome_fantasia, cnpj) VALUES ($1, $2) RETURNING id`;
         const empresaResult = await client.query(empresaQuery, [nome_empresa, cnpj || null]);
         const novaEmpresaId = empresaResult.rows[0].id;
 
-        // 2. Cria o usuário com ativo = false
         const hashSenha = await bcrypt.hash(senha, 10);
         const usuarioQuery = `
             INSERT INTO usuarios (empresa_id, nome, email, senha_hash, ativo) 
             VALUES ($1, $2, $3, $4, false) RETURNING id`;
         
-        // O nome_usuario recebido no body é inserido na coluna 'nome'
         await client.query(usuarioQuery, [novaEmpresaId, nome_usuario, email, hashSenha]);
 
         await client.query('COMMIT');
         res.status(201).json({ message: 'Cadastro realizado. Aguarde a aprovação do administrador.' });
     } catch (error: any) {
         await client.query('ROLLBACK');
-        
-        // Tratamento para violação da constraint UNIQUE (nome de usuário já existente)
-        if (error.code === '23505') {
-            res.status(409).json({ error: 'Este nome de usuário ou e-mail já está em uso.' });
-            return;
-        }
-        
+        console.error(error);
         res.status(500).json({ error: 'Erro ao realizar cadastro.' });
     } finally {
         client.release();
@@ -45,12 +58,26 @@ authRoutes.post('/registro', async (req: Request, res: Response): Promise<void> 
 });
 
 authRoutes.post('/login', async (req: Request, res: Response): Promise<void> => {
-    // 1. Extração da nova credencial mapeada no frontend
-    const { nome_usuario, senha } = req.body;
+    // 1. Modificado para aceitar 'credencial' (pode ser o nome de usuário ou o email)
+    const { credencial, senha } = req.body;
+
+    if (!credencial || !senha) {
+        res.status(400).json({ error: 'Credencial e senha são obrigatórias.' });
+        return;
+    }
 
     try {
-        // 2. Busca no banco filtrando pela coluna 'nome'
-        const result = await db.query('SELECT * FROM usuarios WHERE nome = $1', [nome_usuario]);
+        // 2. Busca por E-mail OU Nome de Usuário e faz o JOIN para trazer os dados da Empresa
+        const query = `
+            SELECT 
+                u.*, 
+                e.nome_fantasia AS nome_empresa, 
+                e.cnpj 
+            FROM usuarios u
+            INNER JOIN empresas e ON u.empresa_id = e.id
+            WHERE u.nome = $1 OR u.email = $1
+        `;
+        const result = await db.query(query, [credencial]);
         const usuario = result.rows[0];
 
         if (!usuario) {
@@ -75,8 +102,18 @@ authRoutes.post('/login', async (req: Request, res: Response): Promise<void> => 
             { expiresIn: '8h' }
         );
 
-        res.json({ token, usuario: { nome: usuario.nome, email: usuario.email } });
+        // 3. O payload devolvido agora reflete a necessidade real do frontend
+        res.json({ 
+            token, 
+            usuario: { 
+                nome_usuario: usuario.nome, 
+                email: usuario.email,
+                nome_empresa: usuario.nome_empresa,
+                cnpj: usuario.cnpj
+            } 
+        });
     } catch (error) {
+        console.error('Erro no login:', error);
         res.status(500).json({ error: 'Erro interno no servidor.' });
     }
 });

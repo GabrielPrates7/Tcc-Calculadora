@@ -6,7 +6,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { PrivateRoute } from './components/PrivateRoute';
 import { Sidebar } from './components/Sidebar';
 
-// Telas de Autenticação (Agora no padrão modular)
+// Telas de Autenticação
 import { Login } from './modules/auth/Login';
 import { Registro } from './modules/auth/Registro';
 
@@ -18,6 +18,9 @@ import { CustoObra } from './modules/custo-obra/CustoObra';
 import { OrdemServicoKanban } from './modules/ordemServico/ordemServico';
 import { Dashboard } from './modules/dashboard/Dashboard'; 
 import { Configuracoes } from './modules/configuracoes/Configuracoes';
+
+// Tela de Super Administrador
+import { PainelAdmin } from './modules/admin/PainelAdmin'; // <-- IMPORTAÇÃO AQUI
 
 const PrivateLayout = () => {
   return (
@@ -55,6 +58,9 @@ function App() {
               <Route path="/custo-obra" element={<CustoObra />} />
               <Route path="/ordens-servico" element={<OrdemServicoKanban />} />
               <Route path="/configuracoes" element={<Configuracoes />} />
+              
+              {/* ROTA DO PAINEL ADMIN */}
+              <Route path="/admin" element={<PainelAdmin />} /> 
             </Route>
           </Route>
 

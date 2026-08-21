@@ -5,7 +5,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
 
 export function Login() {
-    const [nomeUsuario, setNomeUsuario] = useState('');
+    // Estado alterado para refletir a flexibilidade de login (e-mail ou usuário)
+    const [credencial, setCredencial] = useState('');
     const [senha, setSenha] = useState('');
     const [carregando, setCarregando] = useState(false);
     
@@ -14,14 +15,15 @@ export function Login() {
 
     async function handleLogin(e: React.FormEvent) {
         e.preventDefault();
-        if (!nomeUsuario || !senha) {
+        if (!credencial || !senha) {
             toast.warn('Preencha todos os campos.');
             return;
         }
 
         try {
             setCarregando(true);
-            const response = await api.post('/auth/login', { nome_usuario: nomeUsuario, senha });
+            // O payload agora envia 'credencial' para dar match com o req.body do backend
+            const response = await api.post('/auth/login', { credencial, senha });
             const { token, usuario } = response.data;
 
             login(token, usuario);
@@ -47,11 +49,11 @@ export function Login() {
                 <h2 style={{ marginBottom: '1.5rem', textAlign: 'center', fontSize: '1.25rem' }}>Entrar no Sistema</h2>
                 
                 <div style={{ marginBottom: '1rem' }}>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>Nome de Usuário</label>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem' }}>E-mail ou Usuário</label>
                     <input 
                         type="text" 
-                        value={nomeUsuario} 
-                        onChange={e => setNomeUsuario(e.target.value)}
+                        value={credencial} 
+                        onChange={e => setCredencial(e.target.value)}
                         style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid #334155', background: '#0f172a', color: '#fff', boxSizing: 'border-box' }}
                         required 
                     />
