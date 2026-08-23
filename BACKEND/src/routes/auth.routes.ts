@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { pool as db } from '../services/db';
 
 const authRoutes = Router();
-const JWT_SECRET = process.env.JWT_SECRET || 'chave_super_secreta_desenvolvimento';
+const JWT_SECRET = process.env.JWT_SECRET as string;
 
 authRoutes.post('/registro', async (req: Request, res: Response): Promise<void> => {
     const { nome_empresa, cnpj, nome_usuario, email, senha } = req.body;
