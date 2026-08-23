@@ -114,9 +114,14 @@ export function FormularioObra({ onSalvarSucesso, obraEmEdicao, onCancelarEdicao
                     const taxa = taxas.find(t => t.funcao_id === r.funcao_id);
                     const isDia = r.unidade === 'dias';
                     
-                    const horasEstimadas = isDia ? r.tempo * HORAS_PADRAO_DIA : r.tempo;
+                    // Cálculo dinâmico para descobrir as horas diárias baseadas na configuração global (ex: 178 / 20 = 8.9)
+                    const horasPorDia = (taxa && taxa.custo_hora_calculado > 0) 
+                        ? (taxa.custo_dia_calculado / taxa.custo_hora_calculado) 
+                        : 8;
+                    
+                    const horasEstimadas = isDia ? r.tempo * horasPorDia : r.tempo;
                     const custoAplicado = isDia 
-                        ? (taxa ? taxa.custo_dia_calculado / HORAS_PADRAO_DIA : 0) 
+                        ? (taxa ? taxa.custo_dia_calculado / horasPorDia : 0) 
                         : (taxa ? taxa.custo_hora_calculado : 0);
 
                     return {
@@ -124,10 +129,10 @@ export function FormularioObra({ onSalvarSucesso, obraEmEdicao, onCancelarEdicao
                         qtd_profissionais: r.qtd_profissionais,
                         horas_estimadas: horasEstimadas * r.qtd_profissionais, 
                         custo_hora_aplicado: custoAplicado,
-                        unidade_tempo: r.unidade // ✅ Enviando perfeitamente conforme o Contrato
+                        unidade_tempo: r.unidade
                     };
                 })
-            }; // ✅ CÓDIGO LIMPO: Removemos o "as any" daqui.
+            };
 
             if (obraEmEdicao) {
                 await CustoObraService.atualizarOrcamento(obraEmEdicao.id, payload);
