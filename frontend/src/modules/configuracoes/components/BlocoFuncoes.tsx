@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Briefcase, Plus, Trash2, Pencil, X } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Briefcase, Plus, Trash2, Pencil, X, Search, ArrowUpDown } from 'lucide-react';
 import type { Funcao } from '../types';
 
 interface Props {
@@ -19,6 +19,15 @@ export function BlocoFuncoes({ funcoes, novaFuncao, setNovaFuncao, loading, onAd
     const [funcaoEmEdicao, setFuncaoEmEdicao] = useState<Funcao | null>(null);
     const [editNome, setEditNome] = useState('');
     const [salvandoEdicao, setSalvandoEdicao] = useState(false);
+    const [termoBusca, setTermoBusca] = useState('');
+    const [ordemAsc, setOrdemAsc] = useState(true);
+
+    const funcoesFiltradas = useMemo(() => {
+        const filtradas = funcoes.filter(f => f.nome.toLowerCase().includes(termoBusca.toLowerCase()));
+        return [...filtradas].sort((a, b) =>
+            ordemAsc ? a.nome.localeCompare(b.nome) : b.nome.localeCompare(a.nome)
+        );
+    }, [funcoes, termoBusca, ordemAsc]);
 
     const abrirEdicao = (f: Funcao) => {
         setFuncaoEmEdicao(f);
@@ -64,8 +73,28 @@ export function BlocoFuncoes({ funcoes, novaFuncao, setNovaFuncao, loading, onAd
                 </button>
             </div>
 
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                <div style={{ flex: 1, position: 'relative' }}>
+                    <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                    <input
+                        type="text"
+                        value={termoBusca}
+                        onChange={e => setTermoBusca(e.target.value)}
+                        placeholder="Buscar função..."
+                        style={{ width: '100%', padding: '10px 10px 10px 34px', backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '6px', color: '#f8fafc', boxSizing: 'border-box' }}
+                    />
+                </div>
+                <button
+                    onClick={() => setOrdemAsc(prev => !prev)}
+                    title={ordemAsc ? 'Ordenado A-Z — clique para Z-A' : 'Ordenado Z-A — clique para A-Z'}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', border: '1px solid #334155', color: '#94a3b8', padding: '0 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem', whiteSpace: 'nowrap' }}
+                >
+                    <ArrowUpDown size={16} /> {ordemAsc ? 'A-Z' : 'Z-A'}
+                </button>
+            </div>
+
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, height: '220px', overflowY: 'auto', border: '1px solid #334155', borderRadius: '6px', backgroundColor: '#0f172a' }}>
-                {funcoes.map(f => (
+                {funcoesFiltradas.map(f => (
                     <li key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid #334155', gap: '10px' }}>
                         <span style={{ color: '#e2e8f0', fontWeight: '500', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {f.nome}
@@ -90,6 +119,9 @@ export function BlocoFuncoes({ funcoes, novaFuncao, setNovaFuncao, loading, onAd
                     </li>
                 ))}
                 {funcoes.length === 0 && <p style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>Nenhuma função cadastrada.</p>}
+                {funcoes.length > 0 && funcoesFiltradas.length === 0 && (
+                    <p style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>Nenhuma função encontrada para "{termoBusca}".</p>
+                )}
             </ul>
 
             {funcaoEmEdicao && (
