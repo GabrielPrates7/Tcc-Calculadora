@@ -65,34 +65,30 @@ export function BlocoFuncoes({ funcoes, novaFuncao, setNovaFuncao, loading, onAd
             </div>
 
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, height: '220px', overflowY: 'auto', border: '1px solid #334155', borderRadius: '6px', backgroundColor: '#0f172a' }}>
-                {funcoes.map(f => {
-                    const semVinculo = !f.total_funcionarios;
-                    return (
-                        <li key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid #334155', gap: '10px' }}>
-                            <span style={{ color: '#e2e8f0', fontWeight: '500', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                {f.nome}
-                            </span>
+                {funcoes.map(f => (
+                    <li key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid #334155', gap: '10px' }}>
+                        <span style={{ color: '#e2e8f0', fontWeight: '500', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {f.nome}
+                        </span>
 
-                            <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
-                                <button
-                                    onClick={() => semVinculo && abrirEdicao(f)}
-                                    disabled={!semVinculo}
-                                    style={{ background: 'transparent', border: 'none', color: semVinculo ? '#94a3b8' : '#475569', cursor: semVinculo ? 'pointer' : 'not-allowed', padding: '4px' }}
-                                    title={semVinculo ? 'Editar nome' : 'Não é possível editar: função com colaborador vinculado'}
-                                >
-                                    <Pencil size={18} />
-                                </button>
-                                <button
-                                    onClick={() => onDelete(f.id)}
-                                    style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
-                                    title="Excluir"
-                                >
-                                    <Trash2 size={18} />
-                                </button>
-                            </div>
-                        </li>
-                    );
-                })}
+                        <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                            <button
+                                onClick={() => abrirEdicao(f)}
+                                style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }}
+                                title="Editar nome"
+                            >
+                                <Pencil size={18} />
+                            </button>
+                            <button
+                                onClick={() => onDelete(f.id)}
+                                style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
+                                title="Excluir"
+                            >
+                                <Trash2 size={18} />
+                            </button>
+                        </div>
+                    </li>
+                ))}
                 {funcoes.length === 0 && <p style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>Nenhuma função cadastrada.</p>}
             </ul>
 
