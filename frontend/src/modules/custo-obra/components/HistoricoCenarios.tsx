@@ -5,6 +5,8 @@ import { formatarBRL } from '../../../utils/formatters'; // <--- Importamos o fo
 import type { HistoricoItem } from '../types';
 import './HistoricoCenarios.css';
 
+const HORAS_PADRAO_DIA = 8;
+
 interface Props {
     itens: HistoricoItem[];
     custoMensalAtual: number;
@@ -27,7 +29,18 @@ export function HistoricoCenarios({ itens, custoMensalAtual, onExcluir, onRenome
         <div className="historico-container">
             <h3>📜 Histórico de Cenários Salvos</h3>
             <div className="lista-historico">
-                {itens.map((item) => (
+                {itens.map((item) => {
+                    const isDia = item.configuracao_usada.tipo === 'dias';
+                    const qtdProfissionais = item.configuracao_usada.organizacao === 'grupo'
+                        ? item.configuracao_usada.equipes * (item.configuracao_usada.tamanhoGrupo || 1)
+                        : item.configuracao_usada.equipes;
+                    const horasEstimadas = isDia
+                        ? item.configuracao_usada.tempo * HORAS_PADRAO_DIA * qtdProfissionais
+                        : item.configuracao_usada.tempo * qtdProfissionais;
+                    const custoTotalMaoDeObra = item.custo_total_folha ? Number(item.custo_total_folha) : custoMensalAtual;
+                    const custoHoraAplicado = horasEstimadas > 0 ? custoTotalMaoDeObra / horasEstimadas : 0;
+
+                    return (
                     <div key={item.id} className="item-historico">
                         <div className="item-info">
                             <div style={{display:'flex', alignItems:'center', gap: 8}}>
@@ -65,17 +78,19 @@ export function HistoricoCenarios({ itens, custoMensalAtual, onExcluir, onRenome
                                 document={
                                     <RelatorioPDF dados={{
                                         titulo: item.titulo,
-                                        data: new Date(item.data_alteracao).toLocaleDateString(),
-                                        
-                                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                        custoMensal: (item as any).custo_total_folha ? Number((item as any).custo_total_folha) : custoMensalAtual,
-                                        
-                                        tipoTempo: item.configuracao_usada.tipo,
-                                        tempoInput: item.configuracao_usada.tempo,
-                                        qtdUnidades: item.configuracao_usada.equipes,
-                                        tipoOrganizacao: item.configuracao_usada.organizacao,
-                                        tamanhoGrupo: item.configuracao_usada.tamanhoGrupo || 1,
-                                        valorFinal: Number(item.valor_unitario_final)
+                                        cliente: 'Cálculo de Cenário',
+                                        dataCriacao: new Date(item.data_alteracao).toLocaleDateString(),
+                                        recursos: [{
+                                            funcao_id: 0,
+                                            funcao_nome: item.configuracao_usada.organizacao === 'grupo'
+                                                ? `Equipe (${item.configuracao_usada.tamanhoGrupo || 1} pessoas)`
+                                                : 'Mão de obra',
+                                            qtd_profissionais: qtdProfissionais,
+                                            horas_estimadas: horasEstimadas,
+                                            custo_hora_aplicado: custoHoraAplicado,
+                                            unidade_tempo: item.configuracao_usada.tipo
+                                        }],
+                                        custoTotalMaoDeObra
                                     }} />
                                 }
                                 fileName={`Cenario_${item.titulo ? item.titulo.replace(/\s/g, '_') : 'Relatorio'}.pdf`}
@@ -97,7 +112,8 @@ export function HistoricoCenarios({ itens, custoMensalAtual, onExcluir, onRenome
                             </button>
                         </div>
                     </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );
