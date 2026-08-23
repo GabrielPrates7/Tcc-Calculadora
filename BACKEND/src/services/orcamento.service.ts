@@ -11,6 +11,30 @@ export interface IOrcamentoPayload {
     idCenarioMo?: number | null;
 }
 
+/**
+ * Validação server-side dos dados de um orçamento, usada por POST e PUT
+ * antes de calcular/gravar nada. Retorna a mensagem do primeiro problema
+ * encontrado, ou null se os dados estiverem válidos.
+ */
+export function validarOrcamentoPayload(dados: IOrcamentoPayload): string | null {
+    if (!dados.nomeProduto || !dados.nomeProduto.trim()) {
+        return 'Nome do produto é obrigatório.';
+    }
+    if (!Number.isFinite(dados.custoMercadoria) || dados.custoMercadoria < 0) {
+        return 'Custo de materiais deve ser um número maior ou igual a zero.';
+    }
+    if (!Number.isFinite(dados.tempoGasto) || dados.tempoGasto < 0) {
+        return 'Horas trabalhadas deve ser um número maior ou igual a zero.';
+    }
+    if (!Number.isFinite(dados.lucroPct) || dados.lucroPct < 0) {
+        return 'Lucro desejado deve ser um número maior ou igual a zero.';
+    }
+    if (!Number.isFinite(dados.impostoPct) || dados.impostoPct < 0) {
+        return 'Imposto deve ser um número maior ou igual a zero.';
+    }
+    return null;
+}
+
 export interface ICenarioMaoObraDTO {
     id: number;
     titulo: string;

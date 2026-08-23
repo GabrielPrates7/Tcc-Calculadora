@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { OrcamentoService, IOrcamentoPayload } from '../services/orcamento.service';
+import { OrcamentoService, IOrcamentoPayload, validarOrcamentoPayload } from '../services/orcamento.service';
 import { verificarToken } from '../middlewares/auth.middleware';
 
 const router = Router();
@@ -59,6 +59,12 @@ router.post('/', async (req: Request, res: Response) => {
             idCenarioMo: req.body.id_cenario_mo ? Number(req.body.id_cenario_mo) : null
         };
 
+        const erroValidacao = validarOrcamentoPayload(dados);
+        if (erroValidacao) {
+            res.status(400).json({ error: erroValidacao });
+            return;
+        }
+
         const novoOrcamento = await orcamentoService.criarOrcamento(dados, empresaId);
         res.status(201).json(novoOrcamento);
     } catch (err: unknown) {
@@ -82,6 +88,12 @@ router.put('/:id', async (req: Request, res: Response) => {
             valorHoraSelecionado: Number(req.body.valorHoraSelecionado) || 0,
             idCenarioMo: req.body.id_cenario_mo ? Number(req.body.id_cenario_mo) : null
         };
+
+        const erroValidacao = validarOrcamentoPayload(dados);
+        if (erroValidacao) {
+            res.status(400).json({ error: erroValidacao });
+            return;
+        }
 
         const atualizado = await orcamentoService.atualizarOrcamento(Number(req.params.id), dados, empresaId);
         res.json({ message: 'Orçamento atualizado com sucesso!', data: atualizado });
