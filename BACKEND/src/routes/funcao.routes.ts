@@ -48,6 +48,11 @@ funcaoRoutes.delete('/:id', async (req, res) => {
         if (erro.message && erro.message.includes('Não é possível excluir')) {
             return res.status(422).json({ error: erro.message });
         }
+        // Rede de segurança: qualquer vínculo que a pré-checagem não tenha coberto
+        // ainda é barrado pela foreign key do banco (violação = código 23503)
+        if (erro.code === '23503') {
+            return res.status(422).json({ error: 'Não é possível excluir. Esta função está vinculada a outros registros do sistema.' });
+        }
         res.status(500).json({ error: 'Erro ao excluir função' });
     }
 });

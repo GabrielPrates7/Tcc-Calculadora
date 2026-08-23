@@ -46,12 +46,21 @@ export class FuncaoService {
 
     async excluir(id: number, empresa_id: number) {
         // Bloqueia a exclusão se houver funcionários utilizando essa função E garante que seja da mesma empresa
-        const checkQuery = `SELECT COUNT(*) FROM funcionarios WHERE funcao_id = $1 AND empresa_id = $2`;
-        const checkResult = await pool.query(checkQuery, [id, empresa_id]);
-        const qtdVinculos = parseInt(checkResult.rows[0].count, 10);
+        const checkFuncionariosQuery = `SELECT COUNT(*) FROM funcionarios WHERE funcao_id = $1 AND empresa_id = $2`;
+        const checkFuncionariosResult = await pool.query(checkFuncionariosQuery, [id, empresa_id]);
+        const qtdFuncionarios = parseInt(checkFuncionariosResult.rows[0].count, 10);
 
-        if (qtdVinculos > 0) {
-            throw new Error(`Não é possível excluir. Existem ${qtdVinculos} colaboradores vinculados a esta função.`);
+        if (qtdFuncionarios > 0) {
+            throw new Error(`Não é possível excluir. Existem ${qtdFuncionarios} colaboradores vinculados a esta função.`);
+        }
+
+        // Bloqueia também se a função estiver em uso em algum orçamento/obra
+        const checkObrasQuery = `SELECT COUNT(*) FROM obra_recursos_humanos WHERE funcao_id = $1 AND empresa_id = $2`;
+        const checkObrasResult = await pool.query(checkObrasQuery, [id, empresa_id]);
+        const qtdObras = parseInt(checkObrasResult.rows[0].count, 10);
+
+        if (qtdObras > 0) {
+            throw new Error(`Não é possível excluir. Esta função está em uso em ${qtdObras} orçamento(s) de obra.`);
         }
 
         const deleteQuery = `DELETE FROM funcoes WHERE id = $1 AND empresa_id = $2 RETURNING *`;
