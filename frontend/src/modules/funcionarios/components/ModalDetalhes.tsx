@@ -11,11 +11,14 @@ export function ModalDetalhes({ funcionario, onClose }: Props) {
     const salario = Number(funcionario.salario_base) || 0;
     const epi = Number(funcionario.epi) || 0;
 
-    const decimoTerceiro = salario / 12;
-    const ferias = salario / 12;
-    const umTercoFerias = ferias / 3;
-    const inss = salario * 0.08;
-    const multaFgts = salario * 0.032;
+    // Valores já persistidos e calculados pelo backend (calcularEncargos em
+    // funcionario.service.ts), os mesmos gravados no cadastro/edição do
+    // colaborador — não recalculados aqui para não divergir do banco.
+    const decimoTerceiro = Number(funcionario.decimo_terceiro) || 0;
+    const ferias = Number(funcionario.ferias) || 0;
+    const umTercoFerias = Number(funcionario.um_terco_ferias) || 0;
+    const inss = Number(funcionario.inss) || 0;
+    const multaFgts = Number(funcionario.multa_fgts) || 0;
 
     const formatarBRL = (valor: number) => {
         return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 });
@@ -97,7 +100,7 @@ export function ModalDetalhes({ funcionario, onClose }: Props) {
                     <div style={{ marginTop: '16px', background: '#f8fafc', padding: '12px', borderRadius: '6px', display: 'flex', gap: '8px', color: '#64748b', fontSize: '0.85rem', alignItems: 'flex-start' }}>
                         <Info size={16} style={{ marginTop: '2px', flexShrink: 0 }} />
                         <p style={{ margin: 0 }}>
-                            <strong>Conferência:</strong> Valores calculados a partir do Salário Base ({formatarBRL(salario)}). O FGTS de 8% mensal não compõe a precificação nesta visão.
+                            <strong>Conferência:</strong> Valores gravados no cadastro deste colaborador, calculados a partir do Salário Base ({formatarBRL(salario)}). O FGTS de 8% mensal não compõe a precificação nesta visão.
                         </p>
                     </div>
 
