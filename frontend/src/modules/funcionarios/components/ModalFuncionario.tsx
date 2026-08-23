@@ -3,6 +3,7 @@ import { X, Save, Calendar, User, HardHat, DollarSign, Ban, AlertCircle, FileTex
 import { toast } from 'react-toastify';
 import type { Funcionario } from '../types';
 import { ModalGerenciarFuncoes } from './ModalGerenciarFuncoes';
+import { api } from '../../../services/api';
 import './ModalFuncionario.css';
 
 interface DadosEnvio {
@@ -76,9 +77,9 @@ export function ModalFuncionario({ funcionarioEdicao, onClose, onSalvar }: Props
 
     const carregarFuncoes = useCallback(async () => {
         try {
-            const res = await fetch('http://localhost:3000/api/funcoes');
-            const data = await res.json();
-            
+            const res = await api.get('/funcoes');
+            const data = res.data;
+
             // BLINDAGEM CONTRA FALHA DA API: Verifica se é array antes de rodar os métodos
             if (Array.isArray(data)) {
                 setListaFuncoes(data);

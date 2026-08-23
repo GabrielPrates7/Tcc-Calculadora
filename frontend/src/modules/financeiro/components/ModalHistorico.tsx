@@ -4,9 +4,10 @@ import { useEffect, useState } from 'react';
 import { X, Clock, FileText, Trash2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { formatarBRL } from '../../../utils/formatters'; 
-import { ModalConfirmacao } from './ModalConfirmacao'; 
-import './ModalFinanceiro.css'; 
+import { formatarBRL } from '../../../utils/formatters';
+import { ModalConfirmacao } from './ModalConfirmacao';
+import { api } from '../../../services/api';
+import './ModalFinanceiro.css';
 
 interface Props {
     onClose: () => void;
@@ -19,16 +20,10 @@ export function ModalHistorico({ onClose }: Props) {
 
     const [modalExclusao, setModalExclusao] = useState<{ aberto: boolean; id: number | null }>({ aberto: false, id: null });
 
-    const API_BASE = 'http://localhost:3000/api/financeiro';
-
     const carregarLista = () => {
-        fetch(`${API_BASE}/snapshots`)
+        api.get('/financeiro/snapshots')
             .then(res => {
-                if (!res.ok) throw new Error("Erro na resposta do servidor");
-                return res.json();
-            })
-            .then(data => {
-                setHistorico(data);
+                setHistorico(res.data);
                 setLoading(false);
             })
             .catch(error => {
@@ -49,18 +44,11 @@ export function ModalHistorico({ onClose }: Props) {
         if (modalExclusao.id === null) return;
 
         try {
-            const res = await fetch(`${API_BASE}/snapshots/${modalExclusao.id}`, {
-                method: 'DELETE'
-            });
-
-            if (res.ok) {
-                setHistorico(prev => prev.filter(item => item.id !== modalExclusao.id));
-            } else {
-                alert("Erro ao excluir. Verifique o servidor.");
-            }
+            await api.delete(`/financeiro/snapshots/${modalExclusao.id}`);
+            setHistorico(prev => prev.filter(item => item.id !== modalExclusao.id));
         } catch (error) {
             console.error(error);
-            alert("Erro de conexão.");
+            alert("Erro ao excluir. Verifique o servidor.");
         } finally {
             setModalExclusao({ aberto: false, id: null });
         }
@@ -68,10 +56,8 @@ export function ModalHistorico({ onClose }: Props) {
 
     const gerarPDFAntigo = async (id: number) => {
         try {
-            const res = await fetch(`${API_BASE}/snapshots/${id}`);
-            if (!res.ok) throw new Error("Snapshot não encontrado na API");
-            
-            const fullData = await res.json();
+            const res = await api.get(`/financeiro/snapshots/${id}`);
+            const fullData = res.data;
             console.log("🔥 LOG DEBUG - Dados do Banco:", fullData);
 
             let backup = fullData.dados_backup ?? fullData.dadosBackup;

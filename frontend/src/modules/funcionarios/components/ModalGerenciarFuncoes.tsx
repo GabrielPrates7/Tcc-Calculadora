@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { X, Plus, Trash2, ShieldAlert } from 'lucide-react';
 import './ModalGerenciarFuncoes.css';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal'; // Ajuste o caminho se necessário
+import { api } from '../../../services/api';
 
 interface Funcao {
     id: number;
@@ -22,13 +23,10 @@ export function ModalGerenciarFuncoes({ onClose }: Props) {
         isOpen: false, id: 0, nome: ''
     });
 
-    const API_URL = 'http://localhost:3000/api/funcoes'; 
-
     const carregarFuncoes = useCallback(async () => {
         try {
-            const res = await fetch(API_URL);
-            const data = await res.json();
-            setFuncoes(data);
+            const res = await api.get('/funcoes');
+            setFuncoes(res.data);
         } catch (error) {
             console.error("Erro ao carregar funções", error);
         }
@@ -42,21 +40,12 @@ export function ModalGerenciarFuncoes({ onClose }: Props) {
         if (!novaFuncao.trim()) return;
         setLoading(true);
         try {
-            const res = await fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nome: novaFuncao.trim() })
-            });
-
-            if (!res.ok) {
-                const erro = await res.json();
-                alert(erro.error || 'Erro ao adicionar função.');
-            } else {
-                setNovaFuncao('');
-                carregarFuncoes();
-            }
-        } catch {
-            alert('Erro de conexão com o servidor.');
+            await api.post('/funcoes', { nome: novaFuncao.trim() });
+            setNovaFuncao('');
+            carregarFuncoes();
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { error?: string } } };
+            alert(err.response?.data?.error || 'Erro ao adicionar função.');
         } finally {
             setLoading(false);
         }
@@ -70,19 +59,15 @@ export function ModalGerenciarFuncoes({ onClose }: Props) {
     // Gatilho lógico: Executa a requisição DELETE confirmada
     const confirmarExclusao = async () => {
         try {
-            const res = await fetch(`${API_URL}/${modalExclusao.id}`, { method: 'DELETE' });
-            
-            if (res.status === 422) {
-                const erro = await res.json();
-                alert(`⚠️ BLOQUEIO DE SEGURANÇA:\n\n${erro.error}`);
-                return;
-            }
-
-            if (!res.ok) throw new Error('Falha ao excluir');
-            
+            await api.delete(`/funcoes/${modalExclusao.id}`);
             carregarFuncoes();
-        } catch {
-            alert('Erro de conexão com o servidor.');
+        } catch (error: unknown) {
+            const err = error as { response?: { status?: number; data?: { error?: string } } };
+            if (err.response?.status === 422) {
+                alert(`⚠️ BLOQUEIO DE SEGURANÇA:\n\n${err.response.data?.error}`);
+            } else {
+                alert('Erro de conexão com o servidor.');
+            }
         } finally {
             setModalExclusao({ isOpen: false, id: 0, nome: '' });
         }
