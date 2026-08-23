@@ -18,7 +18,7 @@ export function Configuracoes() {
         formOrcamento, setFormOrcamento,
         funcoes, novaFuncao, setNovaFuncao, loading,
         modalConfirmacao, fecharModal,
-        handleSubmitPerfil, handleSalvarParametros, handleAdicionarFuncao, handleExcluirFuncao
+        handleSubmitPerfil, handleSalvarParametros, handleAdicionarFuncao, handleEditarFuncao, handleExcluirFuncao
     } = useConfiguracoes();
 
     return (
@@ -30,38 +30,43 @@ export function Configuracoes() {
                 <p style={{ color: '#94a3b8', marginTop: '8px' }}>Central de parâmetros, regras de negócio e controle de acesso.</p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '24px', alignItems: 'start' }}>
-                
-                <BlocoPerfil 
-                    formPerfil={formPerfil} 
-                    setFormPerfil={setFormPerfil} 
-                    onSubmit={handleSubmitPerfil} 
-                />
+            <div className="config-grid-top">
 
-                <BlocoFinanceiro 
-                    formFinanceiro={formFinanceiro} 
-                    setFormFinanceiro={setFormFinanceiro} 
-                    // TIPAGEM CORRIGIDA AQUI
-                    onSubmit={(e: React.FormEvent) => handleSalvarParametros(e, 'Financeiro')} 
-                />
+                <div className="config-col-left">
+                    <BlocoPerfil
+                        formPerfil={formPerfil}
+                        setFormPerfil={setFormPerfil}
+                        onSubmit={handleSubmitPerfil}
+                    />
+                </div>
 
-                <BlocoOrcamento 
-                    formOrcamento={formOrcamento} 
-                    setFormOrcamento={setFormOrcamento} 
-                    // TIPAGEM CORRIGIDA AQUI
-                    onSubmit={(e: React.FormEvent) => handleSalvarParametros(e, 'Orçamentos')} 
-                />
+                <div className="config-col-right">
+                    <BlocoFinanceiro
+                        formFinanceiro={formFinanceiro}
+                        setFormFinanceiro={setFormFinanceiro}
+                        // TIPAGEM CORRIGIDA AQUI
+                        onSubmit={(e: React.FormEvent) => handleSalvarParametros(e, 'Financeiro')}
+                    />
 
-                <BlocoFuncoes 
-                    funcoes={funcoes} 
-                    novaFuncao={novaFuncao} 
-                    setNovaFuncao={setNovaFuncao} 
-                    loading={loading}
-                    onAdd={handleAdicionarFuncao} 
-                    onDelete={handleExcluirFuncao} 
-                />
+                    <BlocoOrcamento
+                        formOrcamento={formOrcamento}
+                        setFormOrcamento={setFormOrcamento}
+                        // TIPAGEM CORRIGIDA AQUI
+                        onSubmit={(e: React.FormEvent) => handleSalvarParametros(e, 'Orçamentos')}
+                    />
+                </div>
 
             </div>
+
+            <BlocoFuncoes
+                funcoes={funcoes}
+                novaFuncao={novaFuncao}
+                setNovaFuncao={setNovaFuncao}
+                loading={loading}
+                onAdd={handleAdicionarFuncao}
+                onEdit={handleEditarFuncao}
+                onDelete={handleExcluirFuncao}
+            />
 
             <ConfirmModal 
                 isOpen={modalConfirmacao.isOpen}

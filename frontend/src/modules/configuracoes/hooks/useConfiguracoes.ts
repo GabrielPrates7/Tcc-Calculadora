@@ -100,6 +100,18 @@ export function useConfiguracoes() {
         }
     };
 
+    const handleEditarFuncao = async (id: number, dados: { nome: string; baseHorasMensais?: number; custoHoraMercado?: number }) => {
+        try {
+            await ConfiguracoesService.atualizarFuncao(id, dados);
+            toast.success("Função atualizada com sucesso!");
+            recarregar();
+        } catch (error: unknown) {
+            const err = error as { response?: { data?: { error?: string } } };
+            toast.error(err.response?.data?.error || "Erro ao atualizar função.");
+            throw error;
+        }
+    };
+
     const handleExcluirFuncao = (id: number) => {
         setModalConfirmacao({
             isOpen: true,
@@ -173,6 +185,6 @@ export function useConfiguracoes() {
         formFinanceiro, setFormFinanceiro,
         formOrcamento, setFormOrcamento,
         modalConfirmacao, fecharModal,
-        handleAdicionarFuncao, handleExcluirFuncao, handleSubmitPerfil, handleSalvarParametros
+        handleAdicionarFuncao, handleEditarFuncao, handleExcluirFuncao, handleSubmitPerfil, handleSalvarParametros
     };
 }

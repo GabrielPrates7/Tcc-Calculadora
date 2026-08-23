@@ -3,9 +3,9 @@ import { pool } from './db';
 export class FuncaoService {
     async listar(empresa_id: number) {
         const query = `
-            SELECT id, nome, base_horas_mensais 
-            FROM funcoes 
-            WHERE empresa_id = $1 
+            SELECT id, nome, base_horas_mensais, custo_hora_mercado
+            FROM funcoes
+            WHERE empresa_id = $1
             ORDER BY nome ASC
         `;
         const resultado = await pool.query(query, [empresa_id]);
@@ -35,6 +35,32 @@ export class FuncaoService {
         `;
         try {
             const resultado = await pool.query(query, [nome, horasMensais, empresa_id]);
+            return resultado.rows[0];
+        } catch (erro: any) {
+            if (erro.code === '23505') {
+                throw new Error('Esta função já existe no sistema desta empresa.');
+            }
+            throw erro;
+        }
+    }
+
+    async atualizar(id: number, dados: { nome: string; baseHorasMensais?: number; custoHoraMercado?: number }, empresa_id: number) {
+        const query = `
+            UPDATE funcoes
+            SET nome = $1,
+                base_horas_mensais = COALESCE($2, base_horas_mensais),
+                custo_hora_mercado = COALESCE($3, custo_hora_mercado)
+            WHERE id = $4 AND empresa_id = $5
+            RETURNING *
+        `;
+        try {
+            const resultado = await pool.query(query, [
+                dados.nome,
+                dados.baseHorasMensais ?? null,
+                dados.custoHoraMercado ?? null,
+                id,
+                empresa_id
+            ]);
             return resultado.rows[0];
         } catch (erro: any) {
             if (erro.code === '23505') {

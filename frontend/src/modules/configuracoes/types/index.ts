@@ -1,6 +1,8 @@
 export interface Funcao {
     id: number;
     nome: string;
+    base_horas_mensais?: number | string;
+    custo_hora_mercado?: number | string;
 }
 
 export interface PerfilBanco {

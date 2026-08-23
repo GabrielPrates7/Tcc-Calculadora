@@ -14,6 +14,32 @@
     margin-bottom: 32px;
 }
 
+.config-grid-top {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: stretch;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+/* display:grid faz o filho unico (o card do Perfil) esticar para
+   preencher toda a largura e altura desta coluna */
+.config-col-left {
+    display: grid;
+}
+
+.config-col-right {
+    display: grid;
+    gap: 24px;
+    align-content: start;
+}
+
+@media (max-width: 960px) {
+    .config-grid-top {
+        grid-template-columns: 1fr;
+    }
+}
+
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }

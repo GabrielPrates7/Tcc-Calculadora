@@ -35,6 +35,30 @@ funcaoRoutes.post('/', async (req, res) => {
     }
 });
 
+funcaoRoutes.put('/:id', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const empresaId = req.usuario!.empresa_id;
+        const { nome, baseHorasMensais, custoHoraMercado } = req.body;
+
+        if (isNaN(id)) return res.status(400).json({ error: 'ID inválido' });
+        if (!nome) return res.status(400).json({ error: 'Nome da função é obrigatório' });
+
+        const funcaoAtualizada = await service.atualizar(id, { nome, baseHorasMensais, custoHoraMercado }, empresaId);
+
+        if (!funcaoAtualizada) {
+            return res.status(404).json({ error: 'Função não encontrada.' });
+        }
+
+        res.json(funcaoAtualizada);
+    } catch (erro: any) {
+        if (erro.message && erro.message.includes('já existe')) {
+            return res.status(409).json({ error: erro.message });
+        }
+        res.status(500).json({ error: 'Erro ao atualizar função' });
+    }
+});
+
 funcaoRoutes.delete('/:id', async (req, res) => {
     try {
         const id = parseInt(req.params.id);
