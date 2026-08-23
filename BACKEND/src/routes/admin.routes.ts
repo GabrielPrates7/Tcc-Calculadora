@@ -1,7 +1,11 @@
 import { Router, Request, Response } from 'express';
 import { pool as db } from '../services/db';
+import { verificarSuperAdmin } from '../middlewares/auth.middleware';
 
 const adminRoutes = Router();
+
+// Todas as rotas administrativas exigem o administrador global do sistema
+adminRoutes.use(verificarSuperAdmin);
 
 // Rota 1: Listar todos os usuários pendentes (ativo = false)
 adminRoutes.get('/pendentes', async (req: Request, res: Response): Promise<void> => {

@@ -674,7 +674,8 @@ CREATE TABLE public.usuarios (
     token_recuperacao character varying(255),
     expiracao_token timestamp without time zone,
     ativo boolean DEFAULT false,
-    criado_em timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+    criado_em timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    super_admin boolean DEFAULT false NOT NULL
 );
 
 
@@ -1136,7 +1137,7 @@ INSERT INTO public.snapshots_financeiros VALUES (13, '2026-07-24 00:14:22.071167
 -- Data for Name: usuarios; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-INSERT INTO public.usuarios VALUES (3, 4, 'Gabriel Prates', 'gabrieldprates11@gmail.com', '$2b$10$2UjHr/dzAGIx.ooNIxuQrOc/jDOAAhCA/oTEJMt14zowokMrzKnjy', NULL, NULL, true, '2026-08-17 19:00:24.734008');
+INSERT INTO public.usuarios VALUES (3, 4, 'Gabriel Prates', 'gabrieldprates11@gmail.com', '$2b$10$2UjHr/dzAGIx.ooNIxuQrOc/jDOAAhCA/oTEJMt14zowokMrzKnjy', NULL, NULL, true, '2026-08-17 19:00:24.734008', true);
 
 
 --
