@@ -100,7 +100,7 @@ export function useConfiguracoes() {
         }
     };
 
-    const handleEditarFuncao = async (id: number, dados: { nome: string; baseHorasMensais?: number; custoHoraMercado?: number }) => {
+    const handleEditarFuncao = async (id: number, dados: { nome?: string }) => {
         try {
             await ConfiguracoesService.atualizarFuncao(id, dados);
             toast.success("Função atualizada com sucesso!");

@@ -39,12 +39,12 @@ funcaoRoutes.put('/:id', async (req, res) => {
     try {
         const id = parseInt(req.params.id);
         const empresaId = req.usuario!.empresa_id;
-        const { nome, baseHorasMensais, custoHoraMercado } = req.body;
+        const { nome } = req.body;
 
         if (isNaN(id)) return res.status(400).json({ error: 'ID inválido' });
-        if (!nome) return res.status(400).json({ error: 'Nome da função é obrigatório' });
+        if (!nome || !nome.trim()) return res.status(400).json({ error: 'Nome da função é obrigatório' });
 
-        const funcaoAtualizada = await service.atualizar(id, { nome, baseHorasMensais, custoHoraMercado }, empresaId);
+        const funcaoAtualizada = await service.atualizar(id, nome, empresaId);
 
         if (!funcaoAtualizada) {
             return res.status(404).json({ error: 'Função não encontrada.' });

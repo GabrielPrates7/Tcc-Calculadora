@@ -2,14 +2,25 @@ import { pool } from './db';
 
 export class FuncaoService {
     async listar(empresa_id: number) {
+        // total_funcionarios usa a mesma definição de vínculo de excluir()
+        // (conta ativos e inativos, sem filtro ativo = true)
         const query = `
-            SELECT id, nome, base_horas_mensais, custo_hora_mercado
-            FROM funcoes
-            WHERE empresa_id = $1
-            ORDER BY nome ASC
+            SELECT
+                f.id,
+                f.nome,
+                f.base_horas_mensais,
+                COUNT(fn.id) AS total_funcionarios
+            FROM funcoes f
+            LEFT JOIN funcionarios fn ON fn.funcao_id = f.id AND fn.empresa_id = f.empresa_id
+            WHERE f.empresa_id = $1
+            GROUP BY f.id
+            ORDER BY f.nome ASC
         `;
         const resultado = await pool.query(query, [empresa_id]);
-        return resultado.rows;
+        return resultado.rows.map(row => ({
+            ...row,
+            total_funcionarios: Number(row.total_funcionarios)
+        }));
     }
 
     // Alterado: Removemos o valor fixo (176) do parâmetro
@@ -44,23 +55,18 @@ export class FuncaoService {
         }
     }
 
-    async atualizar(id: number, dados: { nome: string; baseHorasMensais?: number; custoHoraMercado?: number }, empresa_id: number) {
+    // base_horas_mensais não é mais editável por função (usa sempre o padrão da
+    // empresa em configuracao_producao) e custo_hora_mercado saiu de uso desde que
+    // ObraService.obterTaxasPorFuncao parou de usá-lo como fallback
+    async atualizar(id: number, nome: string, empresa_id: number) {
         const query = `
             UPDATE funcoes
-            SET nome = $1,
-                base_horas_mensais = COALESCE($2, base_horas_mensais),
-                custo_hora_mercado = COALESCE($3, custo_hora_mercado)
-            WHERE id = $4 AND empresa_id = $5
+            SET nome = $1
+            WHERE id = $2 AND empresa_id = $3
             RETURNING *
         `;
         try {
-            const resultado = await pool.query(query, [
-                dados.nome,
-                dados.baseHorasMensais ?? null,
-                dados.custoHoraMercado ?? null,
-                id,
-                empresa_id
-            ]);
+            const resultado = await pool.query(query, [nome, id, empresa_id]);
             return resultado.rows[0];
         } catch (erro: any) {
             if (erro.code === '23505') {

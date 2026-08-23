@@ -8,7 +8,7 @@ interface Props {
     setNovaFuncao: React.Dispatch<React.SetStateAction<string>>;
     loading: boolean;
     onAdd: () => void;
-    onEdit: (id: number, dados: { nome: string; baseHorasMensais?: number; custoHoraMercado?: number }) => Promise<void>;
+    onEdit: (id: number, dados: { nome: string }) => Promise<void>;
     onDelete: (id: number) => void;
 }
 
@@ -18,15 +18,11 @@ const labelStyle: React.CSSProperties = { display: 'block', marginBottom: '4px',
 export function BlocoFuncoes({ funcoes, novaFuncao, setNovaFuncao, loading, onAdd, onEdit, onDelete }: Props) {
     const [funcaoEmEdicao, setFuncaoEmEdicao] = useState<Funcao | null>(null);
     const [editNome, setEditNome] = useState('');
-    const [editBaseHoras, setEditBaseHoras] = useState<number | string>('');
-    const [editCustoHora, setEditCustoHora] = useState<number | string>('');
     const [salvandoEdicao, setSalvandoEdicao] = useState(false);
 
     const abrirEdicao = (f: Funcao) => {
         setFuncaoEmEdicao(f);
         setEditNome(f.nome);
-        setEditBaseHoras(f.base_horas_mensais ?? '');
-        setEditCustoHora(f.custo_hora_mercado ?? '');
     };
 
     const fecharEdicao = () => setFuncaoEmEdicao(null);
@@ -35,11 +31,7 @@ export function BlocoFuncoes({ funcoes, novaFuncao, setNovaFuncao, loading, onAd
         if (!funcaoEmEdicao || !editNome.trim()) return;
         setSalvandoEdicao(true);
         try {
-            await onEdit(funcaoEmEdicao.id, {
-                nome: editNome.trim(),
-                baseHorasMensais: editBaseHoras === '' ? undefined : Number(editBaseHoras),
-                custoHoraMercado: editCustoHora === '' ? undefined : Number(editCustoHora)
-            });
+            await onEdit(funcaoEmEdicao.id, { nome: editNome.trim() });
             fecharEdicao();
         } catch {
             // erro já é mostrado via toast pelo hook; mantém o modal aberto para o usuário corrigir
@@ -73,27 +65,34 @@ export function BlocoFuncoes({ funcoes, novaFuncao, setNovaFuncao, loading, onAd
             </div>
 
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, height: '220px', overflowY: 'auto', border: '1px solid #334155', borderRadius: '6px', backgroundColor: '#0f172a' }}>
-                {funcoes.map(f => (
-                    <li key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid #334155' }}>
-                        <span style={{ color: '#e2e8f0', fontWeight: '500' }}>{f.nome}</span>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                            <button
-                                onClick={() => abrirEdicao(f)}
-                                style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }}
-                                title="Editar"
-                            >
-                                <Pencil size={18} />
-                            </button>
-                            <button
-                                onClick={() => onDelete(f.id)}
-                                style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
-                                title="Excluir"
-                            >
-                                <Trash2 size={18} />
-                            </button>
-                        </div>
-                    </li>
-                ))}
+                {funcoes.map(f => {
+                    const semVinculo = !f.total_funcionarios;
+                    return (
+                        <li key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', borderBottom: '1px solid #334155', gap: '10px' }}>
+                            <span style={{ color: '#e2e8f0', fontWeight: '500', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {f.nome}
+                            </span>
+
+                            <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+                                <button
+                                    onClick={() => semVinculo && abrirEdicao(f)}
+                                    disabled={!semVinculo}
+                                    style={{ background: 'transparent', border: 'none', color: semVinculo ? '#94a3b8' : '#475569', cursor: semVinculo ? 'pointer' : 'not-allowed', padding: '4px' }}
+                                    title={semVinculo ? 'Editar nome' : 'Não é possível editar: função com colaborador vinculado'}
+                                >
+                                    <Pencil size={18} />
+                                </button>
+                                <button
+                                    onClick={() => onDelete(f.id)}
+                                    style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px' }}
+                                    title="Excluir"
+                                >
+                                    <Trash2 size={18} />
+                                </button>
+                            </div>
+                        </li>
+                    );
+                })}
                 {funcoes.length === 0 && <p style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>Nenhuma função cadastrada.</p>}
             </ul>
 
@@ -115,7 +114,7 @@ export function BlocoFuncoes({ funcoes, novaFuncao, setNovaFuncao, loading, onAd
                             </button>
                         </div>
 
-                        <div style={{ marginBottom: '14px' }}>
+                        <div style={{ marginBottom: '20px' }}>
                             <label style={labelStyle}>Nome</label>
                             <input
                                 type="text"
@@ -124,27 +123,6 @@ export function BlocoFuncoes({ funcoes, novaFuncao, setNovaFuncao, loading, onAd
                                 style={inputStyle}
                                 autoFocus
                             />
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
-                            <div>
-                                <label style={labelStyle}>Base de Horas (Mês)</label>
-                                <input
-                                    type="number"
-                                    value={editBaseHoras}
-                                    onChange={e => setEditBaseHoras(e.target.value === '' ? '' : Number(e.target.value))}
-                                    style={inputStyle}
-                                />
-                            </div>
-                            <div>
-                                <label style={labelStyle}>Custo Hora Mercado (R$)</label>
-                                <input
-                                    type="number"
-                                    value={editCustoHora}
-                                    onChange={e => setEditCustoHora(e.target.value === '' ? '' : Number(e.target.value))}
-                                    style={inputStyle}
-                                />
-                            </div>
                         </div>
 
                         <div style={{ display: 'flex', gap: '8px' }}>

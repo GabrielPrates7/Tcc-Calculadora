@@ -28,7 +28,7 @@ export const ConfiguracoesService = {
         await api.delete(`/funcoes/${id}`);
     },
 
-    async atualizarFuncao(id: number, dados: { nome: string; baseHorasMensais?: number; custoHoraMercado?: number }): Promise<Funcao> {
+    async atualizarFuncao(id: number, dados: { nome?: string }): Promise<Funcao> {
         const response = await api.put(`/funcoes/${id}`, dados);
         return response.data;
     },
