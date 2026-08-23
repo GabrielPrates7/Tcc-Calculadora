@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { pool } from '../services/db';
 import { verificarToken } from '../middlewares/auth.middleware';
+import { ObraService } from '../services/obra.service';
 
 const router = Router();
 
@@ -10,16 +11,6 @@ router.use(verificarToken);
 // ============================================================================
 // INTERFACES (Tipagem Estrita)
 // ============================================================================
-
-interface TaxaFuncaoRow {
-    funcao_id: number;
-    funcao_nome: string;
-    total_funcionarios_ativos: string; 
-    custo_mensal_setor: string;        
-    horas_totais_setor: string;
-    custo_hora_calculado: string;      
-    custo_dia_calculado: string; 
-}
 
 interface RecursoObraInput {
     funcao_id: number;
@@ -43,47 +34,8 @@ interface NovaObraBody {
 router.get('/taxas', async (req: Request, res: Response) => {
     try {
         const empresaId = req.usuario!.empresa_id;
-
-        const query = `
-            SELECT 
-                func.id AS funcao_id,
-                func.nome AS funcao_nome,
-                COUNT(f.id) AS total_funcionarios_ativos,
-                COALESCE(SUM(f.custo_total_mensal), 0) AS custo_mensal_setor,
-                (COUNT(f.id) * func.base_horas_mensais) AS horas_totais_setor,
-                
-                -- CUSTO HORA (CH): Unitário médio
-                CASE 
-                    WHEN COUNT(f.id) > 0 THEN 
-                        ROUND((SUM(f.custo_total_mensal) / (COUNT(f.id) * 22 * 8))::numeric, 6)
-                    ELSE 
-                        COALESCE(func.custo_hora_mercado, 0)::numeric
-                END AS custo_hora_calculado,
-
-                -- CUSTO DIA (CD): Unitário médio
-                CASE 
-                    WHEN COUNT(f.id) > 0 THEN 
-                        ROUND((SUM(f.custo_total_mensal) / (COUNT(f.id) * 22))::numeric, 6)
-                    ELSE 
-                        COALESCE(func.custo_hora_mercado * 8, 0)::numeric
-                END AS custo_dia_calculado
-
-            FROM public.funcoes func
-            LEFT JOIN public.funcionarios f ON f.funcao_id = func.id AND f.ativo = true AND f.empresa_id = $1
-            WHERE func.empresa_id = $1
-            GROUP BY func.id, func.nome, func.base_horas_mensais, func.custo_hora_mercado
-            ORDER BY func.nome;
-        `;
-        const result = await pool.query<TaxaFuncaoRow>(query, [empresaId]);
-        const taxasLimpas = result.rows.map(row => ({
-            funcao_id: row.funcao_id,
-            funcao_nome: row.funcao_nome,
-            total_funcionarios_ativos: Number(row.total_funcionarios_ativos),
-            custo_mensal_setor: Number(row.custo_mensal_setor),
-            custo_hora_calculado: Number(row.custo_hora_calculado),
-            custo_dia_calculado: Number(row.custo_dia_calculado)
-        }));
-        res.json(taxasLimpas);
+        const taxas = await ObraService.obterTaxasPorFuncao(empresaId);
+        res.json(taxas);
     } catch (err) {
         console.error("Erro ao calcular taxas:", err);
         res.status(500).json({ error: 'Erro interno ao processar as taxas.' });

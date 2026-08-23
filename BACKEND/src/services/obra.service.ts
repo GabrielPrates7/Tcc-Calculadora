@@ -18,21 +18,23 @@ export const ObraService = {
                 func.nome AS funcao_nome,
                 COUNT(f.id) AS total_funcionarios_ativos,
                 SUM(f.custo_total_mensal) AS custo_mensal_setor,
-                CASE 
-                    WHEN COUNT(f.id) > 0 AND cp.horas_trabalhadas_dia > 0 THEN 
+                CASE
+                    WHEN COUNT(f.id) > 0 AND cp.horas_trabalhadas_dia > 0 THEN
                         ROUND((SUM(f.custo_total_mensal) / (COUNT(f.id) * cp.horas_trabalhadas_dia))::numeric, 2)
-                    ELSE 0
+                    ELSE
+                        COALESCE(func.custo_hora_mercado, 0)::numeric
                 END AS custo_hora_calculado,
-                CASE 
-                    WHEN COUNT(f.id) > 0 AND cp.dias_trabalhados_mes > 0 THEN 
+                CASE
+                    WHEN COUNT(f.id) > 0 AND cp.dias_trabalhados_mes > 0 THEN
                         ROUND((SUM(f.custo_total_mensal) / (COUNT(f.id) * cp.dias_trabalhados_mes))::numeric, 2)
-                    ELSE 0
+                    ELSE
+                        COALESCE(func.custo_hora_mercado * 8, 0)::numeric
                 END AS custo_dia_calculado
             FROM public.funcoes func
             LEFT JOIN public.configuracao_producao cp ON cp.empresa_id = func.empresa_id
             LEFT JOIN public.funcionarios f ON f.funcao_id = func.id AND f.ativo = true AND f.empresa_id = $1
             WHERE func.empresa_id = $1
-            GROUP BY func.id, func.nome, cp.horas_trabalhadas_dia, cp.dias_trabalhados_mes
+            GROUP BY func.id, func.nome, cp.horas_trabalhadas_dia, cp.dias_trabalhados_mes, func.custo_hora_mercado
             ORDER BY func.nome;
         `;
         
