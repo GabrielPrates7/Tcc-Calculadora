@@ -86,7 +86,7 @@ authRoutes.post('/login', async (req: Request, res: Response): Promise<void> => 
         }
 
         if (!usuario.ativo) {
-            res.status(403).json({ error: 'Conta pendente de aprovação.' });
+            res.status(403).json({ error: 'Conta inativa. Entre em contato com o administrador.' });
             return;
         }
 
@@ -103,14 +103,16 @@ authRoutes.post('/login', async (req: Request, res: Response): Promise<void> => 
         );
 
         // 3. O payload devolvido agora reflete a necessidade real do frontend
-        res.json({ 
-            token, 
-            usuario: { 
-                nome_usuario: usuario.nome, 
+        res.json({
+            token,
+            usuario: {
+                id: usuario.id,
+                nome_usuario: usuario.nome,
                 email: usuario.email,
                 nome_empresa: usuario.nome_empresa,
-                cnpj: usuario.cnpj
-            } 
+                cnpj: usuario.cnpj,
+                super_admin: usuario.super_admin === true
+            }
         });
     } catch (error) {
         console.error('Erro no login:', error);

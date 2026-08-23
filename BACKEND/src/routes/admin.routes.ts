@@ -64,6 +64,13 @@ adminRoutes.get('/usuarios', async (req: Request, res: Response): Promise<void> 
 // Rota 4: Bloquear um usuário (revogar acesso)
 adminRoutes.patch('/bloquear/:id', async (req: Request, res: Response): Promise<void> => {
     const usuarioId = req.params.id;
+
+    // Impede o administrador de revogar o proprio acesso e ficar trancado para fora
+    if (Number(usuarioId) === req.usuario!.id) {
+        res.status(400).json({ error: 'Não é possível bloquear sua própria conta.' });
+        return;
+    }
+
     try {
         const query = `UPDATE usuarios SET ativo = false WHERE id = $1 RETURNING id, nome`;
         const result = await db.query(query, [usuarioId]);

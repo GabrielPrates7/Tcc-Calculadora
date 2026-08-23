@@ -4,6 +4,7 @@ import 'react-toastify/dist/ReactToastify.css';
 
 import { AuthProvider } from './contexts/AuthContext';
 import { PrivateRoute } from './components/PrivateRoute';
+import { SuperAdminRoute } from './components/SuperAdminRoute';
 import { Sidebar } from './components/Sidebar';
 
 // Telas de Autenticação
@@ -59,8 +60,10 @@ function App() {
               <Route path="/ordens-servico" element={<OrdemServicoKanban />} />
               <Route path="/configuracoes" element={<Configuracoes />} />
               
-              {/* ROTA DO PAINEL ADMIN */}
-              <Route path="/admin" element={<PainelAdmin />} /> 
+              {/* ROTA DO PAINEL ADMIN - restrita ao administrador global */}
+              <Route element={<SuperAdminRoute />}>
+                <Route path="/admin" element={<PainelAdmin />} />
+              </Route>
             </Route>
           </Route>
 

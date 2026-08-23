@@ -3,10 +3,12 @@ import { ShieldCheck, CheckCircle, Users, Ban, Check, UserCog, X } from 'lucide-
 import { toast } from 'react-toastify';
 import { AdminService, type CadastroPendente, type AlteracaoPendente } from '../../services/admin.service';
 import { ConfirmModal } from '../../components/ConfirmModal/ConfirmModal';
+import { useAuth } from '../../contexts/AuthContext';
 
 type AbaVisualizacao = 'pendentes' | 'todos' | 'alteracoes';
 
 export function PainelAdmin() {
+    const { usuario } = useAuth();
     const [abaAtiva, setAbaAtiva] = useState<AbaVisualizacao>('pendentes');
     const [pendentes, setPendentes] = useState<CadastroPendente[]>([]);
     const [todosUsuarios, setTodosUsuarios] = useState<CadastroPendente[]>([]);
@@ -74,7 +76,7 @@ export function PainelAdmin() {
         setModalConfirmacao({
             isOpen: true,
             title: "Bloquear Acesso",
-            message: `Atenção: Deseja bloquear o acesso da empresa "${nome_empresa}"? Eles serão desconectados imediatamente.`,
+            message: `Deseja bloquear o acesso da empresa "${nome_empresa}"? O bloqueio impede novos logins; quem já estiver com a sessão aberta continua até ela expirar.`,
             textoConfirmar: "Bloquear",
             onConfirm: async () => {
                 try {
@@ -356,13 +358,26 @@ export function PainelAdmin() {
                                     </td>
                                     <td style={{ padding: '16px 24px', textAlign: 'right' }}>
                                         {req.ativo ? (
-                                            <button 
-                                                onClick={() => handleBloquear(req.usuario_id, req.nome_empresa)}
-                                                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#ef4444', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
-                                                title="Bloquear usuário temporariamente"
-                                            >
-                                                <Ban size={16} /> Bloquear
-                                            </button>
+                                            req.usuario_id === usuario?.id ? (
+                                                <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                                                    <button
+                                                        disabled
+                                                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#1e293b', color: '#64748b', border: '1px solid #334155', padding: '8px 16px', borderRadius: '6px', cursor: 'not-allowed', fontWeight: 'bold' }}
+                                                        title="Não é possível bloquear sua própria conta"
+                                                    >
+                                                        <Ban size={16} /> Bloquear
+                                                    </button>
+                                                    <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Sua própria conta</span>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    onClick={() => handleBloquear(req.usuario_id, req.nome_empresa)}
+                                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#ef4444', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+                                                    title="Bloquear usuário temporariamente"
+                                                >
+                                                    <Ban size={16} /> Bloquear
+                                                </button>
+                                            )
                                         ) : (
                                             <button 
                                                 onClick={() => handleAprovar(req.usuario_id, req.nome_empresa)}

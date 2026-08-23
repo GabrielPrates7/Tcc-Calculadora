@@ -2,11 +2,13 @@ import { createContext, useState, useContext, type ReactNode } from 'react';
 
 // Tipagem expandida para capturar o formato exato que o Node.js envia agora (incluindo o JOIN da Empresa)
 interface Usuario {
+    id?: number;
     nome?: string;
     nome_usuario?: string;
     email?: string;
     nome_empresa?: string;
     cnpj?: string;
+    super_admin?: boolean;
 }
 
 interface AuthContextData {

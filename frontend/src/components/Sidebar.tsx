@@ -46,7 +46,7 @@ export function Sidebar() {
   const nomeExibicao = usuario?.nome || usuario?.nome_usuario || 'Usuário';
   const inicialAvatar = nomeExibicao.charAt(0).toUpperCase();
 
-  const isSuperAdmin = nomeExibicao === 'Gabriel Prates';
+  const isSuperAdmin = usuario?.super_admin === true;
 
   const renderLinks = (items: MenuItem[]) => (
     items.map((item) => (
