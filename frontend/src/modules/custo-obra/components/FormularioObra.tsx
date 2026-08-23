@@ -1,13 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import { formatarBRL } from '../../../utils/formatters';
 import { CustoObraService, type TaxaFuncao, type ObraHistorico, type NovaObraBody } from '../services/custo-obra.service';
-import { Plus, Trash2, Search, Clock, Calendar, Users, X } from 'lucide-react'; 
+import { Plus, Trash2, Search, Clock, Calendar, Users, X, AlertTriangle } from 'lucide-react';
 
 interface RecursoAlocado {
     funcao_id: number;
     qtd_profissionais: number;
     tempo: number;
     unidade: 'horas' | 'dias';
+    funcao_nome?: string; // guardado como fallback de exibição caso a função saia de `taxas`
 }
 
 interface FormularioObraProps {
@@ -62,7 +63,8 @@ export function FormularioObra({ onSalvarSucesso, obraEmEdicao, onCancelarEdicao
                         funcao_id: r.funcao_id,
                         qtd_profissionais: r.qtd_profissionais,
                         tempo: isDia ? (horasIndividuais / HORAS_PADRAO_DIA) : horasIndividuais,
-                        unidade: isDia ? 'dias' : 'horas'
+                        unidade: isDia ? 'dias' : 'horas',
+                        funcao_nome: r.funcao_nome
                     };
                 });
                 setRecursos(recursosFormatados);
@@ -78,8 +80,9 @@ export function FormularioObra({ onSalvarSucesso, obraEmEdicao, onCancelarEdicao
 
     const handleAdicionarRecurso = (funcao_id: number) => {
         if (recursos.some(r => r.funcao_id === funcao_id)) return;
-        setRecursos([...recursos, { funcao_id, qtd_profissionais: 1, tempo: 0, unidade: 'horas' }]);
-        setTermoBusca(''); 
+        const taxa = taxas.find(t => t.funcao_id === funcao_id);
+        setRecursos([...recursos, { funcao_id, qtd_profissionais: 1, tempo: 0, unidade: 'horas', funcao_nome: taxa?.funcao_nome }]);
+        setTermoBusca('');
     };
 
     const handleRemoverRecurso = (funcao_id: number) => setRecursos(prev => prev.filter(r => r.funcao_id !== funcao_id));
@@ -100,9 +103,21 @@ export function FormularioObra({ onSalvarSucesso, obraEmEdicao, onCancelarEdicao
         }, 0);
     }, [recursos, taxas]);
 
+    // Recurso "órfão": aponta para uma função que não veio (mais) em /api/obras/taxas
+    // (ex: função sem funcionário vinculado). Sem taxa, não há custo confiável pra calcular.
+    const temRecursoOrfao = useMemo(() =>
+        recursos.some(r => !taxas.find(t => t.funcao_id === r.funcao_id)),
+        [recursos, taxas]
+    );
+
     const handleSalvar = async () => {
+        if (temRecursoOrfao) {
+            alert('Existem funções na equipe sem funcionário vinculado (destacadas em vermelho). Remova-as ou troque por outra função antes de salvar.');
+            return;
+        }
+
         const recursosFiltrados = recursos.filter(r => r.tempo > 0);
-        
+
         try {
             setIsSaving(true);
             
@@ -213,6 +228,16 @@ export function FormularioObra({ onSalvarSucesso, obraEmEdicao, onCancelarEdicao
 
                 <div style={{ marginTop: '30px' }}>
                     <label style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '10px', display: 'block', fontWeight: 'bold' }}>EQUIPE ALOCADA NESTA OBRA</label>
+
+                    {temRecursoOrfao && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', borderRadius: '8px', padding: '12px 16px', marginBottom: '12px' }}>
+                            <AlertTriangle size={18} color="#ef4444" style={{ flexShrink: 0 }} />
+                            <span style={{ color: '#fca5a5', fontSize: '0.9rem' }}>
+                                Existem funções na equipe sem funcionário vinculado (destacadas em vermelho abaixo). Remova-as ou troque por outra função para poder salvar.
+                            </span>
+                        </div>
+                    )}
+
                     {recursos.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: '40px', color: '#64748b', border: '1px dashed #475569', borderRadius: '8px', backgroundColor: '#0f172a' }}>
                             Utilize a barra de pesquisa acima para montar a equipe.
@@ -221,9 +246,29 @@ export function FormularioObra({ onSalvarSucesso, obraEmEdicao, onCancelarEdicao
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                             {recursos.map(recurso => {
                                 const taxa = taxas.find(t => t.funcao_id === recurso.funcao_id);
-                                if (!taxa) return null;
-                                
-                                const subtotal = recurso.unidade === 'dias' 
+
+                                if (!taxa) {
+                                    return (
+                                        <div key={recurso.funcao_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#0f172a', padding: '15px', borderRadius: '8px', border: '1px solid #ef4444', borderLeft: '4px solid #ef4444', gap: '15px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <AlertTriangle size={20} color="#ef4444" style={{ flexShrink: 0 }} />
+                                                <div>
+                                                    <span style={{ color: '#f8fafc', fontWeight: 'bold', display: 'block', fontSize: '1.05rem' }}>
+                                                        {recurso.funcao_nome || `Função #${recurso.funcao_id}`}
+                                                    </span>
+                                                    <span style={{ color: '#fca5a5', fontSize: '0.85rem' }}>
+                                                        Sem funcionário vinculado — sem taxa disponível para calcular o custo.
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <button onClick={() => handleRemoverRecurso(recurso.funcao_id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '8px' }} title="Remover recurso">
+                                                <Trash2 size={20} />
+                                            </button>
+                                        </div>
+                                    );
+                                }
+
+                                const subtotal = recurso.unidade === 'dias'
                                     ? (recurso.tempo * recurso.qtd_profissionais * taxa.custo_dia_calculado)
                                     : (recurso.tempo * recurso.qtd_profissionais * taxa.custo_hora_calculado);
 
@@ -275,10 +320,14 @@ export function FormularioObra({ onSalvarSucesso, obraEmEdicao, onCancelarEdicao
 
                     <button
                         onClick={handleSalvar}
-                        disabled={isSaving || recursos.length === 0 || !titulo || !cliente}
-                        style={{ width: '100%', padding: '16px', backgroundColor: (isSaving || recursos.length === 0 || !titulo || !cliente) ? '#334155' : (obraEmEdicao ? '#10b981' : '#f97316'), color: (isSaving || recursos.length === 0 || !titulo || !cliente) ? '#64748b' : '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '1.1rem', cursor: (isSaving || recursos.length === 0 || !titulo || !cliente) ? 'not-allowed' : 'pointer', marginTop: '15px' }}
+                        disabled={isSaving || recursos.length === 0 || !titulo || !cliente || temRecursoOrfao}
+                        style={{ width: '100%', padding: '16px', backgroundColor: (isSaving || recursos.length === 0 || !titulo || !cliente || temRecursoOrfao) ? '#334155' : (obraEmEdicao ? '#10b981' : '#f97316'), color: (isSaving || recursos.length === 0 || !titulo || !cliente || temRecursoOrfao) ? '#64748b' : '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '1.1rem', cursor: (isSaving || recursos.length === 0 || !titulo || !cliente || temRecursoOrfao) ? 'not-allowed' : 'pointer', marginTop: '15px' }}
                     >
-                        {isSaving ? 'A processar...' : (obraEmEdicao ? 'Atualizar Base de Cálculo' : 'Salvar Base de Cálculo')}
+                        {isSaving
+                            ? 'A processar...'
+                            : temRecursoOrfao
+                                ? 'Remova as funções sem funcionário para salvar'
+                                : (obraEmEdicao ? 'Atualizar Base de Cálculo' : 'Salvar Base de Cálculo')}
                     </button>
                 </div>
             </div>
