@@ -6,7 +6,8 @@ import { IndicadorCard } from './components/IndicadorCard';
 import { GraficoFinanceiro } from './components/GraficoFinanceiro';
 import { GraficoProdutividade } from './components/GraficoProdutividade';
 import { GraficoCustos } from './components/GraficoCustos';
-import { DollarSign, Clock, CircleCheck, FileText, Wallet, AlertCircle, Calendar, ShieldAlert, ChevronDown, BarChart3, TrendingUp, Trophy, Sparkles, LayoutDashboard, Tag, Package } from 'lucide-react';
+import { DollarSign, Clock, CircleCheck, FileText, Wallet, AlertCircle, Calendar, ShieldAlert, ChevronDown, BarChart3, TrendingUp, Trophy, Sparkles, LayoutDashboard, Tag, Package, Building2 } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 import './styles/Dashboard.css';
 
 const MESES = [
@@ -53,9 +54,12 @@ function FiltroDropdown<T extends string | number>({ valor, opcoes, onChange }: 
 }
 
 export function Dashboard() {
-    const navigate = useNavigate(); 
+    const navigate = useNavigate();
     const { dados, loading, error, mes, setMes, ano, setAno } = useDashboard();
-    
+    const { usuario } = useAuth();
+
+    const nomeEmpresa = usuario?.nome_empresa?.trim();
+
     const [visaoOS, setVisaoOS] = useState<TipoVisao>('urgentes');
 
     if (error) {
@@ -96,7 +100,15 @@ export function Dashboard() {
                         <LayoutDashboard size={26} color="#f97316" />
                     </div>
                     <div>
-                        <h2 className="titulo-gradient">Visão Geral</h2>
+                        <div className="titulo-linha">
+                            <h2 className="titulo-gradient">Visão Geral</h2>
+                            {nomeEmpresa && (
+                                <span className="empresa-badge" title={nomeEmpresa}>
+                                    <Building2 size={14} strokeWidth={2.5} />
+                                    {nomeEmpresa}
+                                </span>
+                            )}
+                        </div>
                         <p className="dashboard-sub">Métricas limitadas às operações de Ordens de Serviço (Produção)</p>
                     </div>
                 </div>

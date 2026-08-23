@@ -73,6 +73,34 @@
     letter-spacing: -0.02em;
 }
 
+.titulo-linha {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.empresa-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 260px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: #f9731615;
+    border: 1px solid #f9731630;
+    color: #f97316;
+    font-size: 0.8rem;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.empresa-badge svg {
+    flex-shrink: 0;
+}
+
 .dashboard-sub {
     font-size: 0.85rem;
     color: #64748b;
