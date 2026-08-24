@@ -2,9 +2,10 @@
   "name": "backend-tcc",
   "version": "1.0.0",
   "description": "Backend do sistema TCC",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "start": "ts-node src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
     "dev": "nodemon --watch src --exec ts-node src/index.ts"
   },
   "dependencies": {
