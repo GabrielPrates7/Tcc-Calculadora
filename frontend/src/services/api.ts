@@ -1,9 +1,7 @@
-// ARQUIVO: src/services/api.ts
-
 import axios from 'axios';
 
 export const api = axios.create({
-    baseURL: 'http://localhost:3000/api',
+    baseURL: 'https://api-tcc-drs1.onrender.com/api',
 });
 
 // Interceptador de Requisição: Antes de enviar qualquer requisição, anexa o Token JWT
