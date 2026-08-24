@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext'; 
 import logoDenarius from '../assets/images/logo-denarius.png';
-import './sidebar.css';
+import './Sidebar.css';
 
 interface MenuItem {
   id: string;
