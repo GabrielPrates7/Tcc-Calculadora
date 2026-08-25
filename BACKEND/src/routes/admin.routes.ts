@@ -1,4 +1,6 @@
 import { Router, Request, Response } from 'express';
+import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
 import { pool as db } from '../services/db';
 import { verificarSuperAdmin } from '../middlewares/auth.middleware';
 
@@ -6,6 +8,35 @@ const adminRoutes = Router();
 
 // Todas as rotas administrativas exigem o administrador global do sistema
 adminRoutes.use(verificarSuperAdmin);
+
+/**
+ * Gera uma senha temporária aleatória (10 caracteres), garantindo pelo menos
+ * uma letra e um número — um charset puramente aleatório teria ~17% de chance
+ * de sair só com letras. Usa crypto.randomInt (não Math.random) por ser
+ * criptograficamente seguro, já que esta senha concede acesso à conta.
+ */
+function gerarSenhaTemporaria(): string {
+    const LETRAS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+    const NUMEROS = '0123456789';
+    const TODOS = LETRAS + NUMEROS;
+    const TAMANHO = 10;
+
+    const caracteres = [
+        LETRAS[crypto.randomInt(LETRAS.length)],
+        NUMEROS[crypto.randomInt(NUMEROS.length)]
+    ];
+    while (caracteres.length < TAMANHO) {
+        caracteres.push(TODOS[crypto.randomInt(TODOS.length)]);
+    }
+
+    // Embaralha (Fisher-Yates) para a letra/número obrigatórios não caírem sempre no início
+    for (let i = caracteres.length - 1; i > 0; i--) {
+        const j = crypto.randomInt(i + 1);
+        [caracteres[i], caracteres[j]] = [caracteres[j], caracteres[i]];
+    }
+
+    return caracteres.join('');
+}
 
 // Rota 1: Listar todos os usuários pendentes (ativo = false)
 adminRoutes.get('/pendentes', async (req: Request, res: Response): Promise<void> => {
@@ -82,6 +113,48 @@ adminRoutes.patch('/bloquear/:id', async (req: Request, res: Response): Promise<
         res.json({ message: 'Usuário bloqueado com sucesso!' });
     } catch (error) {
         res.status(500).json({ error: 'Erro interno ao bloquear o usuário.' });
+    }
+});
+
+// Rota 4.5: Redefinir a senha de um usuário (gera senha temporária)
+adminRoutes.post('/redefinir-senha/:id', async (req: Request, res: Response): Promise<void> => {
+    const usuarioId = Number(req.params.id);
+
+    // Mesma guarda de /bloquear: evita o super admin se trancar fora da própria conta
+    if (usuarioId === req.usuario!.id) {
+        res.status(400).json({ error: 'Não é possível redefinir a senha da sua própria conta por aqui.' });
+        return;
+    }
+
+    try {
+        const senhaTemporaria = gerarSenhaTemporaria();
+        const senhaHash = await bcrypt.hash(senhaTemporaria, 10);
+
+        const result = await db.query(
+            'UPDATE usuarios SET senha_hash = $1 WHERE id = $2 RETURNING id, nome, email',
+            [senhaHash, usuarioId]
+        );
+
+        if (result.rowCount === 0) {
+            res.status(404).json({ error: 'Usuário não encontrado.' });
+            return;
+        }
+
+        const alvo = result.rows[0];
+
+        // Auditoria: fica só no log do servidor — nunca na resposta HTTP nem na tela.
+        console.log(
+            `[ADMIN] Senha redefinida — admin_id=${req.usuario!.id} alvo_id=${alvo.id} ` +
+            `alvo_email=${alvo.email} em=${new Date().toISOString()}`
+        );
+
+        res.json({
+            senhaTemporaria,
+            usuario: { id: alvo.id, nome: alvo.nome, email: alvo.email }
+        });
+    } catch (error) {
+        console.error('Erro ao redefinir senha:', error);
+        res.status(500).json({ error: 'Erro interno ao redefinir a senha.' });
     }
 });
 

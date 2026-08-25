@@ -51,6 +51,11 @@ export const AdminService = {
         return response.data;
     },
 
+    async redefinirSenha(id: number): Promise<{ senhaTemporaria: string; usuario: { id: number; nome: string; email: string } }> {
+        const response = await api.post(`/admin/redefinir-senha/${id}`);
+        return response.data;
+    },
+
     // MÉTODOS DO FLUXO DE ALTERAÇÃO
     async listarAlteracoesPendentes(): Promise<AlteracaoPendente[]> {
         const response = await api.get('/admin/solicitacoes');

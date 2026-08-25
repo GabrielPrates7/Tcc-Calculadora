@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ShieldCheck, CheckCircle, Users, Ban, Check, UserCog, X } from 'lucide-react';
+import { ShieldCheck, CheckCircle, Users, Ban, Check, UserCog, X, KeyRound, Copy } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { AdminService, type CadastroPendente, type AlteracaoPendente } from '../../services/admin.service';
 import { ConfirmModal } from '../../components/ConfirmModal/ConfirmModal';
@@ -24,6 +24,13 @@ export function PainelAdmin() {
         message: '',
         textoConfirmar: '',
         onConfirm: async () => {}
+    });
+
+    // Modal de exibição única da senha temporária gerada
+    const [modalSenhaTemp, setModalSenhaTemp] = useState({
+        isOpen: false,
+        nomeUsuario: '',
+        senha: ''
     });
 
     useEffect(() => {
@@ -91,6 +98,35 @@ export function PainelAdmin() {
                 }
             }
         });
+    };
+
+    const handleRedefinirSenha = (usuario_id: number, nome_usuario: string) => {
+        setModalConfirmacao({
+            isOpen: true,
+            title: "Redefinir Senha",
+            message: `Uma nova senha temporária será gerada para "${nome_usuario}" e a senha atual deixará de funcionar imediatamente. Deseja continuar?`,
+            textoConfirmar: "Redefinir Senha",
+            onConfirm: async () => {
+                try {
+                    const resultado = await AdminService.redefinirSenha(usuario_id);
+                    setModalSenhaTemp({ isOpen: true, nomeUsuario: nome_usuario, senha: resultado.senhaTemporaria });
+                } catch (error) {
+                    console.error(error);
+                    toast.error('Erro ao redefinir senha.');
+                } finally {
+                    setModalConfirmacao(prev => ({ ...prev, isOpen: false }));
+                }
+            }
+        });
+    };
+
+    const handleCopiarSenha = async () => {
+        try {
+            await navigator.clipboard.writeText(modalSenhaTemp.senha);
+            toast.success('Senha copiada!');
+        } catch {
+            toast.error('Não foi possível copiar automaticamente. Selecione o texto manualmente.');
+        }
     };
 
     const handleAprovarAlteracao = (id: number) => {
@@ -357,34 +393,43 @@ export function PainelAdmin() {
                                         {new Date(req.criado_em).toLocaleDateString('pt-BR')}
                                     </td>
                                     <td style={{ padding: '16px 24px', textAlign: 'right' }}>
-                                        {req.ativo ? (
-                                            req.usuario_id === usuario?.id ? (
-                                                <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
-                                                    <button
-                                                        disabled
-                                                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#1e293b', color: '#64748b', border: '1px solid #334155', padding: '8px 16px', borderRadius: '6px', cursor: 'not-allowed', fontWeight: 'bold' }}
-                                                        title="Não é possível bloquear sua própria conta"
-                                                    >
-                                                        <Ban size={16} /> Bloquear
-                                                    </button>
-                                                    <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Sua própria conta</span>
-                                                </div>
-                                            ) : (
+                                        {req.usuario_id === usuario?.id ? (
+                                            <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
                                                 <button
-                                                    onClick={() => handleBloquear(req.usuario_id, req.nome_empresa)}
-                                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#ef4444', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
-                                                    title="Bloquear usuário temporariamente"
+                                                    disabled
+                                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#1e293b', color: '#64748b', border: '1px solid #334155', padding: '8px 16px', borderRadius: '6px', cursor: 'not-allowed', fontWeight: 'bold' }}
+                                                    title="Não é possível bloquear sua própria conta"
                                                 >
                                                     <Ban size={16} /> Bloquear
                                                 </button>
-                                            )
+                                                <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Sua própria conta</span>
+                                            </div>
                                         ) : (
-                                            <button 
-                                                onClick={() => handleAprovar(req.usuario_id, req.nome_empresa)}
-                                                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
-                                            >
-                                                <Check size={16} /> Ativar
-                                            </button>
+                                            <div style={{ display: 'inline-flex', gap: '8px' }}>
+                                                <button
+                                                    onClick={() => handleRedefinirSenha(req.usuario_id, req.nome_usuario)}
+                                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#1e293b', color: '#3b82f6', border: '1px solid #3b82f6', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+                                                    title="Gerar uma nova senha temporária para este usuário"
+                                                >
+                                                    <KeyRound size={16} /> Redefinir Senha
+                                                </button>
+                                                {req.ativo ? (
+                                                    <button
+                                                        onClick={() => handleBloquear(req.usuario_id, req.nome_empresa)}
+                                                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#ef4444', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+                                                        title="Bloquear usuário temporariamente"
+                                                    >
+                                                        <Ban size={16} /> Bloquear
+                                                    </button>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => handleAprovar(req.usuario_id, req.nome_empresa)}
+                                                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+                                                    >
+                                                        <Check size={16} /> Ativar
+                                                    </button>
+                                                )}
+                                            </div>
                                         )}
                                     </td>
                                 </tr>
@@ -395,7 +440,7 @@ export function PainelAdmin() {
             </div>
 
             {/* Injeção do ConfirmModal padronizado */}
-            <ConfirmModal 
+            <ConfirmModal
                 isOpen={modalConfirmacao.isOpen}
                 title={modalConfirmacao.title}
                 message={modalConfirmacao.message}
@@ -403,6 +448,47 @@ export function PainelAdmin() {
                 onConfirm={modalConfirmacao.onConfirm}
                 onCancel={() => setModalConfirmacao(prev => ({ ...prev, isOpen: false }))}
             />
+
+            {/* Modal de exibição única da senha temporária — some ao fechar, nunca fica salva na tela */}
+            {modalSenhaTemp.isOpen && (
+                <div
+                    onClick={() => setModalSenhaTemp({ isOpen: false, nomeUsuario: '', senha: '' })}
+                    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
+                >
+                    <div
+                        onClick={e => e.stopPropagation()}
+                        style={{ background: '#1e293b', borderRadius: '8px', padding: '24px', border: '1px solid #334155', boxShadow: '0 10px 25px rgba(0,0,0,0.3)', width: '400px', maxWidth: '90vw' }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                            <KeyRound size={20} color="#3b82f6" />
+                            <h2 style={{ fontSize: '1.1rem', color: '#f8fafc', margin: 0 }}>Senha Temporária Gerada</h2>
+                        </div>
+                        <p style={{ color: '#94a3b8', fontSize: '0.85rem', marginBottom: '16px' }}>
+                            Repasse esta senha para <strong>{modalSenhaTemp.nomeUsuario}</strong> por fora do sistema (telefone, presencialmente, etc). Ela só é exibida <strong>uma única vez</strong> — não fica salva em lugar nenhum da tela.
+                        </p>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '6px', padding: '12px 16px', marginBottom: '20px' }}>
+                            <code style={{ flex: 1, color: '#10b981', fontSize: '1.15rem', fontWeight: 'bold', letterSpacing: '0.05em', userSelect: 'all' }}>
+                                {modalSenhaTemp.senha}
+                            </code>
+                            <button
+                                onClick={handleCopiarSenha}
+                                style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#334155', color: '#f8fafc', border: 'none', padding: '8px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' }}
+                                title="Copiar senha"
+                            >
+                                <Copy size={16} /> Copiar
+                            </button>
+                        </div>
+
+                        <button
+                            onClick={() => setModalSenhaTemp({ isOpen: false, nomeUsuario: '', senha: '' })}
+                            style={{ width: '100%', background: '#3b82f6', color: '#fff', border: 'none', padding: '10px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+                        >
+                            Já copiei, fechar
+                        </button>
+                    </div>
+                </div>
+            )}
 
         </div>
     );
