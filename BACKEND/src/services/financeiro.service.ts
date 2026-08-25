@@ -28,6 +28,70 @@ const validarDataObrigatoria = (data?: string): string => {
 
 export const FinanceiroService = {
     // ==========================================
+    // TAXA DE CUSTO FIXO (fonte única)
+    // ==========================================
+    /**
+     * Percentual das despesas fixas sobre o faturamento — a única
+     * implementação deste indicador no sistema. Dashboard, tela Financeira,
+     * relatório em PDF e o markup do orçamento devem todos passar por aqui,
+     * para não divergirem entre si.
+     *
+     * - Sem `mes`/`ano`: usa o período do faturamento mais recente lançado.
+     * - Com `mes`/`ano`: usa exatamente aquele período. `mes` aceita uma lista
+     *   para o caso do relatório, que soma um intervalo de vários meses.
+     *
+     * Despesas e faturamento saem sempre do MESMO período, e o resultado é
+     * sempre arredondado em 2 casas.
+     */
+    async calcularTaxaCustoFixo(empresa_id: number, mes?: number | number[], ano?: number): Promise<number> {
+        let mesesAlvo: number[];
+        let anoAlvo: number;
+
+        const mesesInformados = mes === undefined ? [] : (Array.isArray(mes) ? mes : [mes]);
+
+        if (mesesInformados.length === 0 || !ano) {
+            // Sem período explícito: ancora no faturamento mais recente lançado
+            const ultimoRes = await pool.query(
+                `SELECT mes, ano FROM faturamentos_mensais
+                 WHERE empresa_id = $1
+                 ORDER BY ano DESC, mes DESC
+                 LIMIT 1`,
+                [empresa_id]
+            );
+            if (ultimoRes.rowCount === 0) return 0;
+            mesesAlvo = [Number(ultimoRes.rows[0].mes)];
+            anoAlvo = Number(ultimoRes.rows[0].ano);
+        } else {
+            mesesAlvo = mesesInformados;
+            anoAlvo = ano;
+        }
+
+        const faturamentoRes = await pool.query(
+            `SELECT COALESCE(SUM(valor), 0) AS total
+             FROM faturamentos_mensais
+             WHERE mes = ANY($1::int[]) AND ano = $2 AND empresa_id = $3`,
+            [mesesAlvo, anoAlvo, empresa_id]
+        );
+        const faturamento = Number(faturamentoRes.rows[0]?.total) || 0;
+
+        // Sem faturamento no período não há base de rateio — evita divisão por zero
+        if (faturamento <= 0) return 0;
+
+        const despesasRes = await pool.query(
+            `SELECT COALESCE(SUM(valor), 0) AS total
+             FROM despesas_fixas
+             WHERE ativo = true
+               AND EXTRACT(MONTH FROM data_vencimento) = ANY($1::int[])
+               AND EXTRACT(YEAR FROM data_vencimento) = $2
+               AND empresa_id = $3`,
+            [mesesAlvo, anoAlvo, empresa_id]
+        );
+        const totalDespesas = Number(despesasRes.rows[0]?.total) || 0;
+
+        return Number(((totalDespesas / faturamento) * 100).toFixed(2));
+    },
+
+    // ==========================================
     // MÉTODOS DE DESPESAS FIXAS
     // ==========================================
     async listarDespesas(empresa_id: number) {

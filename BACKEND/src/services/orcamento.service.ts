@@ -1,4 +1,5 @@
 import { pool as db } from './db';
+import { FinanceiroService } from './financeiro.service';
 
 export interface IOrcamentoPayload {
     cliente?: string;
@@ -46,25 +47,10 @@ export interface ICenarioMaoObraDTO {
 
 export class OrcamentoService {
     
+    // Delega para a fonte única do indicador (FinanceiroService), sem período
+    // explícito: ancora no faturamento mais recente lançado pela empresa.
     async obterTaxaFixoAtual(empresa_id: number): Promise<number> {
-        const query = `
-            WITH despesas AS (
-                SELECT COALESCE(SUM(valor), 0) AS total 
-                FROM public.despesas_fixas 
-                WHERE ativo = true AND empresa_id = $1
-            ),
-            faturamento AS (
-                SELECT COALESCE(valor, 1) AS total 
-                FROM public.faturamentos_mensais 
-                WHERE valor > 100 AND empresa_id = $1
-                ORDER BY ano DESC, mes DESC 
-                LIMIT 1
-            )
-            SELECT ROUND((d.total / GREATEST(f.total, 1)) * 100, 2) AS taxa_atual
-            FROM despesas d CROSS JOIN faturamento f;
-        `;
-        const result = await db.query(query, [empresa_id]);
-        return result.rows.length > 0 ? Number(result.rows[0].taxa_atual) : 0;
+        return FinanceiroService.calcularTaxaCustoFixo(empresa_id);
     }
 
     async listarCenariosMaoObra(empresa_id: number): Promise<ICenarioMaoObraDTO[]> {

@@ -13,6 +13,44 @@ const MAX_VALOR_PERMITIDO = 9999999999999.99;
 router.use(verificarToken);
 
 // ==========================================
+// 0. TAXA DE CUSTO FIXO (fonte única, consumida também pelo relatório em PDF)
+// ==========================================
+// Aceita ?mes=8&ano=2026 ou ?meses=7,8&ano=2026. Sem período, usa o
+// faturamento mais recente lançado pela empresa.
+router.get('/taxa-custo-fixo', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const empresaId = req.usuario!.empresa_id;
+
+        const mesesParam = (req.query.meses ?? req.query.mes) as string | undefined;
+        const anoParam = req.query.ano as string | undefined;
+
+        let meses: number[] | undefined;
+        if (mesesParam) {
+            meses = String(mesesParam)
+                .split(',')
+                .map(m => Number(m.trim()))
+                .filter(m => Number.isInteger(m) && m >= 1 && m <= 12);
+            if (meses.length === 0) {
+                res.status(400).json({ error: 'Parâmetro de mês inválido. Use valores de 1 a 12.' });
+                return;
+            }
+        }
+
+        const ano = anoParam ? Number(anoParam) : undefined;
+        if (anoParam && !Number.isInteger(ano)) {
+            res.status(400).json({ error: 'Parâmetro de ano inválido.' });
+            return;
+        }
+
+        const taxaCustoFixo = await FinanceiroService.calcularTaxaCustoFixo(empresaId, meses, ano);
+        res.json({ taxaCustoFixo });
+    } catch (err) {
+        console.error("Erro ao calcular taxa de custo fixo:", err);
+        res.status(500).json({ error: 'Erro interno ao calcular a taxa de custo fixo.' });
+    }
+});
+
+// ==========================================
 // 1. DASHBOARD (Financeiro)
 // ==========================================
 router.get('/dashboard', async (req: Request, res: Response): Promise<void> => {
@@ -49,7 +87,8 @@ router.get('/dashboard', async (req: Request, res: Response): Promise<void> => {
         `, [mesFiltro, anoFiltro, empresaId]);
         const totalInvestimentos = Number(investRes.rows[0]?.total) || 0;
 
-        const taxaCustoFixo = faturamento > 0 ? (totalDespesas / faturamento) * 100 : 0;
+        // Fonte única do indicador — mesmo período (o do faturamento mais recente)
+        const taxaCustoFixo = await FinanceiroService.calcularTaxaCustoFixo(empresaId, mesFiltro, anoFiltro);
 
         res.json({ faturamento, totalDespesas, totalInvestimentos, taxaCustoFixo });
     } catch (err) {

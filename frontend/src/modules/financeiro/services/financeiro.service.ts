@@ -81,5 +81,17 @@ export const FinanceiroService = {
 
     async salvarFaturamento(mes: number, ano: number, valor: number): Promise<void> {
         await api.post('/financeiro/faturamento', { mes, ano, valor });
+    },
+
+    /**
+     * Taxa de Custo Fixo do período, calculada pelo backend (fonte única).
+     * `meses` em 1-12. Sem período, o backend usa o faturamento mais recente.
+     */
+    async getTaxaCustoFixo(meses?: number[], ano?: number): Promise<number> {
+        const params = (meses && meses.length > 0 && ano)
+            ? { meses: meses.join(','), ano }
+            : undefined;
+        const res = await api.get<{ taxaCustoFixo: number }>('/financeiro/taxa-custo-fixo', { params });
+        return Number(res.data.taxaCustoFixo) || 0;
     }
 };

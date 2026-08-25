@@ -7,6 +7,7 @@ import autoTable from 'jspdf-autotable';
 import type { ItemFinanceiro } from '../types';
 import { analisarIntervalo } from '../utils/dateHelper';
 import { formatarBRL } from '../../../utils/formatters';
+import { FinanceiroService } from '../services/financeiro.service';
 import './ModalFinanceiro.css';
 
 interface Props {
@@ -56,10 +57,13 @@ export function ModalRelatorio({ despesas, investimentos, onClose, somarFaturame
 
             const totalDespesas = despesasFiltradas.reduce((acc, i) => acc + Number(i.valor), 0);
             const totalInvestimentos = investimentosFiltrados.reduce((acc, i) => acc + Number(i.valor), 0);
-            
-            const taxaCustoFixo = faturamentoPeriodo > 0 
-                ? (totalDespesas / faturamentoPeriodo) * 100 
-                : 0;
+
+            // Taxa vem calculada do backend (fonte única em FinanceiroService),
+            // para não divergir do Dashboard / tela Financeira / orçamento.
+            const taxaCustoFixo = await FinanceiroService.getTaxaCustoFixo(
+                infoDatas.meses.map(m => m + 1),
+                infoDatas.ano ?? undefined
+            );
 
             const doc = new jsPDF();
             const pageWidth = doc.internal.pageSize.width;

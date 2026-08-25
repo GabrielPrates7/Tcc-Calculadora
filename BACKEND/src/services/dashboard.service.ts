@@ -1,4 +1,5 @@
 import { pool } from './db';
+import { FinanceiroService } from './financeiro.service';
 
 interface TotalRow { total: string | number | null; }
 interface FaturamentoRow { valor: string | number; }
@@ -49,8 +50,8 @@ export class DashboardService {
             { nome: 'Investimentos', valor: totalInvestimentos, cor: '#3b82f6' }     // Azul
         ].filter(item => item.valor > 0);
 
-        // 3. Taxa de Custo Fixo
-        const taxaCustoFixo = faturamentoBase > 0 ? (totalDespesasFixas / faturamentoBase) * 100 : 0;
+        // 3. Taxa de Custo Fixo (fonte única em FinanceiroService)
+        const taxaCustoFixo = await FinanceiroService.calcularTaxaCustoFixo(empresa_id, mes, ano);
 
         // 4. Receita Realizada Estrita e Ticket Médio
         const receitaRealizadaRes = await pool.query<{ total: string | number | null, qtd: string | number }>(`
