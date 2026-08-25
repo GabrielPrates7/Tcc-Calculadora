@@ -35,7 +35,19 @@ const PORT = process.env.PORT || 3000;
  */
 app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS) || 0);
 
-app.use(cors());
+/**
+ * Whitelist de origens autorizadas a chamar a API. Sem isso, cors() aberto
+ * (`app.use(cors())`) libera qualquer site da internet a ler as respostas.
+ *
+ * CORS_ORIGINS aceita uma lista separada por vírgula. Sem a variável, cai no
+ * localhost de desenvolvimento — nunca abre para qualquer origem por padrão.
+ */
+const corsOrigins = (process.env.CORS_ORIGINS ?? 'http://localhost:5173')
+    .split(',')
+    .map(origem => origem.trim())
+    .filter(Boolean);
+
+app.use(cors({ origin: corsOrigins }));
 app.use(express.json());
 
 // ==========================================
