@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# Env vars (VITE_* vao pro bundle publico, mas o valor deve poder
+# diferir por ambiente sem precisar de commit)
+.env
+.env.local
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
