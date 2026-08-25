@@ -22,6 +22,19 @@ import configuracoesRoutes from './routes/configuracoes.routes';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+/**
+ * Quantos proxies existem à frente da aplicação. O rate limiting identifica o
+ * cliente por `req.ip`, que só é confiável com este valor correto:
+ *
+ *  - Render (produção): 1 — o Express lê o último IP do X-Forwarded-For.
+ *  - Local, sem proxy:  0 — usa o IP da conexão.
+ *
+ * O padrão é 0 de propósito. Um valor alto demais faria o Express confiar em
+ * um X-Forwarded-For forjado pelo cliente, permitindo trocar de "IP" a cada
+ * requisição e furar o limite de tentativas.
+ */
+app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS) || 0);
+
 app.use(cors());
 app.use(express.json());
 

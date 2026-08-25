@@ -47,19 +47,20 @@ funcionarioRoutes.get('/', async (req, res) => {
 
 funcionarioRoutes.post('/', async (req, res) => {
     try {
-        const { nome, funcao_id, setor, salarioBase, epi } = req.body;
+        const { nome, funcao_id, setor, salarioBase, valorEpi, valorBeneficio } = req.body;
         const empresaId = req.usuario!.empresa_id;
-        
+
         if (!nome || !funcao_id || salarioBase === undefined) {
             return res.status(400).json({ error: 'Nome, função e salário base são obrigatórios.' });
         }
 
-        const novoFuncionario = await service.criarFuncionario({ 
-            nome, 
-            funcao_id, 
-            setor, 
-            salarioBase, 
-            epi: epi || 0 
+        const novoFuncionario = await service.criarFuncionario({
+            nome,
+            funcao_id,
+            setor,
+            salarioBase,
+            valorEpi: valorEpi || 0,
+            valorBeneficio: valorBeneficio || 0
         }, empresaId);
         
         res.status(201).json(novoFuncionario);

@@ -8,6 +8,35 @@ const orcamentoService = new OrcamentoService();
 // Protege todas as rotas de orçamentos
 router.use(verificarToken);
 
+/**
+ * Mensagens de negócio conhecidas (lançadas por OrcamentoService) — as únicas
+ * que podem chegar ao cliente. Qualquer outro erro, em especial falhas do
+ * Postgres, devolve mensagem genérica: a mensagem crua do banco revela nomes
+ * de tabela, coluna e constraint, servindo de mapa para um atacante.
+ */
+const ERROS_NEGOCIO: { trecho: string; status: number }[] = [
+    { trecho: 'excede 100%', status: 400 },
+    { trecho: 'não encontrado', status: 404 }
+];
+
+/**
+ * Loga o erro completo no servidor e responde ao cliente com a mensagem de
+ * negócio (se for uma conhecida) ou com o texto genérico de fallback.
+ */
+function responderErro(res: Response, err: unknown, contexto: string, fallback: string): void {
+    console.error(`${contexto}:`, err);
+
+    const mensagem = err instanceof Error ? err.message : '';
+    const conhecido = ERROS_NEGOCIO.find(e => mensagem.includes(e.trecho));
+
+    if (conhecido) {
+        res.status(conhecido.status).json({ error: mensagem });
+        return;
+    }
+
+    res.status(500).json({ error: fallback });
+}
+
 // --- 0. BUSCAR HISTÓRICO PARA O DROPDOWN ---
 router.get('/historico-obra', async (req: Request, res: Response) => {
     try {
@@ -68,9 +97,7 @@ router.post('/', async (req: Request, res: Response) => {
         const novoOrcamento = await orcamentoService.criarOrcamento(dados, empresaId);
         res.status(201).json(novoOrcamento);
     } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido ao salvar';
-        console.error("Erro ao salvar:", errorMessage);
-        res.status(400).json({ error: errorMessage });
+        responderErro(res, err, 'Erro ao salvar orçamento', 'Erro ao salvar o orçamento.');
     }
 });
 
@@ -98,9 +125,7 @@ router.put('/:id', async (req: Request, res: Response) => {
         const atualizado = await orcamentoService.atualizarOrcamento(Number(req.params.id), dados, empresaId);
         res.json({ message: 'Orçamento atualizado com sucesso!', data: atualizado });
     } catch (err: unknown) {
-        const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido ao atualizar';
-        console.error("Erro ao atualizar:", errorMessage);
-        res.status(400).json({ error: errorMessage });
+        responderErro(res, err, 'Erro ao atualizar orçamento', 'Erro ao atualizar o orçamento.');
     }
 });
 

@@ -2,7 +2,8 @@ import { pool } from './db';
 
 export interface EncargosSociais {
     salarioBase: number;
-    epi: number;
+    valorEpi: number;
+    valorBeneficio: number;
     decimoTerceiro: number;
     ferias: number;
     umTercoFerias: number;
@@ -13,28 +14,30 @@ export interface EncargosSociais {
 }
 
 // Motor Contábil Anti-Float
-export function calcularEncargos(salario: number, epi: number): EncargosSociais {
+export function calcularEncargos(salario: number, valorEpi: number, valorBeneficio: number): EncargosSociais {
     const salarioCentavos = Math.round(salario * 100);
-    const epiCentavos = Math.round(epi * 100);
+    const epiCentavos = Math.round(valorEpi * 100);
+    const beneficioCentavos = Math.round(valorBeneficio * 100);
 
     const decimoTerceiro = Math.round(salarioCentavos / 12);
     const ferias = Math.round(salarioCentavos / 12);
     const umTercoFerias = Math.round(ferias / 3);
-    const inss = Math.round(salarioCentavos * 0.08); 
-    const fgtsMensal = Math.round(salarioCentavos * 0.08); 
-    const multaFgts = Math.round(fgtsMensal * 0.40); 
+    const inss = Math.round(salarioCentavos * 0.08);
+    const fgtsMensal = Math.round(salarioCentavos * 0.08);
+    const multaFgts = Math.round(fgtsMensal * 0.40);
 
-    const custoTotalCentavos = salarioCentavos + epiCentavos + decimoTerceiro + ferias + umTercoFerias + inss + multaFgts;
+    const custoTotalCentavos = salarioCentavos + epiCentavos + beneficioCentavos + decimoTerceiro + ferias + umTercoFerias + inss + multaFgts;
 
     return {
-        salarioBase: salarioCentavos / 100, 
-        epi: epiCentavos / 100, 
-        decimoTerceiro: decimoTerceiro / 100, 
+        salarioBase: salarioCentavos / 100,
+        valorEpi: epiCentavos / 100,
+        valorBeneficio: beneficioCentavos / 100,
+        decimoTerceiro: decimoTerceiro / 100,
         ferias: ferias / 100,
-        umTercoFerias: umTercoFerias / 100, 
-        inss: inss / 100, 
-        fgtsMensal: fgtsMensal / 100, 
-        multaFgts: multaFgts / 100, 
+        umTercoFerias: umTercoFerias / 100,
+        inss: inss / 100,
+        fgtsMensal: fgtsMensal / 100,
+        multaFgts: multaFgts / 100,
         custoTotal: custoTotalCentavos / 100
     };
 }
@@ -124,8 +127,8 @@ export class FuncionarioService {
 
         // Adicionado 'f.custo_hora' no select para disponibilidade no frontend caso necessário no futuro
         const dataQuery = `
-            SELECT f.id, f.nome, fun.nome AS funcao, f.funcao_id, f.setor, 
-                   f.salario_base, f.epi, f.custo_total_mensal, f.custo_hora, f.ativo, f.data_admissao,
+            SELECT f.id, f.nome, fun.nome AS funcao, f.funcao_id, f.setor,
+                   f.salario_base, f.valor_epi, f.valor_beneficio, f.custo_total_mensal, f.custo_hora, f.ativo, f.data_admissao,
                    f.decimo_terceiro, f.um_terco_ferias, f.ferias, f.inss, f.multa_fgts
             FROM funcionarios f
             LEFT JOIN funcoes fun ON f.funcao_id = fun.id
@@ -144,9 +147,9 @@ export class FuncionarioService {
     }
 
     // 3. Single Source of Truth na inserção
-    async criarFuncionario(dados: { nome: string; funcao_id: number; setor: string; salarioBase: number; epi: number }, empresa_id: number) {
-        const calc = calcularEncargos(dados.salarioBase, dados.epi);
-        
+    async criarFuncionario(dados: { nome: string; funcao_id: number; setor: string; salarioBase: number; valorEpi: number; valorBeneficio: number }, empresa_id: number) {
+        const calc = calcularEncargos(dados.salarioBase, dados.valorEpi, dados.valorBeneficio);
+
         // INTERCEPTAÇÃO GLOBAL: Busca a base de horas da empresa para derivar o Custo Hora Real
         const configRes = await pool.query('SELECT horas_trabalhadas_dia FROM configuracao_producao WHERE empresa_id = $1', [empresa_id]);
         const baseHoras = configRes.rows[0]?.horas_trabalhadas_dia || 176;
@@ -154,15 +157,15 @@ export class FuncionarioService {
 
         const query = `
             INSERT INTO funcionarios (
-                nome, funcao_id, setor, salario_base, epi, 
+                nome, funcao_id, setor, salario_base, valor_epi, valor_beneficio,
                 decimo_terceiro, um_terco_ferias, ferias, inss, multa_fgts, custo_total_mensal, custo_hora,
                 ativo, data_admissao, empresa_id
-            ) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), $14) RETURNING *
+            )
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), $15) RETURNING *
         `;
         const values = [
-            dados.nome, dados.funcao_id, dados.setor, calc.salarioBase, calc.epi,
-            calc.decimoTerceiro, calc.umTercoFerias, calc.ferias, calc.inss, calc.multaFgts, calc.custoTotal, custoHoraReal, 
+            dados.nome, dados.funcao_id, dados.setor, calc.salarioBase, calc.valorEpi, calc.valorBeneficio,
+            calc.decimoTerceiro, calc.umTercoFerias, calc.ferias, calc.inss, calc.multaFgts, calc.custoTotal, custoHoraReal,
             true, empresa_id
         ];
         const resultado = await pool.query(query, values);
@@ -181,20 +184,20 @@ export class FuncionarioService {
         if (dados.motivo_inativacao !== undefined) { updateFills += `motivo_inativacao = $${index++}, `; values.push(dados.motivo_inativacao); }
         if (dados.data_inativacao !== undefined) { updateFills += `data_inativacao = $${index++}, `; values.push(dados.data_inativacao); }
 
-        if (dados.salarioBase !== undefined && dados.epi !== undefined) {
-            const calc = calcularEncargos(dados.salarioBase, dados.epi);
-            
+        if (dados.salarioBase !== undefined && dados.valorEpi !== undefined && dados.valorBeneficio !== undefined) {
+            const calc = calcularEncargos(dados.salarioBase, dados.valorEpi, dados.valorBeneficio);
+
             // REPROCESSAMENTO DO CUSTO HORA GLOBAL EM CASO DE AUMENTO DE SALÁRIO
             const configRes = await pool.query('SELECT horas_trabalhadas_dia FROM configuracao_producao WHERE empresa_id = $1', [empresa_id]);
             const baseHoras = configRes.rows[0]?.horas_trabalhadas_dia || 176;
             const custoHoraReal = Number((calc.custoTotal / baseHoras).toFixed(2));
 
             updateFills += `
-                salario_base = $${index++}, epi = $${index++}, decimo_terceiro = $${index++}, 
-                um_terco_ferias = $${index++}, ferias = $${index++}, inss = $${index++}, 
-                multa_fgts = $${index++}, custo_total_mensal = $${index++}, custo_hora = $${index++}, 
+                salario_base = $${index++}, valor_epi = $${index++}, valor_beneficio = $${index++}, decimo_terceiro = $${index++},
+                um_terco_ferias = $${index++}, ferias = $${index++}, inss = $${index++},
+                multa_fgts = $${index++}, custo_total_mensal = $${index++}, custo_hora = $${index++},
             `;
-            values.push(calc.salarioBase, calc.epi, calc.decimoTerceiro, calc.umTercoFerias, calc.ferias, calc.inss, calc.multaFgts, calc.custoTotal, custoHoraReal);
+            values.push(calc.salarioBase, calc.valorEpi, calc.valorBeneficio, calc.decimoTerceiro, calc.umTercoFerias, calc.ferias, calc.inss, calc.multaFgts, calc.custoTotal, custoHoraReal);
         }
 
         updateFills = updateFills.replace(/,\s*$/, ''); 

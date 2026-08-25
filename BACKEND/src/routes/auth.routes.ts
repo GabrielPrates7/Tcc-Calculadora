@@ -2,11 +2,26 @@ import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { pool as db } from '../services/db';
+import { loginLimiter, registroLimiter } from '../middlewares/rateLimit.middleware';
 
 const authRoutes = Router();
 const JWT_SECRET = process.env.JWT_SECRET as string;
 
-authRoutes.post('/registro', async (req: Request, res: Response): Promise<void> => {
+/**
+ * Resposta única para qualquer falha de login — senha errada, usuário
+ * inexistente ou conta inativa. Mensagens distintas permitiriam descobrir
+ * quais contas existem no sistema antes de tentar a força bruta.
+ */
+const ERRO_LOGIN_GENERICO = 'Credenciais inválidas ou conta indisponível.';
+
+/**
+ * Hash descartável usado quando o usuário não existe. Sem ele, a resposta
+ * voltaria de imediato (sem passar pelo bcrypt), e a diferença de tempo
+ * revelaria a existência da conta mesmo com a mensagem unificada.
+ */
+const HASH_DUMMY = bcrypt.hashSync('conta-inexistente-comparacao-de-tempo', 10);
+
+authRoutes.post('/registro', registroLimiter, async (req: Request, res: Response): Promise<void> => {
     const { nome_empresa, cnpj, nome_usuario, email, senha } = req.body;
     const client = await db.connect();
 
@@ -57,7 +72,7 @@ authRoutes.post('/registro', async (req: Request, res: Response): Promise<void> 
     }
 });
 
-authRoutes.post('/login', async (req: Request, res: Response): Promise<void> => {
+authRoutes.post('/login', loginLimiter, async (req: Request, res: Response): Promise<void> => {
     // 1. Modificado para aceitar 'credencial' (pode ser o nome de usuário ou o email)
     const { credencial, senha } = req.body;
 
@@ -80,19 +95,16 @@ authRoutes.post('/login', async (req: Request, res: Response): Promise<void> => 
         const result = await db.query(query, [credencial]);
         const usuario = result.rows[0];
 
-        if (!usuario) {
-            res.status(401).json({ error: 'Usuário não encontrado ou credenciais inválidas.' });
-            return;
-        }
+        // O bcrypt roda sempre, mesmo sem usuário, para que o tempo de resposta
+        // não denuncie se a conta existe.
+        const senhaValida = usuario
+            ? await bcrypt.compare(senha, usuario.senha_hash)
+            : await bcrypt.compare(senha, HASH_DUMMY);
 
-        if (!usuario.ativo) {
-            res.status(403).json({ error: 'Conta inativa. Entre em contato com o administrador.' });
-            return;
-        }
-
-        const senhaValida = await bcrypt.compare(senha, usuario.senha_hash);
-        if (!senhaValida) {
-            res.status(401).json({ error: 'Credenciais inválidas.' });
+        // Conta inexistente, senha errada e conta inativa devolvem exatamente a
+        // mesma resposta — ver ERRO_LOGIN_GENERICO.
+        if (!usuario || !senhaValida || !usuario.ativo) {
+            res.status(401).json({ error: ERRO_LOGIN_GENERICO });
             return;
         }
 

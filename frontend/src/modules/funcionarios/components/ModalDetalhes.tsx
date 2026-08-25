@@ -9,7 +9,8 @@ interface Props {
 
 export function ModalDetalhes({ funcionario, onClose }: Props) {
     const salario = Number(funcionario.salario_base) || 0;
-    const epi = Number(funcionario.epi) || 0;
+    const valorEpi = Number(funcionario.valor_epi) || 0;
+    const valorBeneficio = Number(funcionario.valor_beneficio) || 0;
 
     // Valores já persistidos e calculados pelo backend (calcularEncargos em
     // funcionario.service.ts), os mesmos gravados no cadastro/edição do
@@ -70,8 +71,12 @@ export function ModalDetalhes({ funcionario, onClose }: Props) {
                                     <td style={{ padding: '12px 16px', color: '#0f172a', fontWeight: 'bold', textAlign: 'right', fontFamily: 'monospace', fontSize: '1rem' }}>{formatarBRL(salario)}</td>
                                 </tr>
                                 <tr style={{ borderBottom: '1px solid #f1f5f9', display: 'table-row' }}>
-                                    <td style={{ padding: '12px 16px', color: '#334155', fontWeight: '500' }}>EPI / Vale</td>
-                                    <td style={{ padding: '12px 16px', color: '#0f172a', fontWeight: 'bold', textAlign: 'right', fontFamily: 'monospace', fontSize: '1rem' }}>{formatarBRL(epi)}</td>
+                                    <td style={{ padding: '12px 16px', color: '#334155', fontWeight: '500' }}>EPI</td>
+                                    <td style={{ padding: '12px 16px', color: '#0f172a', fontWeight: 'bold', textAlign: 'right', fontFamily: 'monospace', fontSize: '1rem' }}>{formatarBRL(valorEpi)}</td>
+                                </tr>
+                                <tr style={{ borderBottom: '1px solid #f1f5f9', display: 'table-row' }}>
+                                    <td style={{ padding: '12px 16px', color: '#334155', fontWeight: '500' }}>Benefício / Vale Alimentação</td>
+                                    <td style={{ padding: '12px 16px', color: '#0f172a', fontWeight: 'bold', textAlign: 'right', fontFamily: 'monospace', fontSize: '1rem' }}>{formatarBRL(valorBeneficio)}</td>
                                 </tr>
                                 <tr style={{ borderBottom: '1px solid #f1f5f9', display: 'table-row' }}>
                                     <td style={{ padding: '12px 16px', color: '#334155', fontWeight: '500' }}>Provisão 13º</td>

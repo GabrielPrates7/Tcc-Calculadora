@@ -9,12 +9,13 @@ import './ModalFuncionario.css';
 interface DadosEnvio {
     id?: number;
     nome: string;
-    funcao_id: number; 
+    funcao_id: number;
     setor: 'producao' | 'administrativo';
     ativo: boolean;
     data_admissao: string;
     salarioBase: number;
-    epi: number;
+    valorEpi: number;
+    valorBeneficio: number;
     data_inativacao?: string | null;
     motivo_inativacao?: string | null;
 }
@@ -64,8 +65,13 @@ export function ModalFuncionario({ funcionarioEdicao, onClose, onSalvar }: Props
             : ''
     );
     const [valorEpi, setValorEpi] = useState<string>(
-        funcEdicao?.epi 
-            ? Number(funcEdicao.epi).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        funcEdicao?.valor_epi
+            ? Number(funcEdicao.valor_epi).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+            : ''
+    );
+    const [valorBeneficio, setValorBeneficio] = useState<string>(
+        funcEdicao?.valor_beneficio
+            ? Number(funcEdicao.valor_beneficio).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
             : ''
     );
 
@@ -156,6 +162,10 @@ export function ModalFuncionario({ funcionarioEdicao, onClose, onSalvar }: Props
         setValorEpi(aplicarMascaraMoeda(e.target.value));
     };
 
+    const handleValorBeneficioChange = (e: ChangeEvent<HTMLInputElement>) => {
+        setValorBeneficio(aplicarMascaraMoeda(e.target.value));
+    };
+
     const handleSubmit = async () => {
         if (!nome.trim()) {
             toast.warning("Preencha o nome!");
@@ -192,8 +202,9 @@ export function ModalFuncionario({ funcionarioEdicao, onClose, onSalvar }: Props
             setor, 
             ativo,
             data_admissao: dataAdmissao,
-            salarioBase: salarioNumerico, 
-            epi: limparMascaraMoeda(valorEpi), 
+            salarioBase: salarioNumerico,
+            valorEpi: limparMascaraMoeda(valorEpi),
+            valorBeneficio: limparMascaraMoeda(valorBeneficio),
             data_inativacao: ativo ? null : dataInativacao,
             motivo_inativacao: ativo ? null : motivo
         };
@@ -380,30 +391,43 @@ export function ModalFuncionario({ funcionarioEdicao, onClose, onSalvar }: Props
                         <div className="divider"></div>
 
                         <div className="section-label destaque">Base Financeira (Mensal)</div>
-                        <div className="form-grid two-cols financeiro-box">
+                        <div className="form-grid three-cols financeiro-box">
                             <div className="input-group">
                                 <label>Salário Base</label>
                                 <div className="input-wrapper money">
                                     <span className="currency">R$</span>
-                                    <input 
-                                        type="text" 
-                                        value={salario} 
-                                        onChange={handleSalarioChange} 
+                                    <input
+                                        type="text"
+                                        value={salario}
+                                        onChange={handleSalarioChange}
                                         onBlur={() => completarDecimais(salario, setSalario)}
-                                        placeholder="0,00" 
+                                        placeholder="0,00"
                                     />
                                 </div>
                             </div>
                             <div className="input-group">
-                                <label>Valor EPI / Benefícios</label>
+                                <label>Valor EPI (R$)</label>
                                 <div className="input-wrapper money">
                                     <span className="currency"><HardHat size={16}/> R$</span>
-                                    <input 
-                                        type="text" 
-                                        value={valorEpi} 
-                                        onChange={handleValorEpiChange} 
+                                    <input
+                                        type="text"
+                                        value={valorEpi}
+                                        onChange={handleValorEpiChange}
                                         onBlur={() => completarDecimais(valorEpi, setValorEpi)}
-                                        placeholder="0,00" 
+                                        placeholder="0,00"
+                                    />
+                                </div>
+                            </div>
+                            <div className="input-group">
+                                <label>Valor Benefício/Vale Alimentação (R$)</label>
+                                <div className="input-wrapper money">
+                                    <span className="currency">R$</span>
+                                    <input
+                                        type="text"
+                                        value={valorBeneficio}
+                                        onChange={handleValorBeneficioChange}
+                                        onBlur={() => completarDecimais(valorBeneficio, setValorBeneficio)}
+                                        placeholder="0,00"
                                     />
                                 </div>
                             </div>

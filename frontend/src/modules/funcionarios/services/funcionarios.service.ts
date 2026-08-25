@@ -30,7 +30,8 @@ export const FuncionariosService = {
             ...dados,
             funcao_id: Number(dados.funcao_id),
             salarioBase: Number(dados.salario_base || dados.salarioBase),
-            epi: Number(dados.epi || 0)
+            valorEpi: Number(dados.valor_epi || 0),
+            valorBeneficio: Number(dados.valor_beneficio || 0)
         };
 
         try {
@@ -48,7 +49,8 @@ export const FuncionariosService = {
              ...dados,
              funcao_id: dados.funcao_id ? Number(dados.funcao_id) : undefined,
              salarioBase: (dados.salario_base || dados.salarioBase) ? Number(dados.salario_base || dados.salarioBase) : undefined,
-             epi: dados.epi !== undefined ? Number(dados.epi) : undefined
+             valorEpi: dados.valor_epi !== undefined ? Number(dados.valor_epi) : undefined,
+             valorBeneficio: dados.valor_beneficio !== undefined ? Number(dados.valor_beneficio) : undefined
         };
 
         try {

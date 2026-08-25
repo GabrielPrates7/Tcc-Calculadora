@@ -7,9 +7,9 @@ export interface Funcionario {
     data_admissao: string;
     
     // Valores Monetários Principais
-    salario_base: number | string; 
-    epi: number | string;
-    epi_mensal?: number | string; // <-- CORREÇÃO: Propriedade adicionada
+    salario_base: number | string;
+    valor_epi: number | string;
+    valor_beneficio: number | string;
     custo_total_mensal?: number | string;
 
     // --- NOVOS CAMPOS (Detalhamento Financeiro) ---
@@ -33,8 +33,9 @@ export interface FuncionarioInput {
     ativo: boolean;
     data_admissao: string;
     
-    salario: number; 
-    epi: number;
+    salario: number;
+    valor_epi: number;
+    valor_beneficio: number;
 
     data_inativacao?: string | null;
     motivo_inativacao?: string | null;
