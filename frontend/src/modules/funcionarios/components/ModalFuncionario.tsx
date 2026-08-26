@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, type ChangeEvent } from 'react';
-import { X, Save, Calendar, User, HardHat, DollarSign, Ban, AlertCircle, FileText, Settings, Search } from 'lucide-react';
+import { X, Save, Calendar, User, DollarSign, Ban, AlertCircle, FileText, Settings, Search } from 'lucide-react';
 import { toast } from 'react-toastify';
 import type { Funcionario } from '../types';
 import { ModalGerenciarFuncoes } from './ModalGerenciarFuncoes';
@@ -406,9 +406,9 @@ export function ModalFuncionario({ funcionarioEdicao, onClose, onSalvar }: Props
                                 </div>
                             </div>
                             <div className="input-group">
-                                <label>Valor EPI (R$)</label>
+                                <label>EPI</label>
                                 <div className="input-wrapper money">
-                                    <span className="currency"><HardHat size={16}/> R$</span>
+                                    <span className="currency">R$</span>
                                     <input
                                         type="text"
                                         value={valorEpi}
@@ -419,7 +419,7 @@ export function ModalFuncionario({ funcionarioEdicao, onClose, onSalvar }: Props
                                 </div>
                             </div>
                             <div className="input-group">
-                                <label>Valor Benefício/Vale Alimentação (R$)</label>
+                                <label title="Benefício / Vale Alimentação">Benefício</label>
                                 <div className="input-wrapper money">
                                     <span className="currency">R$</span>
                                     <input

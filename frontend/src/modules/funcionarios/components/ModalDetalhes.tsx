@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { X, Calculator, Info } from 'lucide-react';
 import type { Funcionario } from '../types';
 import './ModalDetalhes.css'; 
@@ -25,6 +26,22 @@ export function ModalDetalhes({ funcionario, onClose }: Props) {
         return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 });
     };
 
+    const tituloSecao: CSSProperties = {
+        padding: '14px 20px 4px',
+        fontSize: '0.75rem',
+        fontWeight: 'bold',
+        color: '#64748b',
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em',
+    };
+
+    const Linha = ({ label, valor, destaque, semBorda }: { label: string; valor: number; destaque?: boolean; semBorda?: boolean }) => (
+        <div style={{ padding: '10px 20px', borderBottom: semBorda ? 'none' : '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ color: '#334155', fontWeight: 500 }}>{label}</span>
+            <span style={{ color: '#0f172a', fontWeight: 'bold', fontFamily: 'monospace', fontSize: destaque ? '1.15rem' : '1rem' }}>{formatarBRL(valor)}</span>
+        </div>
+    );
+
     return (
         <div className="modal-overlay">
             <div className="modal-content" style={{ maxWidth: '800px' }}>
@@ -45,61 +62,47 @@ export function ModalDetalhes({ funcionario, onClose }: Props) {
                 </div>
 
                 <div className="modal-body" style={{ padding: '24px' }}>
-                    
-                    <div style={{ background: '#334155', borderRadius: '8px', padding: '20px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: '4px solid #22c55e' }}>
-                        <div>
-                            <div style={{ color: '#f8fafc', fontSize: '1.1rem', fontWeight: '500', marginBottom: '4px' }}>Custo Total Mensal</div>
-                            <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Valor exato armazenado no banco de dados.</div>
-                        </div>
-                        <div style={{ color: '#22c55e', fontSize: '1.8rem', fontWeight: 'bold' }}>
-                            {formatarBRL(Number(funcionario.custo_total_mensal) || 0)}
-                        </div>
-                    </div>
 
                     {/* Correção CSS: overflow setado para visible para impedir cortes */}
-                    <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'visible', paddingBottom: '4px' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                            <thead>
-                                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                                    <th style={{ padding: '12px 16px', color: '#64748b', fontSize: '0.8rem', fontWeight: 'bold', textTransform: 'uppercase' }}>Componente</th>
-                                    <th style={{ padding: '12px 16px', color: '#64748b', fontSize: '0.8rem', fontWeight: 'bold', textTransform: 'uppercase', textAlign: 'right' }}>Valor Calculado</th>
-                                </tr>
-                            </thead>
-                            <tbody style={{ display: 'table-row-group' }}>
-                                <tr style={{ borderBottom: '1px solid #f1f5f9', display: 'table-row' }}>
-                                    <td style={{ padding: '12px 16px', color: '#334155', fontWeight: '500' }}>Salário Base</td>
-                                    <td style={{ padding: '12px 16px', color: '#0f172a', fontWeight: 'bold', textAlign: 'right', fontFamily: 'monospace', fontSize: '1rem' }}>{formatarBRL(salario)}</td>
-                                </tr>
-                                <tr style={{ borderBottom: '1px solid #f1f5f9', display: 'table-row' }}>
-                                    <td style={{ padding: '12px 16px', color: '#334155', fontWeight: '500' }}>EPI</td>
-                                    <td style={{ padding: '12px 16px', color: '#0f172a', fontWeight: 'bold', textAlign: 'right', fontFamily: 'monospace', fontSize: '1rem' }}>{formatarBRL(valorEpi)}</td>
-                                </tr>
-                                <tr style={{ borderBottom: '1px solid #f1f5f9', display: 'table-row' }}>
-                                    <td style={{ padding: '12px 16px', color: '#334155', fontWeight: '500' }}>Benefício / Vale Alimentação</td>
-                                    <td style={{ padding: '12px 16px', color: '#0f172a', fontWeight: 'bold', textAlign: 'right', fontFamily: 'monospace', fontSize: '1rem' }}>{formatarBRL(valorBeneficio)}</td>
-                                </tr>
-                                <tr style={{ borderBottom: '1px solid #f1f5f9', display: 'table-row' }}>
-                                    <td style={{ padding: '12px 16px', color: '#334155', fontWeight: '500' }}>Provisão 13º</td>
-                                    <td style={{ padding: '12px 16px', color: '#0f172a', fontWeight: 'bold', textAlign: 'right', fontFamily: 'monospace', fontSize: '1rem' }}>{formatarBRL(decimoTerceiro)}</td>
-                                </tr>
-                                <tr style={{ borderBottom: '1px solid #f1f5f9', display: 'table-row' }}>
-                                    <td style={{ padding: '12px 16px', color: '#334155', fontWeight: '500' }}>Provisão Férias</td>
-                                    <td style={{ padding: '12px 16px', color: '#0f172a', fontWeight: 'bold', textAlign: 'right', fontFamily: 'monospace', fontSize: '1rem' }}>{formatarBRL(ferias)}</td>
-                                </tr>
-                                <tr style={{ borderBottom: '1px solid #f1f5f9', display: 'table-row' }}>
-                                    <td style={{ padding: '12px 16px', color: '#334155', fontWeight: '500' }}>1/3 Férias</td>
-                                    <td style={{ padding: '12px 16px', color: '#0f172a', fontWeight: 'bold', textAlign: 'right', fontFamily: 'monospace', fontSize: '1rem' }}>{formatarBRL(umTercoFerias)}</td>
-                                </tr>
-                                <tr style={{ borderBottom: '1px solid #f1f5f9', display: 'table-row' }}>
-                                    <td style={{ padding: '12px 16px', color: '#334155', fontWeight: '500' }}>INSS (8%)</td>
-                                    <td style={{ padding: '12px 16px', color: '#0f172a', fontWeight: 'bold', textAlign: 'right', fontFamily: 'monospace', fontSize: '1rem' }}>{formatarBRL(inss)}</td>
-                                </tr>
-                                <tr style={{ display: 'table-row' }}>
-                                    <td style={{ padding: '12px 16px', color: '#334155', fontWeight: '500' }}>Multa FGTS (Provisão 40%)</td>
-                                    <td style={{ padding: '12px 16px', color: '#0f172a', fontWeight: 'bold', textAlign: 'right', fontFamily: 'monospace', fontSize: '1rem' }}>{formatarBRL(multaFgts)}</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'visible' }}>
+
+                        {/* Bloco 1: Base */}
+                        <div style={tituloSecao}>Base</div>
+                        <Linha label="Salário Base" valor={salario} destaque semBorda />
+
+                        <div style={{ borderTop: '1px solid #e2e8f0' }} />
+
+                        {/* Bloco 2: Adicionais */}
+                        <div style={tituloSecao}>Adicionais</div>
+                        <Linha label="EPI" valor={valorEpi} />
+                        <Linha label="Benefício / Vale Alimentação" valor={valorBeneficio} semBorda />
+                        <p style={{ margin: 0, padding: '0 20px 14px', color: '#94a3b8', fontSize: '0.8rem', fontStyle: 'italic' }}>
+                            Não entram na base de cálculo dos encargos abaixo.
+                        </p>
+
+                        <div style={{ borderTop: '1px solid #e2e8f0' }} />
+
+                        {/* Bloco 3: Encargos sobre o Salário Base */}
+                        <div style={tituloSecao}>Encargos sobre o Salário Base</div>
+                        <p style={{ margin: 0, padding: '0 20px 8px', color: '#94a3b8', fontSize: '0.8rem' }}>
+                            Base de cálculo: Salário Base ({formatarBRL(salario)})
+                        </p>
+                        <Linha label="Provisão 13º" valor={decimoTerceiro} />
+                        <Linha label="Provisão Férias" valor={ferias} />
+                        <Linha label="1/3 Férias" valor={umTercoFerias} />
+                        <Linha label="INSS (8%)" valor={inss} />
+                        <Linha label="Multa FGTS (Provisão 40%)" valor={multaFgts} semBorda />
+
+                        {/* Linha final destacada: Custo Total Mensal */}
+                        <div style={{ background: '#334155', borderRadius: '0 0 7px 7px', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderLeft: '4px solid #22c55e' }}>
+                            <div>
+                                <div style={{ color: '#f8fafc', fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '4px' }}>Custo Total Mensal</div>
+                                <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Valor exato armazenado no banco de dados.</div>
+                            </div>
+                            <div style={{ color: '#22c55e', fontSize: '1.8rem', fontWeight: 'bold' }}>
+                                {formatarBRL(Number(funcionario.custo_total_mensal) || 0)}
+                            </div>
+                        </div>
                     </div>
 
                     <div style={{ marginTop: '16px', background: '#f8fafc', padding: '12px', borderRadius: '6px', display: 'flex', gap: '8px', color: '#64748b', fontSize: '0.85rem', alignItems: 'flex-start' }}>
