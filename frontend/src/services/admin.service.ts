@@ -30,6 +30,13 @@ export interface AlteracaoPendente {
     };
 }
 
+export interface FuncionarioEncargoZerado {
+    id: number;
+    nome: string;
+    empresa_id: number;
+    nome_empresa: string;
+}
+
 export const AdminService = {
     async listarPendentes(): Promise<CadastroPendente[]> {
         const response = await api.get('/admin/pendentes');
@@ -68,5 +75,16 @@ export const AdminService = {
 
     async rejeitarAlteracao(id: number): Promise<void> {
         await api.post(`/admin/solicitacoes/${id}/rejeitar`);
+    },
+
+    // MANUTENÇÃO
+    async diagnosticarEncargosZerados(): Promise<FuncionarioEncargoZerado[]> {
+        const response = await api.get('/admin/funcionarios-encargos-zerados');
+        return response.data;
+    },
+
+    async corrigirEncargosZerados(): Promise<{ corrigidos: number; total: number }> {
+        const response = await api.post('/admin/funcionarios-encargos-zerados/corrigir');
+        return response.data;
     }
 };

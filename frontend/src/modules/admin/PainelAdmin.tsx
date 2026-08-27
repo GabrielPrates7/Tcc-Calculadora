@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { ShieldCheck, CheckCircle, Users, Ban, Check, UserCog, X, KeyRound, Copy } from 'lucide-react';
+import { ShieldCheck, CheckCircle, Users, Ban, Check, UserCog, X, KeyRound, Copy, Wrench, Search, AlertTriangle } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { AdminService, type CadastroPendente, type AlteracaoPendente } from '../../services/admin.service';
+import { AdminService, type CadastroPendente, type AlteracaoPendente, type FuncionarioEncargoZerado } from '../../services/admin.service';
 import { ConfirmModal } from '../../components/ConfirmModal/ConfirmModal';
 import { useAuth } from '../../contexts/AuthContext';
 
-type AbaVisualizacao = 'pendentes' | 'todos' | 'alteracoes';
+type AbaVisualizacao = 'pendentes' | 'todos' | 'alteracoes' | 'manutencao';
 
 export function PainelAdmin() {
     const { usuario } = useAuth();
@@ -16,6 +16,12 @@ export function PainelAdmin() {
     
     const [loading, setLoading] = useState(true);
     const [atualizarLista, setAtualizarLista] = useState(0);
+
+    // Aba de Manutenção: diagnóstico de encargos zerados (sob demanda, não carrega junto com o resto)
+    const [encargosZerados, setEncargosZerados] = useState<FuncionarioEncargoZerado[]>([]);
+    const [diagnosticando, setDiagnosticando] = useState(false);
+    const [diagnosticoExecutado, setDiagnosticoExecutado] = useState(false);
+    const [corrigindo, setCorrigindo] = useState(false);
 
     // Estado unificado para controlar o ConfirmModal
     const [modalConfirmacao, setModalConfirmacao] = useState({
@@ -171,6 +177,44 @@ export function PainelAdmin() {
         });
     };
 
+    const handleDiagnosticarEncargosZerados = async () => {
+        setDiagnosticando(true);
+        try {
+            const resultado = await AdminService.diagnosticarEncargosZerados();
+            setEncargosZerados(resultado);
+            setDiagnosticoExecutado(true);
+        } catch (error) {
+            console.error(error);
+            toast.error('Erro ao diagnosticar encargos zerados.');
+        } finally {
+            setDiagnosticando(false);
+        }
+    };
+
+    const handleCorrigirTodos = () => {
+        setModalConfirmacao({
+            isOpen: true,
+            title: "Corrigir Encargos Zerados",
+            message: `Isso recalculará o detalhamento de encargos (13º, Férias, 1/3 Férias, INSS, Multa FGTS) de ${encargosZerados.length} funcionário(s), a partir do salário, EPI e benefício já cadastrados de cada um. Nenhum desses três valores será alterado. Deseja continuar?`,
+            textoConfirmar: "Corrigir Todos",
+            onConfirm: async () => {
+                setCorrigindo(true);
+                try {
+                    const resultado = await AdminService.corrigirEncargosZerados();
+                    toast.success(`${resultado.corrigidos} de ${resultado.total} funcionário(s) corrigido(s) com sucesso!`);
+                    const atualizado = await AdminService.diagnosticarEncargosZerados();
+                    setEncargosZerados(atualizado);
+                } catch (error) {
+                    console.error(error);
+                    toast.error('Erro ao corrigir encargos zerados.');
+                } finally {
+                    setCorrigindo(false);
+                    setModalConfirmacao(prev => ({ ...prev, isOpen: false }));
+                }
+            }
+        });
+    };
+
     if (loading) return <div style={{ padding: '40px', color: '#94a3b8', textAlign: 'center' }}>Carregando painel de administração...</div>;
 
     return (
@@ -234,6 +278,19 @@ export function PainelAdmin() {
                 >
                     <Users size={18} />
                     Gestão de Clientes
+                </button>
+                <button
+                    onClick={() => setAbaAtiva('manutencao')}
+                    style={{
+                        background: 'transparent', border: 'none', cursor: 'pointer', padding: '12px 16px',
+                        fontSize: '1rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px',
+                        color: abaAtiva === 'manutencao' ? '#a855f7' : '#94a3b8',
+                        borderBottom: abaAtiva === 'manutencao' ? '2px solid #a855f7' : '2px solid transparent',
+                        transition: 'all 0.2s'
+                    }}
+                >
+                    <Wrench size={18} />
+                    Manutenção
                 </button>
             </div>
 
@@ -436,6 +493,85 @@ export function PainelAdmin() {
                             ))}
                         </tbody>
                     </table>
+                )}
+
+                {/* ABA 4: MANUTENÇÃO */}
+                {abaAtiva === 'manutencao' && (
+                    <div style={{ padding: '24px' }}>
+                        <div style={{ marginBottom: '20px' }}>
+                            <h3 style={{ color: '#f8fafc', fontSize: '1.05rem', margin: '0 0 6px 0' }}>Diagnóstico de Encargos Zerados</h3>
+                            <p style={{ color: '#94a3b8', fontSize: '0.85rem', margin: '0 0 16px 0' }}>
+                                Varre todas as empresas em busca de funcionários com Custo Total Mensal preenchido, mas com algum
+                                componente do detalhamento de encargos (13º, Férias, 1/3 Férias, INSS ou Multa FGTS) zerado.
+                                Apenas lista — nenhum dado é alterado aqui.
+                            </p>
+                            <button
+                                onClick={handleDiagnosticarEncargosZerados}
+                                disabled={diagnosticando}
+                                style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: '8px',
+                                    backgroundColor: '#a855f7', color: '#fff', border: 'none',
+                                    padding: '10px 18px', borderRadius: '6px',
+                                    cursor: diagnosticando ? 'not-allowed' : 'pointer',
+                                    fontWeight: 'bold', opacity: diagnosticando ? 0.7 : 1
+                                }}
+                            >
+                                <Search size={16} />
+                                {diagnosticando ? 'Diagnosticando...' : 'Diagnosticar Encargos Zerados'}
+                            </button>
+                        </div>
+
+                        {diagnosticoExecutado && (
+                            encargosZerados.length === 0 ? (
+                                <div style={{ padding: '32px', textAlign: 'center', color: '#64748b', border: '1px solid #334155', borderRadius: '8px' }}>
+                                    <CheckCircle size={40} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
+                                    <p style={{ margin: 0 }}>Nenhum funcionário com encargos zerados encontrado.</p>
+                                </div>
+                            ) : (
+                                <div>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '12px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#fbbf24', fontSize: '0.85rem', fontWeight: 'bold' }}>
+                                            <AlertTriangle size={16} />
+                                            {encargosZerados.length} funcionário(s) encontrado(s)
+                                        </div>
+                                        <button
+                                            onClick={handleCorrigirTodos}
+                                            disabled={corrigindo}
+                                            style={{
+                                                display: 'inline-flex', alignItems: 'center', gap: '8px',
+                                                backgroundColor: '#10b981', color: '#fff', border: 'none',
+                                                padding: '8px 16px', borderRadius: '6px',
+                                                cursor: corrigindo ? 'not-allowed' : 'pointer',
+                                                fontWeight: 'bold', opacity: corrigindo ? 0.7 : 1
+                                            }}
+                                            title="Recalcula o detalhamento de encargos de todos os funcionários listados, sem alterar salário, EPI ou benefício"
+                                        >
+                                            <Check size={16} />
+                                            {corrigindo ? 'Corrigindo...' : 'Corrigir Todos'}
+                                        </button>
+                                    </div>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                                        <thead>
+                                            <tr style={{ backgroundColor: '#0f172a', color: '#94a3b8', fontSize: '0.85rem', textTransform: 'uppercase' }}>
+                                                <th style={{ padding: '12px 16px', borderBottom: '1px solid #334155' }}>ID</th>
+                                                <th style={{ padding: '12px 16px', borderBottom: '1px solid #334155' }}>Nome</th>
+                                                <th style={{ padding: '12px 16px', borderBottom: '1px solid #334155' }}>Empresa</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {encargosZerados.map(f => (
+                                                <tr key={f.id} style={{ borderBottom: '1px solid #334155', color: '#f8fafc' }}>
+                                                    <td style={{ padding: '12px 16px', color: '#94a3b8', fontFamily: 'monospace' }}>{f.id}</td>
+                                                    <td style={{ padding: '12px 16px', fontWeight: 'bold' }}>{f.nome}</td>
+                                                    <td style={{ padding: '12px 16px' }}>{f.nome_empresa}</td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )
+                        )}
+                    </div>
                 )}
             </div>
 

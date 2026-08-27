@@ -3,6 +3,9 @@ import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { pool as db } from '../services/db';
 import { verificarSuperAdmin } from '../middlewares/auth.middleware';
+import { FuncionarioService } from '../services/funcionario.service';
+
+const funcionarioService = new FuncionarioService();
 
 const adminRoutes = Router();
 
@@ -236,6 +239,77 @@ adminRoutes.post('/solicitacoes/:id/aprovar', async (req: Request, res: Response
         res.status(500).json({ error: 'Erro interno ao processar a aprovação.' });
     } finally {
         client.release();
+    }
+});
+
+// ==========================================
+// MANUTENÇÃO: DIAGNÓSTICO DE DADOS
+// ==========================================
+
+// Rota 8: Lista, em todas as empresas, funcionários com custo_total_mensal
+// preenchido mas algum componente do detalhamento de encargos zerado —
+// não corrige nada, apenas diagnostica.
+adminRoutes.get('/funcionarios-encargos-zerados', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const query = `
+            SELECT f.id, f.nome, f.empresa_id, e.nome_fantasia as nome_empresa
+            FROM funcionarios f
+            JOIN empresas e ON f.empresa_id = e.id
+            WHERE f.custo_total_mensal > 0
+              AND (
+                  f.decimo_terceiro = 0 OR
+                  f.ferias = 0 OR
+                  f.um_terco_ferias = 0 OR
+                  f.inss = 0 OR
+                  f.multa_fgts = 0
+              )
+            ORDER BY e.nome_fantasia, f.nome
+        `;
+        const result = await db.query(query);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Erro ao diagnosticar encargos zerados:', error);
+        res.status(500).json({ error: 'Erro ao buscar funcionários com encargos zerados.' });
+    }
+});
+
+// Rota 8.5: Corrige em lote os funcionários com encargos zerados. Reaproveita
+// FuncionarioService.atualizarFuncionario — o mesmo caminho do PUT normal —
+// reenviando o salário/EPI/benefício já cadastrados de cada um só para forçar
+// o recálculo do detalhamento (calcularEncargos). Nunca altera esses 3 valores.
+adminRoutes.post('/funcionarios-encargos-zerados/corrigir', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const busca = await db.query(`
+            SELECT id, empresa_id, salario_base, valor_epi, valor_beneficio
+            FROM funcionarios
+            WHERE custo_total_mensal > 0
+              AND (
+                  decimo_terceiro = 0 OR
+                  ferias = 0 OR
+                  um_terco_ferias = 0 OR
+                  inss = 0 OR
+                  multa_fgts = 0
+              )
+        `);
+
+        let corrigidos = 0;
+        for (const row of busca.rows) {
+            try {
+                await funcionarioService.atualizarFuncionario(row.id, {
+                    salarioBase: Number(row.salario_base),
+                    valorEpi: Number(row.valor_epi),
+                    valorBeneficio: Number(row.valor_beneficio)
+                }, row.empresa_id);
+                corrigidos++;
+            } catch (err) {
+                console.error(`Erro ao corrigir funcionario id=${row.id}:`, err);
+            }
+        }
+
+        res.json({ corrigidos, total: busca.rows.length });
+    } catch (error) {
+        console.error('Erro ao corrigir encargos zerados em lote:', error);
+        res.status(500).json({ error: 'Erro ao corrigir encargos zerados.' });
     }
 });
 
