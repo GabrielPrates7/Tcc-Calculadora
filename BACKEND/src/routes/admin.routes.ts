@@ -77,6 +77,73 @@ adminRoutes.patch('/ativar/:id', async (req: Request, res: Response): Promise<vo
     }
 });
 
+// Rota 2.5: Recusar (excluir) um cadastro pendente de empresa/usuário.
+// Reconsulta e trava a linha dentro da transação — nunca confia que o
+// frontend já escondeu o botão para um cadastro que, nesse meio-tempo,
+// tenha sido aprovado por outra aba/sessão.
+adminRoutes.delete('/cadastros/:id', async (req: Request, res: Response): Promise<void> => {
+    const usuarioId = Number(req.params.id);
+    if (isNaN(usuarioId)) {
+        res.status(400).json({ error: 'ID inválido.' });
+        return;
+    }
+
+    const client = await db.connect();
+    try {
+        await client.query('BEGIN');
+
+        const busca = await client.query(
+            `SELECT u.id, u.ativo, u.email, u.empresa_id, e.nome_fantasia, e.cnpj
+             FROM usuarios u
+             JOIN empresas e ON u.empresa_id = e.id
+             WHERE u.id = $1
+             FOR UPDATE OF u`,
+            [usuarioId]
+        );
+
+        if (busca.rowCount === 0) {
+            await client.query('ROLLBACK');
+            res.status(404).json({ error: 'Cadastro não encontrado.' });
+            return;
+        }
+
+        const cadastro = busca.rows[0];
+
+        if (cadastro.ativo === true) {
+            await client.query('ROLLBACK');
+            res.status(409).json({ error: 'Não é possível recusar: cadastro já aprovado.' });
+            return;
+        }
+
+        // A exclusão de usuarios acontece automaticamente via ON DELETE CASCADE
+        await client.query('DELETE FROM empresas WHERE id = $1', [cadastro.empresa_id]);
+
+        await client.query('COMMIT');
+
+        console.log(
+            `[ADMIN] Cadastro recusado — admin_id=${req.usuario!.id} ` +
+            `empresa="${cadastro.nome_fantasia}" cnpj=${cadastro.cnpj || 'N/A'} ` +
+            `email=${cadastro.email} em=${new Date().toISOString()}`
+        );
+
+        res.status(204).send();
+    } catch (error: any) {
+        await client.query('ROLLBACK');
+
+        // Rede de segurança: qualquer vínculo de negócio inesperado (funcionarios,
+        // obras, etc.) ainda é barrado pela foreign key do banco (código 23503)
+        if (error.code === '23503') {
+            res.status(422).json({ error: 'Não é possível recusar: já existem dados de negócio vinculados a esta empresa.' });
+            return;
+        }
+
+        console.error('Erro ao recusar cadastro:', error);
+        res.status(500).json({ error: 'Erro interno ao recusar o cadastro.' });
+    } finally {
+        client.release();
+    }
+});
+
 // Rota 3: Listar TODOS os usuários cadastrados
 adminRoutes.get('/usuarios', async (req: Request, res: Response): Promise<void> => {
     try {

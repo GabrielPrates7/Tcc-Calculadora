@@ -53,6 +53,10 @@ export const AdminService = {
         return response.data;
     },
 
+    async recusarCadastro(id: number): Promise<void> {
+        await api.delete(`/admin/cadastros/${id}`);
+    },
+
     async bloquearUsuario(id: number): Promise<void> {
         const response = await api.patch(`/admin/bloquear/${id}`);
         return response.data;

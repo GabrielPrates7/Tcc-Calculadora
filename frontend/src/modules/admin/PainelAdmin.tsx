@@ -85,6 +85,27 @@ export function PainelAdmin() {
         });
     };
 
+    const handleRecusar = (usuario_id: number, nome_empresa: string, email: string) => {
+        setModalConfirmacao({
+            isOpen: true,
+            title: "Recusar Cadastro",
+            message: `Esta ação é IRREVERSÍVEL: a empresa "${nome_empresa}" (${email}) e todos os seus dados serão permanentemente excluídos do sistema. Deseja continuar?`,
+            textoConfirmar: "Recusar e Excluir",
+            onConfirm: async () => {
+                try {
+                    await AdminService.recusarCadastro(usuario_id);
+                    setPendentes(prev => prev.filter(p => p.usuario_id !== usuario_id));
+                    toast.success(`Cadastro de "${nome_empresa}" recusado e removido.`);
+                } catch (error: unknown) {
+                    const err = error as { response?: { data?: { error?: string } } };
+                    toast.error(err.response?.data?.error || 'Erro ao recusar cadastro.');
+                } finally {
+                    setModalConfirmacao(prev => ({ ...prev, isOpen: false }));
+                }
+            }
+        });
+    };
+
     const handleBloquear = (usuario_id: number, nome_empresa: string) => {
         setModalConfirmacao({
             isOpen: true,
@@ -328,12 +349,20 @@ export function PainelAdmin() {
                                             {new Date(req.criado_em).toLocaleDateString('pt-BR')}
                                         </td>
                                         <td style={{ padding: '16px 24px', textAlign: 'right' }}>
-                                            <button 
-                                                onClick={() => handleAprovar(req.usuario_id, req.nome_empresa)}
-                                                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
-                                            >
-                                                <Check size={16} /> Aprovar
-                                            </button>
+                                            <div style={{ display: 'inline-flex', gap: '8px' }}>
+                                                <button
+                                                    onClick={() => handleRecusar(req.usuario_id, req.nome_empresa, req.email)}
+                                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#1e293b', color: '#ef4444', border: '1px solid #ef4444', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+                                                >
+                                                    <X size={16} /> Recusar
+                                                </button>
+                                                <button
+                                                    onClick={() => handleAprovar(req.usuario_id, req.nome_empresa)}
+                                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#10b981', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+                                                >
+                                                    <Check size={16} /> Aprovar
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
