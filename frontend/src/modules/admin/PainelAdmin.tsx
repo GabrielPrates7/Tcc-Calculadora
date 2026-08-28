@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import { ShieldCheck, CheckCircle, Users, Ban, Check, UserCog, X, KeyRound, Copy, Wrench, Search, AlertTriangle } from 'lucide-react';
+import { ShieldCheck, CheckCircle, Users, Ban, Check, UserCog, X, KeyRound, Copy, Wrench, Search, AlertTriangle, Lock } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { AdminService, type CadastroPendente, type AlteracaoPendente, type FuncionarioEncargoZerado } from '../../services/admin.service';
+import { AdminService, type CadastroPendente, type AlteracaoPendente, type FuncionarioEncargoZerado, type SolicitacaoRecuperacaoSenha } from '../../services/admin.service';
 import { ConfirmModal } from '../../components/ConfirmModal/ConfirmModal';
 import { useAuth } from '../../contexts/AuthContext';
 
-type AbaVisualizacao = 'pendentes' | 'todos' | 'alteracoes' | 'manutencao';
+type AbaVisualizacao = 'pendentes' | 'todos' | 'alteracoes' | 'manutencao' | 'recuperacao';
 
 export function PainelAdmin() {
     const { usuario } = useAuth();
@@ -13,7 +13,8 @@ export function PainelAdmin() {
     const [pendentes, setPendentes] = useState<CadastroPendente[]>([]);
     const [todosUsuarios, setTodosUsuarios] = useState<CadastroPendente[]>([]);
     const [alteracoesPendentes, setAlteracoesPendentes] = useState<AlteracaoPendente[]>([]);
-    
+    const [recuperacoesSenha, setRecuperacoesSenha] = useState<SolicitacaoRecuperacaoSenha[]>([]);
+
     const [loading, setLoading] = useState(true);
     const [atualizarLista, setAtualizarLista] = useState(0);
 
@@ -42,15 +43,17 @@ export function PainelAdmin() {
     useEffect(() => {
         const buscarDados = async () => {
             try {
-                const [dadosPendentes, dadosTodos, dadosAlteracoes] = await Promise.all([
+                const [dadosPendentes, dadosTodos, dadosAlteracoes, dadosRecuperacoes] = await Promise.all([
                     AdminService.listarPendentes(),
                     AdminService.listarTodos(),
-                    AdminService.listarAlteracoesPendentes()
+                    AdminService.listarAlteracoesPendentes(),
+                    AdminService.listarRecuperacoesSenha()
                 ]);
-                
+
                 setPendentes(dadosPendentes);
                 setTodosUsuarios(dadosTodos);
-                setAlteracoesPendentes(dadosAlteracoes); 
+                setAlteracoesPendentes(dadosAlteracoes);
+                setRecuperacoesSenha(dadosRecuperacoes);
             } catch (error) {
                 console.error(error);
                 toast.error('Erro ao buscar dados do servidor.');
@@ -236,6 +239,48 @@ export function PainelAdmin() {
         });
     };
 
+    const handleGerarSenhaRecuperacao = (solicitacaoId: number, nomeUsuario: string) => {
+        setModalConfirmacao({
+            isOpen: true,
+            title: "Gerar Senha",
+            message: `Uma nova senha temporária será gerada para "${nomeUsuario}" e a senha atual deixará de funcionar imediatamente. Deseja continuar?`,
+            textoConfirmar: "Gerar Senha",
+            onConfirm: async () => {
+                try {
+                    const resultado = await AdminService.gerarSenhaRecuperacao(solicitacaoId);
+                    setRecuperacoesSenha(prev => prev.filter(r => r.id !== solicitacaoId));
+                    setModalSenhaTemp({ isOpen: true, nomeUsuario, senha: resultado.senhaTemporaria });
+                } catch (error: unknown) {
+                    const err = error as { response?: { data?: { error?: string } } };
+                    toast.error(err.response?.data?.error || 'Erro ao gerar senha.');
+                } finally {
+                    setModalConfirmacao(prev => ({ ...prev, isOpen: false }));
+                }
+            }
+        });
+    };
+
+    const handleRecusarRecuperacao = (solicitacaoId: number, identificador: string) => {
+        setModalConfirmacao({
+            isOpen: true,
+            title: "Recusar Solicitação",
+            message: `Deseja recusar a solicitação de recuperação de senha para "${identificador}"? Nenhuma senha será gerada.`,
+            textoConfirmar: "Recusar",
+            onConfirm: async () => {
+                try {
+                    await AdminService.recusarRecuperacaoSenha(solicitacaoId);
+                    setRecuperacoesSenha(prev => prev.filter(r => r.id !== solicitacaoId));
+                    toast.info('Solicitação recusada.');
+                } catch (error: unknown) {
+                    const err = error as { response?: { data?: { error?: string } } };
+                    toast.error(err.response?.data?.error || 'Erro ao recusar solicitação.');
+                } finally {
+                    setModalConfirmacao(prev => ({ ...prev, isOpen: false }));
+                }
+            }
+        });
+    };
+
     if (loading) return <div style={{ padding: '40px', color: '#94a3b8', textAlign: 'center' }}>Carregando painel de administração...</div>;
 
     return (
@@ -312,6 +357,24 @@ export function PainelAdmin() {
                 >
                     <Wrench size={18} />
                     Manutenção
+                </button>
+                <button
+                    onClick={() => setAbaAtiva('recuperacao')}
+                    style={{
+                        background: 'transparent', border: 'none', cursor: 'pointer', padding: '12px 16px',
+                        fontSize: '1rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px',
+                        color: abaAtiva === 'recuperacao' ? '#ec4899' : '#94a3b8',
+                        borderBottom: abaAtiva === 'recuperacao' ? '2px solid #ec4899' : '2px solid transparent',
+                        transition: 'all 0.2s'
+                    }}
+                >
+                    <Lock size={18} />
+                    Recuperação de Senha
+                    {recuperacoesSenha.length > 0 && (
+                        <span style={{ background: '#ec4899', color: '#fff', fontSize: '0.7rem', padding: '2px 8px', borderRadius: '12px', marginLeft: '4px' }}>
+                            {recuperacoesSenha.length}
+                        </span>
+                    )}
                 </button>
             </div>
 
@@ -601,6 +664,75 @@ export function PainelAdmin() {
                             )
                         )}
                     </div>
+                )}
+
+                {/* ABA 5: RECUPERAÇÃO DE SENHA */}
+                {abaAtiva === 'recuperacao' && (
+                    recuperacoesSenha.length === 0 ? (
+                        <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
+                            <CheckCircle size={48} style={{ margin: '0 auto 16px', opacity: 0.5 }} />
+                            <p>Não há solicitações de recuperação de senha pendentes.</p>
+                        </div>
+                    ) : (
+                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                            <thead>
+                                <tr style={{ backgroundColor: '#0f172a', color: '#94a3b8', fontSize: '0.85rem', textTransform: 'uppercase' }}>
+                                    <th style={{ padding: '16px 24px', borderBottom: '1px solid #334155' }}>Identificador Informado</th>
+                                    <th style={{ padding: '16px 24px', borderBottom: '1px solid #334155' }}>Conta Localizada</th>
+                                    <th style={{ padding: '16px 24px', borderBottom: '1px solid #334155' }}>Data</th>
+                                    <th style={{ padding: '16px 24px', borderBottom: '1px solid #334155', textAlign: 'right' }}>Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {recuperacoesSenha.map(rec => (
+                                    <tr key={rec.id} style={{ borderBottom: '1px solid #334155', color: '#f8fafc' }}>
+                                        <td style={{ padding: '16px 24px', fontFamily: 'monospace' }}>{rec.identificador_informado}</td>
+                                        <td style={{ padding: '16px 24px' }}>
+                                            {rec.usuario_id !== null ? (
+                                                <div>
+                                                    <div style={{ fontWeight: 'bold' }}>{rec.nome_usuario}</div>
+                                                    <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{rec.nome_empresa}</div>
+                                                </div>
+                                            ) : (
+                                                <span style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold' }}>
+                                                    Conta não localizada
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td style={{ padding: '16px 24px', color: '#cbd5e1' }}>
+                                            {new Date(rec.criado_em).toLocaleString('pt-BR')}
+                                        </td>
+                                        <td style={{ padding: '16px 24px', textAlign: 'right' }}>
+                                            <div style={{ display: 'inline-flex', gap: '8px' }}>
+                                                <button
+                                                    onClick={() => handleRecusarRecuperacao(rec.id, rec.identificador_informado)}
+                                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#1e293b', color: '#ef4444', border: '1px solid #ef4444', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+                                                >
+                                                    <X size={16} /> Recusar
+                                                </button>
+                                                <button
+                                                    onClick={() => rec.usuario_id !== null && handleGerarSenhaRecuperacao(rec.id, rec.nome_usuario!)}
+                                                    disabled={rec.usuario_id === null}
+                                                    title={rec.usuario_id === null ? 'Não é possível gerar senha: nenhuma conta foi localizada' : 'Gerar uma nova senha temporária para este usuário'}
+                                                    style={{
+                                                        display: 'inline-flex', alignItems: 'center', gap: '6px',
+                                                        backgroundColor: rec.usuario_id === null ? '#1e293b' : '#3b82f6',
+                                                        color: rec.usuario_id === null ? '#64748b' : '#fff',
+                                                        border: rec.usuario_id === null ? '1px solid #334155' : 'none',
+                                                        padding: '8px 16px', borderRadius: '6px',
+                                                        cursor: rec.usuario_id === null ? 'not-allowed' : 'pointer',
+                                                        fontWeight: 'bold'
+                                                    }}
+                                                >
+                                                    <KeyRound size={16} /> Gerar Senha
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )
                 )}
             </div>
 
