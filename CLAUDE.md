@@ -63,3 +63,10 @@ All HTTP calls go through the single axios instance in [src/services/api.ts](fro
 PostgreSQL, no ORM. Connection pool is defined directly in [BACKEND/src/services/db.ts](BACKEND/src/services/db.ts) with hardcoded credentials (`database: 'db_industria'`, host/port/user/password all literal in the file) — `dotenv` is a declared dependency but is never actually loaded (`process.env.PORT` in `index.ts` and `process.env.JWT_SECRET` in `auth.middleware.ts` only ever fall back to their hardcoded defaults in practice). If you add env-based config, you must add the `dotenv.config()` call yourself — it isn't wired up anywhere currently.
 
 Schema is not managed via migrations — [BACKEND/banco_dados.sql](BACKEND/banco_dados.sql) is a full `pg_dump` snapshot used to (re)create the database manually. When a change requires a schema change, update this dump file and note it, since there is no migration tool tracking incremental changes. Key tables: `empresas`, `usuarios`, `obras`, `obra_recursos_humanos`, `funcionarios`, `funcoes`, `orcamentos`, `ordens_servico`, `pagamentos_os`, `despesas_fixas`, `investimentos`, `faturamentos_mensais`, `snapshots_financeiros`, `configuracao_producao`, `historico_custo_obra` — most carry an `empresa_id` column for tenant scoping.
+
+## Fluxo de Git
+
+- `main` é produção — deploy automático via Vercel (frontend) / Render (backend). Nunca recebe commit direto.
+- `homolog` é a branch de integração/pré-produção — gera preview automático no Vercel.
+- Branches de trabalho seguem `feature/<nome-descritivo>`, `fix/<nome-descritivo>` ou `chore/<nome-descritivo>` — nunca nomeadas por data.
+- Toda mudança de schema de banco é aplicada manualmente no Neon de produção antes de promover `homolog` para `main`.
