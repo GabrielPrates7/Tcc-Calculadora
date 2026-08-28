@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { pool as db } from '../services/db';
-import { loginLimiter, registroLimiter } from '../middlewares/rateLimit.middleware';
+import { loginLimiter, registroLimiter, esqueciSenhaLimiter } from '../middlewares/rateLimit.middleware';
 
 const authRoutes = Router();
 const JWT_SECRET = process.env.JWT_SECRET as string;
@@ -129,6 +129,54 @@ authRoutes.post('/login', loginLimiter, async (req: Request, res: Response): Pro
     } catch (error) {
         console.error('Erro no login:', error);
         res.status(500).json({ error: 'Erro interno no servidor.' });
+    }
+});
+
+/**
+ * "Esqueci minha senha" — rota pública, sem verificarToken (é justamente
+ * para quem não consegue mais logar). Aceita email, nome de usuário ou CNPJ
+ * da empresa como identificador.
+ *
+ * Mesma lógica anti-enumeração do login: uma única consulta cobre os dois
+ * casos (encontrou / não encontrou), sem branch que faça trabalho extra só
+ * num dos caminhos, e a resposta é sempre a mesma 200 com a mesma mensagem —
+ * para o tempo de resposta e o corpo da resposta nunca denunciarem se aquele
+ * identificador existe no sistema. A linha em solicitacoes_recuperacao_senha
+ * é inserida nos dois casos; usuario_id só vem preenchido quando há match.
+ */
+authRoutes.post('/esqueci-senha', esqueciSenhaLimiter, async (req: Request, res: Response): Promise<void> => {
+    const identificador = typeof req.body.identificador === 'string' ? req.body.identificador.trim() : '';
+
+    if (!identificador) {
+        res.status(400).json({ error: 'Informe seu e-mail, usuário ou CNPJ.' });
+        return;
+    }
+
+    const MENSAGEM_GENERICA = 'Se encontrarmos uma conta correspondente, a solicitação será analisada em breve.';
+
+    try {
+        const busca = await db.query(
+            `SELECT u.id
+             FROM usuarios u
+             JOIN empresas e ON u.empresa_id = e.id
+             WHERE u.email = $1 OR u.nome = $1 OR e.cnpj = $1
+             LIMIT 1`,
+            [identificador]
+        );
+
+        const usuarioId = busca.rows[0]?.id ?? null;
+
+        await db.query(
+            'INSERT INTO solicitacoes_recuperacao_senha (identificador_informado, usuario_id) VALUES ($1, $2)',
+            [identificador, usuarioId]
+        );
+
+        res.status(200).json({ message: MENSAGEM_GENERICA });
+    } catch (error) {
+        console.error('Erro ao processar solicitação de recuperação de senha:', error);
+        // Mesma mensagem genérica mesmo em erro interno — não é o momento de
+        // vazar detalhes, e evita que um erro vire um outro sinal distinguível.
+        res.status(200).json({ message: MENSAGEM_GENERICA });
     }
 });
 

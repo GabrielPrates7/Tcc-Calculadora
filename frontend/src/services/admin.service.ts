@@ -37,6 +37,15 @@ export interface FuncionarioEncargoZerado {
     nome_empresa: string;
 }
 
+export interface SolicitacaoRecuperacaoSenha {
+    id: number;
+    identificador_informado: string;
+    usuario_id: number | null;
+    nome_usuario: string | null;
+    nome_empresa: string | null;
+    criado_em: string;
+}
+
 export const AdminService = {
     async listarPendentes(): Promise<CadastroPendente[]> {
         const response = await api.get('/admin/pendentes');
@@ -90,5 +99,20 @@ export const AdminService = {
     async corrigirEncargosZerados(): Promise<{ corrigidos: number; total: number }> {
         const response = await api.post('/admin/funcionarios-encargos-zerados/corrigir');
         return response.data;
+    },
+
+    // RECUPERAÇÃO DE SENHA
+    async listarRecuperacoesSenha(): Promise<SolicitacaoRecuperacaoSenha[]> {
+        const response = await api.get('/admin/solicitacoes-recuperacao-senha');
+        return response.data;
+    },
+
+    async gerarSenhaRecuperacao(id: number): Promise<{ senhaTemporaria: string; usuario: { id: number; nome: string; email: string } }> {
+        const response = await api.post(`/admin/solicitacoes-recuperacao-senha/${id}/gerar-senha`);
+        return response.data;
+    },
+
+    async recusarRecuperacaoSenha(id: number): Promise<void> {
+        await api.post(`/admin/solicitacoes-recuperacao-senha/${id}/recusar`);
     }
 };

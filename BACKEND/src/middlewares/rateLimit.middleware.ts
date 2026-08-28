@@ -35,3 +35,21 @@ export const registroLimiter = rateLimit({
         error: 'Muitas tentativas de cadastro. Aguarde 15 minutos e tente novamente.'
     }
 });
+
+/**
+ * Limite para "esqueci minha senha". A rota sempre responde 200 com a mesma
+ * mensagem (não vaza se a conta existe), então o rate limit aqui não é para
+ * evitar descoberta de contas — é para não deixar a rota virar um jeito
+ * gratuito de encher solicitacoes_recuperacao_senha ou, futuramente, de
+ * disparar e-mails em massa. Mesmo teto do login por ser sensível do mesmo
+ * jeito (rota pública, sem sessão).
+ */
+export const esqueciSenhaLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutos
+    limit: 5,
+    standardHeaders: 'draft-8',
+    legacyHeaders: false,
+    message: {
+        error: 'Muitas tentativas. Aguarde 15 minutos e tente novamente.'
+    }
+});
