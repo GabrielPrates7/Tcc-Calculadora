@@ -229,6 +229,147 @@ adminRoutes.post('/redefinir-senha/:id', async (req: Request, res: Response): Pr
 });
 
 // ==========================================
+// RECUPERAÇÃO DE SENHA (fila alimentada por POST /auth/esqueci-senha)
+// ==========================================
+
+// Rota 4.6: Listar solicitações pendentes de recuperação de senha
+adminRoutes.get('/solicitacoes-recuperacao-senha', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const query = `
+            SELECT s.id, s.identificador_informado, s.usuario_id, s.criado_em,
+                   u.nome AS nome_usuario, e.nome_fantasia AS nome_empresa
+            FROM solicitacoes_recuperacao_senha s
+            LEFT JOIN usuarios u ON s.usuario_id = u.id
+            LEFT JOIN empresas e ON u.empresa_id = e.id
+            WHERE s.status = 'PENDENTE'
+            ORDER BY s.criado_em ASC
+        `;
+        const result = await db.query(query);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Erro ao listar solicitações de recuperação de senha:', error);
+        res.status(500).json({ error: 'Erro ao buscar solicitações de recuperação de senha.' });
+    }
+});
+
+// Rota 4.7: Gerar senha temporária a partir de uma solicitação de recuperação.
+// Reaproveita a mesma lógica de /redefinir-senha/:id (gerarSenhaTemporaria +
+// hash), mas trava e reconfere status/usuario_id na própria solicitação
+// antes de agir — nunca confia que o frontend já desabilitou o botão.
+adminRoutes.post('/solicitacoes-recuperacao-senha/:id/gerar-senha', async (req: Request, res: Response): Promise<void> => {
+    const solicitacaoId = Number(req.params.id);
+    if (isNaN(solicitacaoId)) {
+        res.status(400).json({ error: 'ID inválido.' });
+        return;
+    }
+
+    const client = await db.connect();
+    try {
+        await client.query('BEGIN');
+
+        const busca = await client.query(
+            `SELECT id, status, usuario_id FROM solicitacoes_recuperacao_senha WHERE id = $1 FOR UPDATE`,
+            [solicitacaoId]
+        );
+
+        if (busca.rowCount === 0) {
+            await client.query('ROLLBACK');
+            res.status(404).json({ error: 'Solicitação não encontrada.' });
+            return;
+        }
+
+        const solicitacao = busca.rows[0];
+
+        if (solicitacao.status !== 'PENDENTE') {
+            await client.query('ROLLBACK');
+            res.status(409).json({ error: 'Esta solicitação já foi processada.' });
+            return;
+        }
+
+        if (solicitacao.usuario_id === null) {
+            await client.query('ROLLBACK');
+            res.status(422).json({ error: 'Não é possível gerar senha: nenhuma conta foi localizada para esta solicitação.' });
+            return;
+        }
+
+        const senhaTemporaria = gerarSenhaTemporaria();
+        const senhaHash = await bcrypt.hash(senhaTemporaria, 10);
+
+        const userResult = await client.query(
+            'UPDATE usuarios SET senha_hash = $1 WHERE id = $2 RETURNING id, nome, email',
+            [senhaHash, solicitacao.usuario_id]
+        );
+
+        if (userResult.rowCount === 0) {
+            await client.query('ROLLBACK');
+            res.status(404).json({ error: 'A conta vinculada a esta solicitação não existe mais.' });
+            return;
+        }
+
+        const alvo = userResult.rows[0];
+
+        await client.query(
+            `UPDATE solicitacoes_recuperacao_senha SET status = 'APROVADA', analisado_em = CURRENT_TIMESTAMP WHERE id = $1`,
+            [solicitacaoId]
+        );
+
+        await client.query('COMMIT');
+
+        // Auditoria: fica só no log do servidor — nunca na resposta HTTP nem na tela.
+        console.log(
+            `[ADMIN] Senha gerada via recuperação — admin_id=${req.usuario!.id} solicitacao_id=${solicitacaoId} ` +
+            `alvo_id=${alvo.id} alvo_email=${alvo.email} em=${new Date().toISOString()}`
+        );
+
+        res.json({
+            senhaTemporaria,
+            usuario: { id: alvo.id, nome: alvo.nome, email: alvo.email }
+        });
+    } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Erro ao gerar senha por recuperação:', error);
+        res.status(500).json({ error: 'Erro interno ao gerar a senha.' });
+    } finally {
+        client.release();
+    }
+});
+
+// Rota 4.8: Recusar uma solicitação de recuperação de senha, sem gerar nada.
+adminRoutes.post('/solicitacoes-recuperacao-senha/:id/recusar', async (req: Request, res: Response): Promise<void> => {
+    const solicitacaoId = Number(req.params.id);
+    if (isNaN(solicitacaoId)) {
+        res.status(400).json({ error: 'ID inválido.' });
+        return;
+    }
+
+    try {
+        const result = await db.query(
+            `UPDATE solicitacoes_recuperacao_senha
+             SET status = 'REJEITADA', analisado_em = CURRENT_TIMESTAMP
+             WHERE id = $1 AND status = 'PENDENTE'
+             RETURNING id, identificador_informado`,
+            [solicitacaoId]
+        );
+
+        if (result.rowCount === 0) {
+            res.status(409).json({ error: 'Solicitação não encontrada ou já processada.' });
+            return;
+        }
+
+        console.log(
+            `[ADMIN] Solicitação de recuperação de senha recusada — admin_id=${req.usuario!.id} ` +
+            `solicitacao_id=${solicitacaoId} identificador="${result.rows[0].identificador_informado}" ` +
+            `em=${new Date().toISOString()}`
+        );
+
+        res.json({ message: 'Solicitação recusada.' });
+    } catch (error) {
+        console.error('Erro ao recusar solicitação de recuperação de senha:', error);
+        res.status(500).json({ error: 'Erro interno ao recusar a solicitação.' });
+    }
+});
+
+// ==========================================
 // NOVAS ROTAS: FLUXO DE ALTERAÇÃO DE PERFIL
 // ==========================================
 
