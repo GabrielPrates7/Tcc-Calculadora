@@ -68,5 +68,5 @@ Schema is not managed via migrations — [BACKEND/banco_dados.sql](BACKEND/banco
 
 - `main` é produção — deploy automático via Vercel (frontend) / Render (backend). Nunca recebe commit direto.
 - `homolog` é a branch de integração/pré-produção — gera preview automático no Vercel.
-- Branches de trabalho seguem `feature/<nome-descritivo>`, `fix/<nome-descritivo>` ou `chore/<nome-descritivo>` — nunca nomeadas por data.
+- Branches de trabalho seguem `feature/<nome-descritivo>`, `fix/<nome-descritivo>` ou `chore/<nome-descritivo>` — nunca nomeadas por data. Devem ser enviadas ao GitHub imediatamente após a criação (`git push -u origin <nome-da-branch>`), antes mesmo do primeiro commit — não só depois de mescladas em `homolog` — para que toda branch de trabalho fique visível no histórico do repositório desde o início.
 - Toda mudança de schema de banco é aplicada manualmente no Neon de produção antes de promover `homolog` para `main`.
