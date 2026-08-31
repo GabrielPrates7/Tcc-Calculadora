@@ -53,42 +53,86 @@ router.get('/taxa-custo-fixo', async (req: Request, res: Response): Promise<void
 // ==========================================
 // 1. DASHBOARD (Financeiro)
 // ==========================================
+// Aceita ?mes=8&ano=2026 ou ?meses=7,8&ano=2026 — mesmo formato de
+// /taxa-custo-fixo. SEM esses parâmetros o comportamento é o de sempre:
+// ancora no faturamento mais recente lançado (Dashboard, relatório em PDF e
+// orçamento não passam período e continuam inalterados).
 router.get('/dashboard', async (req: Request, res: Response): Promise<void> => {
     try {
         const empresaId = req.usuario!.empresa_id;
 
-        const fatRes = await pool.query(
-            'SELECT mes, ano, valor FROM faturamentos_mensais WHERE empresa_id = $1 ORDER BY ano DESC, mes DESC LIMIT 1',
-            [empresaId]
-        );
-        const faturamentoData = fatRes.rows[0];
-        const faturamento = Number(faturamentoData?.valor) || 0;
-        
-        const mesFiltro = faturamentoData?.mes || new Date().getMonth() + 1;
-        const anoFiltro = faturamentoData?.ano || new Date().getFullYear();
+        const mesesParam = (req.query.meses ?? req.query.mes) as string | undefined;
+        const anoParam = req.query.ano as string | undefined;
+
+        let mesesInformados: number[] | undefined;
+        if (mesesParam) {
+            mesesInformados = String(mesesParam)
+                .split(',')
+                .map(m => Number(m.trim()))
+                .filter(m => Number.isInteger(m) && m >= 1 && m <= 12);
+            if (mesesInformados.length === 0) {
+                res.status(400).json({ error: 'Parâmetro de mês inválido. Use valores de 1 a 12.' });
+                return;
+            }
+        }
+
+        const anoInformado = anoParam ? Number(anoParam) : undefined;
+        if (anoParam && !Number.isInteger(anoInformado)) {
+            res.status(400).json({ error: 'Parâmetro de ano inválido.' });
+            return;
+        }
+
+        const periodoInformado = !!(mesesInformados && mesesInformados.length > 0 && anoInformado);
+
+        let mesesFiltro: number[];
+        let anoFiltro: number;
+        let faturamento: number;
+
+        if (periodoInformado) {
+            mesesFiltro = mesesInformados!;
+            anoFiltro = anoInformado!;
+
+            const fatRes = await pool.query(
+                `SELECT COALESCE(SUM(valor), 0) AS total
+                 FROM faturamentos_mensais
+                 WHERE mes = ANY($1::int[]) AND ano = $2 AND empresa_id = $3`,
+                [mesesFiltro, anoFiltro, empresaId]
+            );
+            faturamento = Number(fatRes.rows[0]?.total) || 0;
+        } else {
+            const fatRes = await pool.query(
+                'SELECT mes, ano, valor FROM faturamentos_mensais WHERE empresa_id = $1 ORDER BY ano DESC, mes DESC LIMIT 1',
+                [empresaId]
+            );
+            const faturamentoData = fatRes.rows[0];
+            faturamento = Number(faturamentoData?.valor) || 0;
+
+            mesesFiltro = [faturamentoData?.mes || new Date().getMonth() + 1];
+            anoFiltro = faturamentoData?.ano || new Date().getFullYear();
+        }
 
         const despesasRes = await pool.query(`
-            SELECT SUM(valor) as total 
-            FROM despesas_fixas 
-            WHERE ativo = true 
-            AND EXTRACT(MONTH FROM data_vencimento) = $1 
+            SELECT SUM(valor) as total
+            FROM despesas_fixas
+            WHERE ativo = true
+            AND EXTRACT(MONTH FROM data_vencimento) = ANY($1::int[])
             AND EXTRACT(YEAR FROM data_vencimento) = $2
             AND empresa_id = $3
-        `, [mesFiltro, anoFiltro, empresaId]);
+        `, [mesesFiltro, anoFiltro, empresaId]);
         const totalDespesas = Number(despesasRes.rows[0]?.total) || 0;
 
         const investRes = await pool.query(`
-            SELECT SUM(valor) as total 
-            FROM investimentos 
+            SELECT SUM(valor) as total
+            FROM investimentos
             WHERE ativo = true
-            AND EXTRACT(MONTH FROM data_vencimento) = $1 
+            AND EXTRACT(MONTH FROM data_vencimento) = ANY($1::int[])
             AND EXTRACT(YEAR FROM data_vencimento) = $2
             AND empresa_id = $3
-        `, [mesFiltro, anoFiltro, empresaId]);
+        `, [mesesFiltro, anoFiltro, empresaId]);
         const totalInvestimentos = Number(investRes.rows[0]?.total) || 0;
 
-        // Fonte única do indicador — mesmo período (o do faturamento mais recente)
-        const taxaCustoFixo = await FinanceiroService.calcularTaxaCustoFixo(empresaId, mesFiltro, anoFiltro);
+        // Fonte única do indicador — sempre o mesmo período usado acima
+        const taxaCustoFixo = await FinanceiroService.calcularTaxaCustoFixo(empresaId, mesesFiltro, anoFiltro);
 
         res.json({ faturamento, totalDespesas, totalInvestimentos, taxaCustoFixo });
     } catch (err) {
