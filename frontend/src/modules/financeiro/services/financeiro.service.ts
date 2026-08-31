@@ -15,8 +15,16 @@ interface ItemBackend {
 }
 
 export const FinanceiroService = {
-    async getDashboard(): Promise<DashboardData> {
-        const res = await api.get('/financeiro/dashboard');
+    /**
+     * Indicadores do período. `meses` em 1-12. Sem período informado, o
+     * backend mantém o comportamento padrão (faturamento mais recente) —
+     * é assim que o carregamento inicial da tela continua chamando.
+     */
+    async getDashboard(meses?: number[], ano?: number): Promise<DashboardData> {
+        const params = (meses && meses.length > 0 && ano)
+            ? { meses: meses.join(','), ano }
+            : undefined;
+        const res = await api.get('/financeiro/dashboard', { params });
         return res.data;
     },
 
