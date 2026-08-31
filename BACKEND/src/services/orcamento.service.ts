@@ -33,6 +33,19 @@ export function validarOrcamentoPayload(dados: IOrcamentoPayload): string | null
     if (!Number.isFinite(dados.impostoPct) || dados.impostoPct < 0) {
         return 'Imposto deve ser um número maior ou igual a zero.';
     }
+    // Entra no cálculo de custoMaoObraTotal (tempoGasto * valorHora) e, por
+    // consequência, no preço de venda gravado — um negativo aqui corromperia
+    // o orçamento. Na UI o campo vem de um dropdown, mas a API é chamável
+    // diretamente.
+    if (!Number.isFinite(dados.valorHoraSelecionado) || dados.valorHoraSelecionado < 0) {
+        return 'Valor hora selecionado deve ser um número maior ou igual a zero.';
+    }
+    // Quando informado, precisa ser um id utilizável — a checagem de posse
+    // (se a obra é da empresa do usuário) fica na rota, que responde 403.
+    if (dados.idCenarioMo !== null && dados.idCenarioMo !== undefined
+        && (!Number.isInteger(dados.idCenarioMo) || dados.idCenarioMo <= 0)) {
+        return 'Cenário de mão de obra inválido.';
+    }
     return null;
 }
 
@@ -51,6 +64,23 @@ export class OrcamentoService {
     // explícito: ancora no faturamento mais recente lançado pela empresa.
     async obterTaxaFixoAtual(empresa_id: number): Promise<number> {
         return FinanceiroService.calcularTaxaCustoFixo(empresa_id);
+    }
+
+    /**
+     * Confirma que o cenário de mão de obra informado (uma obra) pertence à
+     * empresa do usuário autenticado.
+     *
+     * A foreign key do banco (fk_orcamento_cenario_mo) só garante que o id
+     * existe em `obras` — nada impede referenciar a obra de OUTRA empresa
+     * chamando a API diretamente, já que o dropdown que filtra por empresa
+     * vive só no frontend. Por isso o vínculo é reconferido aqui.
+     */
+    async cenarioMaoObraPertenceAEmpresa(idCenario: number, empresa_id: number): Promise<boolean> {
+        const result = await db.query(
+            'SELECT 1 FROM public.obras WHERE id = $1 AND empresa_id = $2',
+            [idCenario, empresa_id]
+        );
+        return (result.rowCount ?? 0) > 0;
     }
 
     async listarCenariosMaoObra(empresa_id: number): Promise<ICenarioMaoObraDTO[]> {
