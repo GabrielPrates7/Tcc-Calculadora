@@ -11,8 +11,9 @@ import { ModalRelatorio } from './components/ModalRelatorio';
 import { ModalHistorico } from './components/ModalHistorico'; 
 import { ModalConfirmacao } from './components/ModalConfirmacao'; 
 import { ModalNovoCheckpoint } from './components/ModalNovoCheckpoint';
-import type { ViewMode, TipoModal, ItemFinanceiro, StatusFilter } from './types'; 
+import type { ViewMode, TipoModal, ItemFinanceiro, StatusFilter } from './types';
 import { analisarIntervalo } from './utils/dateHelper';
+import { FinanceiroService } from './services/financeiro.service';
 import { api } from '../../services/api'; // <-- IMPORTAÇÃO DA API CORRIGIDA
 import './Financeiro.css'; 
 
@@ -46,6 +47,11 @@ export function Financeiro() {
     const [filtroStatus, setFiltroStatus] = useState<StatusFilter>('todos');
     const [faturamentoExibido, setFaturamentoExibido] = useState<number>(0);
 
+    // Taxa de Custo Fixo do período selecionado, vinda da fonte única no
+    // backend (FinanceiroService.calcularTaxaCustoFixo). Nunca recalculada
+    // aqui — ver o efeito abaixo, que refaz a busca só na troca de mês/ano.
+    const [taxaCustoFixoPeriodo, setTaxaCustoFixoPeriodo] = useState<number | null>(null);
+
     const [modalRelatorioAberto, setModalRelatorioAberto] = useState(false);
     const [modalHistoricoAberto, setModalHistoricoAberto] = useState(false); 
 
@@ -63,6 +69,17 @@ export function Financeiro() {
     const infoDatas = useMemo(() => {
         return analisarIntervalo(filtroDataInicio, filtroDataFim);
     }, [filtroDataInicio, filtroDataFim]);
+
+    /**
+     * Chave estável do período (mês/ano). Ajustar só os dias dentro do mesmo
+     * mês produz exatamente a mesma string, então o efeito que depende dela
+     * não dispara — é o que garante que o recorte fino de dias não mexa no
+     * percentual, apenas na listagem.
+     */
+    const chavePeriodo = useMemo(() => {
+        if (!infoDatas.ano || infoDatas.meses.length === 0) return '';
+        return `${infoDatas.ano}:${infoDatas.meses.join(',')}`;
+    }, [infoDatas.ano, infoDatas.meses]);
 
     useEffect(() => {
         const carregarFaturamento = async () => {
@@ -85,7 +102,42 @@ export function Financeiro() {
         };
         carregarFaturamento();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [infoDatas.meses, infoDatas.ano, infoDatas.isMesUnico]); 
+    }, [infoDatas.meses, infoDatas.ano, infoDatas.isMesUnico]);
+
+    // Rebusca a Taxa de Custo Fixo no backend a cada troca de mês/ano.
+    // Depende de `chavePeriodo` (string), não do array de meses: mudar só os
+    // dias mantém a mesma chave e não dispara nova busca.
+    useEffect(() => {
+        let ativo = true;
+
+        const carregarTaxa = async () => {
+            if (!infoDatas.ano || infoDatas.meses.length === 0) {
+                if (ativo) setTaxaCustoFixoPeriodo(null);
+                return;
+            }
+
+            try {
+                const mesesBanco = infoDatas.meses.map(m => m + 1);
+                const dados = await FinanceiroService.getDashboard(mesesBanco, infoDatas.ano);
+                if (ativo) setTaxaCustoFixoPeriodo(Number(dados.taxaCustoFixo) || 0);
+            } catch (error) {
+                console.error("Erro ao buscar a taxa de custo fixo do período:", error);
+                if (ativo) setTaxaCustoFixoPeriodo(null);
+            }
+        };
+
+        carregarTaxa();
+        return () => { ativo = false; };
+        // `despesas` entra como gatilho porque sua referência só muda quando o
+        // hook recarrega os dados (salvar/excluir despesa, salvar faturamento)
+        // — casos em que a taxa realmente precisa ser recalculada no servidor.
+        // `faturamentoExibido` entra explicitamente pelo mesmo motivo: editar o
+        // faturamento do mês também exige recalcular a taxa no servidor, e essa
+        // dependência direta deixa a intenção clara no código, em vez de contar
+        // só com o efeito colateral indireto de `despesas` mudar de referência
+        // a cada recarregar().
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [chavePeriodo, despesas, faturamentoExibido]);
 
     const dashboardCalculado = useMemo(() => {
         const somarFiltrados = (lista: ItemFinanceiro[]) => {
@@ -105,18 +157,16 @@ export function Financeiro() {
         const totalInvestimentosFiltrados = somarFiltrados(investimentos);
         const faturamentoFinal = faturamentoExibido;
 
-        const taxaCustoFixo = faturamentoFinal > 0 
-            ? (totalDespesasFiltradas / faturamentoFinal) * 100 
-            : 0;
-
         return {
             ...dashboardOriginal,
             faturamento: faturamentoFinal,
             totalDespesas: totalDespesasFiltradas,
             totalInvestimentos: totalInvestimentosFiltrados,
-            taxaCustoFixo: taxaCustoFixo,
+            // Vem pronta do backend (fonte única). O recorte fino de dias
+            // altera as somas acima, mas nunca este percentual.
+            taxaCustoFixo: taxaCustoFixoPeriodo ?? dashboardOriginal.taxaCustoFixo,
         };
-    }, [despesas, investimentos, filtroDataInicio, filtroDataFim, faturamentoExibido, dashboardOriginal]);
+    }, [despesas, investimentos, filtroDataInicio, filtroDataFim, faturamentoExibido, dashboardOriginal, taxaCustoFixoPeriodo]);
 
     const handleSalvarCheckpoint = () => {
         setModalCheckpointAberto(true);
