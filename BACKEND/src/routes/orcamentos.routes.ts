@@ -37,6 +37,27 @@ function responderErro(res: Response, err: unknown, contexto: string, fallback: 
     res.status(500).json({ error: fallback });
 }
 
+/**
+ * Barra o uso de um cenário de mão de obra que não seja da empresa do
+ * usuário autenticado. Responde 403 — e não 404 — tanto para id inexistente
+ * quanto para obra de outra empresa: distinguir os dois casos permitiria
+ * descobrir por tentativa quais ids existem no sistema (mesma lógica
+ * anti-enumeração já usada no login).
+ *
+ * Devolve true quando pode seguir; quando devolve false, a resposta já foi
+ * enviada e o handler deve apenas retornar.
+ */
+async function cenarioAutorizado(res: Response, idCenarioMo: number | null | undefined, empresaId: number): Promise<boolean> {
+    if (idCenarioMo === null || idCenarioMo === undefined) return true;
+
+    const pertence = await orcamentoService.cenarioMaoObraPertenceAEmpresa(idCenarioMo, empresaId);
+    if (!pertence) {
+        res.status(403).json({ error: 'Cenário de mão de obra inválido ou indisponível.' });
+        return false;
+    }
+    return true;
+}
+
 // --- 0. BUSCAR HISTÓRICO PARA O DROPDOWN ---
 router.get('/historico-obra', async (req: Request, res: Response) => {
     try {
@@ -84,7 +105,7 @@ router.post('/', async (req: Request, res: Response) => {
             tempoGasto: Number(req.body.horas_trabalhadas),
             lucroPct: Number(req.body.lucro_desejado),
             impostoPct: Number(req.body.imposto),
-            valorHoraSelecionado: Number(req.body.valorHoraSelecionado) || 0,
+            valorHoraSelecionado: Number(req.body.valorHoraSelecionado),
             idCenarioMo: req.body.id_cenario_mo ? Number(req.body.id_cenario_mo) : null
         };
 
@@ -93,6 +114,8 @@ router.post('/', async (req: Request, res: Response) => {
             res.status(400).json({ error: erroValidacao });
             return;
         }
+
+        if (!(await cenarioAutorizado(res, dados.idCenarioMo, empresaId))) return;
 
         const novoOrcamento = await orcamentoService.criarOrcamento(dados, empresaId);
         res.status(201).json(novoOrcamento);
@@ -112,7 +135,7 @@ router.put('/:id', async (req: Request, res: Response) => {
             tempoGasto: Number(req.body.horas_trabalhadas),
             lucroPct: Number(req.body.lucro_desejado),
             impostoPct: Number(req.body.imposto),
-            valorHoraSelecionado: Number(req.body.valorHoraSelecionado) || 0,
+            valorHoraSelecionado: Number(req.body.valorHoraSelecionado),
             idCenarioMo: req.body.id_cenario_mo ? Number(req.body.id_cenario_mo) : null
         };
 
@@ -121,6 +144,8 @@ router.put('/:id', async (req: Request, res: Response) => {
             res.status(400).json({ error: erroValidacao });
             return;
         }
+
+        if (!(await cenarioAutorizado(res, dados.idCenarioMo, empresaId))) return;
 
         const atualizado = await orcamentoService.atualizarOrcamento(Number(req.params.id), dados, empresaId);
         res.json({ message: 'Orçamento atualizado com sucesso!', data: atualizado });
