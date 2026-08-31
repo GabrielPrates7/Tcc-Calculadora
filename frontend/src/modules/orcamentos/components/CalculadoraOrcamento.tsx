@@ -137,7 +137,12 @@ export function CalculadoraOrcamento({
             setErroValidacao("Por favor, digite o nome do produto.");
             return;
         }
-        if (divisor <= 0) {
+        // Só bloqueia por causa da soma das taxas quando o preço de fato vai
+        // ser recalculado — espelha exatamente a condição do backend
+        // (atualizarOrcamento só valida a soma quando precoMudou é true). Numa
+        // edição administrativa (ex: só o cliente), o snapshot é preservado
+        // sem recálculo, então a soma atual não é relevante para essa gravação.
+        if (algumCampoPrecoMudou && divisor <= 0) {
             setErroValidacao("A soma das taxas ultrapassa 100%. Impossível calcular o preço de venda.");
             return;
         }
