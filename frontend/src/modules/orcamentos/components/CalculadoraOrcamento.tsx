@@ -74,9 +74,28 @@ export function CalculadoraOrcamento({
 
     const cenarioAtivo = useMemo(() => {
         const listaSegura = Array.isArray(listaCenarios) ? listaCenarios : [];
-        return listaSegura.find(c => c.id === idCenarioSelecionado) 
+        return listaSegura.find(c => c.id === idCenarioSelecionado)
                || (listaSegura.length > 0 ? listaSegura[0] : null);
     }, [listaCenarios, idCenarioSelecionado]);
+
+    /**
+     * Valores originais dos campos relevantes ao preço, congelados na
+     * abertura do formulário de edição — mesma lista usada na correção do
+     * backend (atualizarOrcamento). O componente é remontado a cada troca de
+     * orçamento (veja o `key` em Orcamentos.tsx), então `orcamentoEdicao` não
+     * muda de identidade durante esta montagem: capturar uma vez já basta.
+     */
+    const valoresOriginaisPreco = useMemo(() => {
+        if (!orcamentoEdicao) return null;
+        return {
+            materiais: Number(orcamentoEdicao.custo_materiais) || 0,
+            horasTrabalhadas: Number(orcamentoEdicao.horas_trabalhadas) || 0,
+            idCenarioMo: orcamentoEdicao.id_cenario_mo ?? null,
+            lucro: Number(orcamentoEdicao.lucro_desejado) || 0,
+            imposto: Number(orcamentoEdicao.imposto) || 0,
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const PCT = (v: number) => (Number(v) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
 
@@ -94,7 +113,24 @@ export function CalculadoraOrcamento({
     const somaPorcentagens = (Number(taxaFixa) || 0) + (Number(lucro) || 0) + (Number(imposto) || 0);
     const divisor = 1 - (somaPorcentagens / 100);
 
-    const precoFinal = (divisor > 0 && custoProducao > 0) ? custoProducao / divisor : 0;
+    const precoCalculadoAoVivo = (divisor > 0 && custoProducao > 0) ? custoProducao / divisor : 0;
+
+    // Sem orçamento em edição (novo orçamento), sempre ao vivo — comportamento
+    // inalterado. Editando, só troca para o cálculo ao vivo (com a taxa atual)
+    // depois que o usuário mexer em algum campo relevante ao preço; editar só
+    // cliente/produto mantém o preço exibido igual ao que já está gravado —
+    // espelha o que atualizarOrcamento decide no backend.
+    const algumCampoPrecoMudou = !valoresOriginaisPreco || (
+        (Number(materiais) || 0) !== valoresOriginaisPreco.materiais ||
+        tempoEfetivo !== valoresOriginaisPreco.horasTrabalhadas ||
+        (cenarioAtivo?.id ?? null) !== valoresOriginaisPreco.idCenarioMo ||
+        (Number(lucro) || 0) !== valoresOriginaisPreco.lucro ||
+        (Number(imposto) || 0) !== valoresOriginaisPreco.imposto
+    );
+
+    const precoFinal = algumCampoPrecoMudou
+        ? precoCalculadoAoVivo
+        : (Number(orcamentoEdicao?.preco_venda) || 0);
 
     const handleSalvar = async () => {
         if (!produto || !produto.trim()) {
