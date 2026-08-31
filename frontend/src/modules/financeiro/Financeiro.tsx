@@ -126,8 +126,19 @@ export function Financeiro() {
             }
         };
 
-        carregarTaxa();
-        return () => { ativo = false; };
+        // Debounce: uma troca de mês muda `chavePeriodo` de imediato e,
+        // pouco depois, `faturamentoExibido` (quando o outro efeito termina
+        // de buscar o faturamento via API — esse round-trip mediu ~100 a
+        // ~200ms em teste local, podendo variar mais em produção). Sem isso,
+        // as duas mudanças disparam duas buscas idênticas em sequência.
+        // 400ms dá folga confortável acima do round-trip observado, mantendo
+        // as duas mudanças agrupadas num único fetch.
+        const timer = setTimeout(carregarTaxa, 400);
+
+        return () => {
+            ativo = false;
+            clearTimeout(timer);
+        };
         // `despesas` entra como gatilho porque sua referência só muda quando o
         // hook recarrega os dados (salvar/excluir despesa, salvar faturamento)
         // — casos em que a taxa realmente precisa ser recalculada no servidor.
