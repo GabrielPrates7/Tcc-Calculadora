@@ -162,7 +162,54 @@ export class OrcamentoService {
     }
 
     async atualizarOrcamento(id: number, dados: IOrcamentoPayload, empresa_id: number) {
-        const calculo = await this.calcularPrecoVenda(dados, empresa_id);
+        // Estado atual do orçamento, lido antes de qualquer cálculo: serve tanto
+        // para adiantar o 404 (que antes só aparecia depois de calcular tudo à
+        // toa) quanto para decidir se o preço precisa mesmo ser refeito.
+        const atualRes = await db.query(
+            `SELECT custo_mercadoria, tempo_gasto, lucro_desejado_pct, imposto_pct,
+                    custo_mao_obra_unitario, id_cenario_mo,
+                    custo_fixo_pct_snapshot, custo_mao_obra_total, preco_venda
+             FROM public.orcamentos
+             WHERE id = $1 AND empresa_id = $2`,
+            [id, empresa_id]
+        );
+
+        if (atualRes.rowCount === 0) throw new Error("Orçamento não encontrado para atualização.");
+
+        const atual = atualRes.rows[0];
+
+        // Colunas numeric voltam do driver pg como string ("3900.00"), então os
+        // dois lados passam por Number antes de comparar — sem isso
+        // "3900.00" !== 3900 e toda edição pareceria mudança de preço.
+        const numeroMudou = (novo: number, atualValor: unknown): boolean =>
+            Number(novo ?? 0) !== Number(atualValor ?? 0);
+
+        // valorHoraSelecionado não tem coluna de mesmo nome: é gravado em
+        // custo_mao_obra_unitario. idCenarioMo é integer (já vem como number),
+        // e é normalizado com `|| null` para bater com o que o UPDATE grava.
+        const precoMudou =
+            numeroMudou(dados.custoMercadoria, atual.custo_mercadoria) ||
+            numeroMudou(dados.tempoGasto, atual.tempo_gasto) ||
+            numeroMudou(dados.valorHoraSelecionado, atual.custo_mao_obra_unitario) ||
+            numeroMudou(dados.lucroPct, atual.lucro_desejado_pct) ||
+            numeroMudou(dados.impostoPct, atual.imposto_pct) ||
+            (dados.idCenarioMo || null) !== (atual.id_cenario_mo ?? null);
+
+        /**
+         * Só recalcula quando algum campo que entra no preço mudou. Editar
+         * apenas dados administrativos (cliente, nome do produto) preserva o
+         * snapshot original: custo_fixo_pct_snapshot guarda a taxa de custo
+         * fixo vigente na criação, e refazê-lo numa edição não relacionada
+         * trocaria silenciosamente o preço acordado pelo preço com a taxa de
+         * hoje. Os valores preservados voltam crus do SELECT (sem passar por
+         * Number) para serem regravados idênticos, sem risco de arredondamento.
+         */
+        const calculo = precoMudou ? await this.calcularPrecoVenda(dados, empresa_id) : null;
+
+        const taxaFixaGravar = calculo ? calculo.taxaFixa : atual.custo_fixo_pct_snapshot;
+        const custoMaoObraTotalGravar = calculo ? calculo.custoMaoObraTotal : atual.custo_mao_obra_total;
+        const precoVendaGravar = calculo ? calculo.precoVenda : atual.preco_venda;
+
         const query = `
             UPDATE public.orcamentos
             SET cliente = $1, nome_produto = $2, custo_mercadoria = $3, tempo_gasto = $4,
@@ -173,8 +220,8 @@ export class OrcamentoService {
         `;
         const values = [
             dados.cliente || null, dados.nomeProduto, dados.custoMercadoria, dados.tempoGasto,
-            dados.lucroPct, dados.impostoPct, calculo.taxaFixa, 
-            dados.valorHoraSelecionado, calculo.custoMaoObraTotal, calculo.precoVenda, 
+            dados.lucroPct, dados.impostoPct, taxaFixaGravar,
+            dados.valorHoraSelecionado, custoMaoObraTotalGravar, precoVendaGravar,
             dados.idCenarioMo || null,
             id, empresa_id
         ];
